@@ -115,8 +115,9 @@ struct CleanView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            // Radar animation
-            ScanLine()
+            // Solar system scanning animation
+            SystemMonitorOverlay()
+                .frame(width: 300, height: 300)
 
             // Progress readout
             VStack(spacing: 8) {

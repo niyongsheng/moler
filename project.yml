@@ -36,7 +36,8 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Resources/Moler.entitlements
         SWIFT_OBJC_BRIDGING_HEADER: ""
         ENABLE_HARDENED_RUNTIME: NO
-    dependencies: []
+    dependencies:
+      - sdk: SceneKit.framework
     postCompileScripts:
       - script: |
           if [ "$CONFIGURATION" = "Release" ]; then

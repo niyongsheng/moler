@@ -151,7 +151,7 @@ struct RootView: View {
                 .visible(activePane == .clean)
             placeholderView(for: L10n.navPurge)
                 .visible(activePane == .purge)
-            placeholderView(for: L10n.navOptimize)
+            OptimizeView()
                 .visible(activePane == .optimize)
             placeholderView(for: L10n.navAnalyze)
                 .visible(activePane == .analyze)
