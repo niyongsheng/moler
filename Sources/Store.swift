@@ -32,13 +32,14 @@ final class Store: ObservableObject {
     /// - `"zh-Hans"` — Simplified Chinese
     /// - `"en"` — English
     @Published var language: String {
-        didSet {
-            if language.isEmpty {
-                defaults.removeObject(forKey: Key.language)
-            } else {
-                defaults.set([language], forKey: Key.language)
-            }
-            defaults.synchronize()
+        didSet { persistLanguage() }
+    }
+
+    private func persistLanguage() {
+        if language.isEmpty {
+            defaults.removeObject(forKey: Key.language)
+        } else {
+            defaults.set([language], forKey: Key.language)
         }
     }
 
@@ -86,9 +87,9 @@ final class Store: ObservableObject {
         self.hasOnboarded = defaults.bool(forKey: Key.hasOnboarded)
 
         // Language: read the first preferred language from AppleLanguages.
-        // If not set, defaults to system language (empty string → use system).
+        // Use _language (no didSet) to avoid persisting the same value on init.
         let preferred = defaults.stringArray(forKey: Key.language)?.first
-        self.language = preferred ?? ""
+        self._language = Published(initialValue: preferred ?? "")
 
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         self.lastScanPath = defaults.string(forKey: Key.lastScanPath) ?? home
