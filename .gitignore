@@ -22,3 +22,6 @@ CLAUDE.md
 
 # macOS
 .DS_Store
+
+# Profiling data
+*.profraw
