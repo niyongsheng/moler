@@ -20,13 +20,11 @@ struct TypewriterLabel: View {
                 .monoFont(12)
                 .foregroundColor(Brand.textPrimary)
 
-            // Blinking cursor
-            if displayedCount < fullText.count || cursorVisible {
-                Rectangle()
-                    .fill(Brand.accentOrange)
-                    .frame(width: 7, height: 14)
-                    .opacity(cursorVisible ? 1 : 0)
-            }
+            // Blinking cursor (always present in hierarchy to prevent height fluctuation)
+            Rectangle()
+                .fill(Brand.accentOrange)
+                .frame(width: 7, height: 14)
+                .opacity(cursorVisible ? 1 : 0)
         }
         .onAppear { startTyping() }
         .onDisappear { displayedCount = 0 }
