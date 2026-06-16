@@ -28,7 +28,7 @@ struct InstrumentPanel<Content: View>: View {
                 .frame(width: 3)
 
             // Panel body
-            VStack(alignment: .leading, spacing: Brand.unit * 3) {
+            VStack(alignment: .leading, spacing: Brand.unit) {
                 // Header
                 header
 
@@ -36,7 +36,8 @@ struct InstrumentPanel<Content: View>: View {
                 content()
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(Brand.margin)
+            .padding(.horizontal, Brand.margin)
+            .padding(.vertical, Brand.marginTight)
         }
         .background(Brand.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 4))

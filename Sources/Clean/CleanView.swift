@@ -130,6 +130,7 @@ struct CleanView: View {
 
                 HStack(spacing: 24) {
                     DataRow(label: L10n.cleanFiles, value: "\(progress.currentItem)/\(progress.totalItems)")
+                    DataRow(label: L10n.cleanSize, value: formatBytes(progress.scannedBytes))
                     DataRow(label: L10n.cleanElapsed, value: "\(progress.elapsedSeconds)s")
                 }
 

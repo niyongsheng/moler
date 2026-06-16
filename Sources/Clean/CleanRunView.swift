@@ -17,6 +17,7 @@ struct CleanRunView: View {
             ) {
                 DataRow(label: L10n.cleanRunStatus, value: L10n.cleanRunExecuting)
             }
+            .frame(maxHeight: 100)
             .padding(.bottom, Brand.margin)
 
             // Terminal log output

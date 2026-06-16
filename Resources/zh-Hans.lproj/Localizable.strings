@@ -12,6 +12,8 @@
 "nav.optimize.sub" = "系统服务";
 "nav.analyze" = "分析";
 "nav.analyze.sub" = "磁盘图谱";
+"nav.software" = "软件";
+"nav.software.sub" = "关于";
 "nav.offline" = "模块未上线";
 
 /* === 清理：待机 === */
@@ -68,6 +70,18 @@
 "error.mo_failed" = "mo 执行失败 (退出码 %d): %@";
 "error.parse_failed" = "解析 mo 输出失败: %@";
 
+/* === 安装引导 === */
+"install.title" = "需要 Mole 引擎";
+"install.message" = "Moler 是 Mole CLI (`mo`) 的图形界面——扫描和清理都由它完成。请先安装 mo，然后点击「重试」。";
+"install.subtitle" = "使用 Homebrew 安装";
+"install.copy" = "复制";
+"install.copied" = "已复制";
+"install.recheck" = "重试";
+"install.checking" = "检查中…";
+"install.still_missing" = "仍未找到 `mo`。如果刚安装完毕，请先打开一个新终端，或重新启动 Moler。";
+"install.other_options" = "没有 Homebrew？其他安装方式 →";
+"install.quit" = "退出";
+
 /* === 隐私 === */
 "privacy.title" = "需要全磁盘访问权限";
 "privacy.message" = "Moler 需要全磁盘访问权限才能扫描和清理 Mac 上的文件。\n\n打开 系统设置 → 隐私与安全性 → 全磁盘访问权限，然后为 Moler 开启开关。";
@@ -87,6 +101,35 @@
 "overview.quick_scan" = "开始扫描";
 "overview.quick_settings" = "设置";
 
+/* === 清除项目残留：待机 === */
+"purge.title" = "清除项目残留";
+"purge.subtitle" = "清理旧的构建缓存";
+"purge.scan_path" = "扫描路径";
+"purge.initiate" = "扫描项目";
+"purge.scanning" = "正在扫描项目";
+"purge.scanning.hint" = "> 正在扫描项目目录...";
+"purge.cancel" = "取消";
+"purge.stop" = "停止";
+
+/* === 清除项目残留：审核 === */
+"purge.review.title" = "选择要清除的项";
+"purge.review.total" = "总计";
+"purge.review.execute" = "开始清除";
+
+/* === 清除项目残留：执行中 === */
+"purge.run.title" = "清除执行中";
+"purge.run.subtitle" = "请勿中断操作";
+"purge.run.status" = "状态";
+"purge.run.executing" = "正在清除项目构建残留...";
+"purge.run.init" = "> 正在启动清除序列...";
+
+/* === 清除项目残留：完成 === */
+"purge.done.title" = "清除完成";
+"purge.done.subtitle" = "所有选中的项目残留已清除";
+"purge.done.space_freed" = "释放空间";
+"purge.done.items_removed" = "清除项数";
+"purge.done.new_scan" = "重新扫描";
+
 /* === 设置 === */
 "settings.title" = "设置";
 "settings.general" = "通用";
@@ -104,3 +147,14 @@
 /* === 设置：关于 === */
 "settings.about" = "关于";
 "settings.version" = "版本";
+
+/* === 更新 === */
+"update.check" = "检查更新";
+"update.check_result" = "发现新版本";
+"update.up_to_date" = "已是最新版本";
+"update.up_to_date_body" = "Moler %@ 已是最新版本。";
+"update.available" = "Moler %@ 可用（当前版本 %@）。请从发布页面下载。";
+"update.error" = "检查更新失败";
+"update.error_body" = "GitHub 暂时无响应，请稍后再试，或直接打开发布页面。";
+"update.release_page" = "打开发布页面";
+"update.close" = "关闭";
