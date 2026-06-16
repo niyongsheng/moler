@@ -1,0 +1,91 @@
+/*
+  Localizable.strings — 简体中文
+  Moler Mac 清理工具
+*/
+
+/* === 导航 === */
+"nav.clean" = "清理";
+"nav.clean.sub" = "深度扫描";
+"nav.purge" = "清除";
+"nav.purge.sub" = "项目残留";
+"nav.optimize" = "优化";
+"nav.optimize.sub" = "系统服务";
+"nav.analyze" = "分析";
+"nav.analyze.sub" = "磁盘图谱";
+"nav.offline" = "模块未上线";
+
+/* === 清理：待机 === */
+"clean.title" = "深度系统扫描";
+"clean.subtitle" = "清理模块 v1.0";
+"clean.last_scan" = "上次扫描";
+"clean.last_clean" = "上次清理";
+"clean.total_freed" = "累计释放";
+"clean.clean_count" = "清理次数";
+"clean.never" = "从未";
+"clean.initiate" = "开始扫描";
+
+/* === 清理：扫描中 === */
+"clean.scanning" = "扫描进行中";
+"clean.scanning.hint" = "> 正在分析磁盘结构...";
+"clean.scanning.wait" = "可能需要一分钟左右...";
+"clean.scanning.elapsed" = "已用时间";
+"clean.files" = "文件数";
+"clean.size" = "大小";
+
+/* === 清理：审核 === */
+"clean.review.title" = "扫描结果";
+"clean.review.subtitle" = "勾选要清理的项目";
+"clean.review.scan_path" = "扫描路径";
+"clean.review.total_size" = "总计大小";
+"clean.review.total_files" = "文件总数";
+"clean.review.selected" = "已选";
+"clean.review.select_all" = "全选";
+"clean.review.deselect_all" = "取消全选";
+"clean.review.no_files" = "未发现文件";
+"clean.review.back" = "返回";
+"clean.review.execute" = "执行清理";
+"clean.review.files_selected" = "已选 %d 个文件";
+
+/* === 清理：执行中 === */
+"clean.run.title" = "清理执行中";
+"clean.run.subtitle" = "请勿中断操作";
+"clean.run.status" = "状态";
+"clean.run.executing" = "执行中";
+"clean.run.init" = "> 正在启动清理序列...";
+
+/* === 清理：完成 === */
+"clean.done.title" = "清理完成";
+"clean.done.subtitle" = "所有选中项目已处理";
+"clean.done.space_freed" = "释放空间";
+"clean.done.files_removed" = "移除文件";
+"clean.done.new_scan" = "重新扫描";
+
+/* === 错误 === */
+"error.dismiss" = "关闭";
+"error.mo_not_found" = "未找到 Mole CLI (`mo`)。请运行: brew install mole";
+"error.mo_failed" = "mo 执行失败 (退出码 %d): %@";
+"error.parse_failed" = "解析 mo 输出失败: %@";
+
+/* === 隐私 === */
+"privacy.title" = "需要全磁盘访问权限";
+"privacy.message" = "Moler 需要全磁盘访问权限才能扫描和清理 Mac 上的文件。\n\n打开 系统设置 → 隐私与安全性 → 全磁盘访问权限，然后为 Moler 开启开关。";
+"privacy.open_settings" = "打开设置";
+"privacy.later" = "稍后";
+
+/* === 设置 === */
+"settings.title" = "设置";
+"settings.general" = "通用";
+"settings.language" = "语言";
+"settings.language.system" = "跟随系统";
+"settings.restart_note" = "语言更改需要重启应用才能生效。";
+
+/* === 设置：权限 === */
+"settings.permissions" = "权限";
+"settings.fda.title" = "全磁盘访问权限";
+"settings.fda.granted" = "已授权";
+"settings.fda.not_granted" = "未授权";
+"settings.fda.action" = "打开系统设置";
+
+/* === 设置：关于 === */
+"settings.about" = "关于";
+"settings.version" = "版本";
