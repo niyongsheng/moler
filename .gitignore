@@ -1,0 +1,24 @@
+# Xcode
+*.xcworkspace
+xcuserdata/
+DerivedData/
+*.xcuserstate
+*.xcbkptlist
+
+# Build outputs
+build/
+*.app
+*.dSYM.zip
+*.dSYM
+
+# Generated project
+Moler.xcodeproj/
+
+# Swift
+.swiftpm/
+
+# Claude
+CLAUDE.md
+
+# macOS
+.DS_Store

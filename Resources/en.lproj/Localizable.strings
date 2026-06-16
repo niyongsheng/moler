@@ -1,0 +1,91 @@
+/*
+  Localizable.strings — English (Base)
+  Moler Mac Cleaner
+*/
+
+/* === Navigation === */
+"nav.clean" = "CLEAN";
+"nav.clean.sub" = "DEEP_SCAN";
+"nav.purge" = "PURGE";
+"nav.purge.sub" = "PROJECTS";
+"nav.optimize" = "OPTIMIZE";
+"nav.optimize.sub" = "SERVICES";
+"nav.analyze" = "ANALYZE";
+"nav.analyze.sub" = "DISK_MAP";
+"nav.offline" = "MODULE OFFLINE";
+
+/* === Clean: Idle === */
+"clean.title" = "DEEP_SYSTEM_SCAN";
+"clean.subtitle" = "CLEAN_MODULE_v1.0";
+"clean.last_scan" = "LAST_SCAN";
+"clean.last_clean" = "LAST_CLEAN";
+"clean.total_freed" = "TOTAL_FREED";
+"clean.clean_count" = "CLEAN_COUNT";
+"clean.never" = "NEVER";
+"clean.initiate" = "INITIATE_SCAN";
+
+/* === Clean: Scanning === */
+"clean.scanning" = "SCANNING_IN_PROGRESS";
+"clean.scanning.hint" = "> ANALYZING_DISK_STRUCTURE...";
+"clean.scanning.wait" = "This may take a minute...";
+"clean.scanning.elapsed" = "ELAPSED";
+"clean.files" = "FILES";
+"clean.size" = "SIZE";
+
+/* === Clean: Review === */
+"clean.review.title" = "SCAN_RESULTS";
+"clean.review.subtitle" = "REVIEW_AND_SELECT";
+"clean.review.scan_path" = "SCAN_PATH";
+"clean.review.total_size" = "TOTAL_SIZE";
+"clean.review.total_files" = "TOTAL_FILES";
+"clean.review.selected" = "SELECTED";
+"clean.review.select_all" = "SELECT_ALL";
+"clean.review.deselect_all" = "DESELECT_ALL";
+"clean.review.no_files" = "NO_FILES_FOUND";
+"clean.review.back" = "BACK";
+"clean.review.execute" = "EXECUTE_CLEAN";
+"clean.review.files_selected" = "%d files selected";
+
+/* === Clean: Running === */
+"clean.run.title" = "CLEAN_IN_PROGRESS";
+"clean.run.subtitle" = "DO_NOT_INTERRUPT";
+"clean.run.status" = "STATUS";
+"clean.run.executing" = "EXECUTING";
+"clean.run.init" = "> INITIALIZING_CLEAN_SEQUENCE...";
+
+/* === Clean: Done === */
+"clean.done.title" = "CLEAN_COMPLETE";
+"clean.done.subtitle" = "ALL_SELECTED_ITEMS_PROCESSED";
+"clean.done.space_freed" = "SPACE_FREED";
+"clean.done.files_removed" = "FILES_REMOVED";
+"clean.done.new_scan" = "NEW_SCAN";
+
+/* === Error === */
+"error.dismiss" = "DISMISS";
+"error.mo_not_found" = "Mole CLI (`mo`) not found. Install with: brew install mole";
+"error.mo_failed" = "mo exited with code %d: %@";
+"error.parse_failed" = "Failed to parse mo output: %@";
+
+/* === Privacy === */
+"privacy.title" = "Full Disk Access Required";
+"privacy.message" = "Moler needs Full Disk Access to scan and clean files on your Mac.\n\nOpen System Settings → Privacy & Security → Full Disk Access, then enable the toggle for Moler.";
+"privacy.open_settings" = "Open Settings";
+"privacy.later" = "Later";
+
+/* === Settings === */
+"settings.title" = "Settings";
+"settings.general" = "GENERAL";
+"settings.language" = "Language";
+"settings.language.system" = "Follow System";
+"settings.restart_note" = "Language changes require an app restart to take effect.";
+
+/* === Settings: Permissions === */
+"settings.permissions" = "PERMISSIONS";
+"settings.fda.title" = "Full Disk Access";
+"settings.fda.granted" = "Granted";
+"settings.fda.not_granted" = "Not Granted";
+"settings.fda.action" = "Open System Settings";
+
+/* === Settings: About === */
+"settings.about" = "ABOUT";
+"settings.version" = "Version";
