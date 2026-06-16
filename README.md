@@ -8,7 +8,7 @@
 ![Pages](https://img.shields.io/badge/Developing-1.0.0-brightgreen.svg?style=flat-square)
 ---
 
-<img alt="demo" src="https://github.com/user-attachments/assets/29536116-533f-45dd-bb28-f1d28e94eda5" />
+<img alt="demo" src="https://github.com/user-attachments/assets/0669c787-92b9-48f9-94ff-726b17d3084b" />
 
 ## Install
 

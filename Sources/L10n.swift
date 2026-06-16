@@ -19,6 +19,8 @@ enum L10n {
     static let navOptimizeSub = String(localized: "nav.optimize.sub")
     static let navAnalyze    = String(localized: "nav.analyze")
     static let navAnalyzeSub = String(localized: "nav.analyze.sub")
+    static let navSoftware   = String(localized: "nav.software")
+    static let navSoftwareSub = String(localized: "nav.software.sub")
     static let navOffline    = String(localized: "nav.offline")
 
     // MARK: - Clean Idle
@@ -85,6 +87,18 @@ enum L10n {
     /// "Failed to parse mo output: %@" — String(format: L10n.errorParseFailed, msg)
     static let errorParseFailed = String(localized: "error.parse_failed")
 
+    // MARK: - Install
+
+    static let installTitle     = String(localized: "install.title")
+    static let installMessage   = String(localized: "install.message")
+    static let installSubtitle  = String(localized: "install.subtitle")
+    static let installCopy      = String(localized: "install.copy")
+    static let installCopied    = String(localized: "install.copied")
+    static let installRecheck   = String(localized: "install.recheck")
+    static let installChecking  = String(localized: "install.checking")
+    static let installStillMissing = String(localized: "install.still_missing")
+    static let installOtherOptions = String(localized: "install.other_options")
+    static let installQuit      = String(localized: "install.quit")
     // MARK: - Privacy
 
     static let privacyTitle = String(localized: "privacy.title")
@@ -122,8 +136,59 @@ enum L10n {
     static let settingsFDANotGranted = String(localized: "settings.fda.not_granted")
     static let settingsFDAAction     = String(localized: "settings.fda.action")
 
+    // MARK: - Purge Idle
+
+    static let purgeTitle     = String(localized: "purge.title")
+    static let purgeSubtitle  = String(localized: "purge.subtitle")
+    static let purgeScanPath  = String(localized: "purge.scan_path")
+    static let purgeInitiate  = String(localized: "purge.initiate")
+
+    // MARK: - Purge Scanning
+
+    static let purgeScanning      = String(localized: "purge.scanning")
+    static let purgeScanningHint  = String(localized: "purge.scanning.hint")
+    static let purgeCancel        = String(localized: "purge.cancel")
+    static let purgeStop          = String(localized: "purge.stop")
+
+    // MARK: - Purge Review
+
+    static let purgeReviewTitle   = String(localized: "purge.review.title")
+    static let purgeReviewTotal   = String(localized: "purge.review.total")
+    static let purgeReviewExecute = String(localized: "purge.review.execute")
+
+    // MARK: - Purge Running
+
+    static let purgeRunTitle      = String(localized: "purge.run.title")
+    static let purgeRunSubtitle   = String(localized: "purge.run.subtitle")
+    static let purgeRunStatus     = String(localized: "purge.run.status")
+    static let purgeRunExecuting  = String(localized: "purge.run.executing")
+    static let purgeRunInit       = String(localized: "purge.run.init")
+
+    // MARK: - Purge Done
+
+    static let purgeDoneTitle       = String(localized: "purge.done.title")
+    static let purgeDoneSubtitle    = String(localized: "purge.done.subtitle")
+    static let purgeDoneSpaceFreed  = String(localized: "purge.done.space_freed")
+    static let purgeDoneItemsRemoved = String(localized: "purge.done.items_removed")
+    static let purgeDoneNewScan     = String(localized: "purge.done.new_scan")
+
     // MARK: - Settings: About
 
     static let settingsAbout         = String(localized: "settings.about")
     static let settingsVersion       = String(localized: "settings.version")
+
+    // MARK: - Update
+
+    static let updateCheck        = String(localized: "update.check")
+    static let updateCheckResult  = String(localized: "update.check_result")
+    static let updateUpToDate     = String(localized: "update.up_to_date")
+    /// "Moler %@ is the latest release." — String(format: L10n.updateUpToDateBody, version)
+    static let updateUpToDateBody = String(localized: "update.up_to_date_body")
+    /// "Moler %@ is available (you have %@). Download it from the release page."
+    static let updateAvailable    = String(localized: "update.available")
+    static let updateError        = String(localized: "update.error")
+    /// "GitHub didn't answer. Try again later, or open the releases page."
+    static let updateErrorBody    = String(localized: "update.error_body")
+    static let updateReleasePage  = String(localized: "update.release_page")
+    static let updateClose        = String(localized: "update.close")
 }

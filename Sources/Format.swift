@@ -27,6 +27,34 @@ enum Format {
     }
 }
 
+// MARK: - Byte Unit Constants
+
+/// Byte unit multiplier pairs (1024-based), shared between parsers.
+struct ByteUnit {
+    let suffix: String
+    let multiplier: Int64
+
+    static let table: [ByteUnit] = [
+        ByteUnit(suffix: "TB", multiplier: 1_099_511_627_776),
+        ByteUnit(suffix: "GB", multiplier: 1_073_741_824),
+        ByteUnit(suffix: "MB", multiplier: 1_048_576),
+        ByteUnit(suffix: "KB", multiplier: 1_024),
+        ByteUnit(suffix: "B",  multiplier: 1),
+    ]
+}
+
+/// Parse a human-readable size string like "1.2GB", "366.8MB", "500KB" → bytes.
+/// Returns 0 if the text cannot be parsed.
+func parseSizeBytes(_ text: String) -> Int64 {
+    let t = text.trimmingCharacters(in: .whitespaces).uppercased()
+    for unit in ByteUnit.table where t.hasSuffix(unit.suffix) {
+        let number = t.dropLast(unit.suffix.count).trimmingCharacters(in: .whitespaces)
+        guard let value = Double(number) else { return 0 }
+        return Int64(value * Double(unit.multiplier))
+    }
+    return 0
+}
+
 // MARK: - Free Functions
 
 /// Format a byte count as human-readable (1024-based).

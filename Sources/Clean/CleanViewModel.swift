@@ -27,6 +27,7 @@ struct ScanProgress: Equatable {
     let totalItems: Int
     let currentPath: String
     let elapsedSeconds: Int
+    let scannedBytes: Int64
 }
 
 // MARK: - ViewModel
@@ -82,7 +83,7 @@ final class CleanViewModel: ObservableObject {
 
         let totalItems = items.count
         state = .scanning(progress: ScanProgress(
-            currentItem: 0, totalItems: totalItems, currentPath: scanPath, elapsedSeconds: 0
+            currentItem: 0, totalItems: totalItems, currentPath: scanPath, elapsedSeconds: 0, scannedBytes: 0
         ))
 
         scanTimer?.invalidate()
@@ -91,7 +92,7 @@ final class CleanViewModel: ObservableObject {
             let elapsed = Int(Date().timeIntervalSince(self.scanStartTime ?? Date()))
             self.state = .scanning(progress: ScanProgress(
                 currentItem: p.currentItem, totalItems: p.totalItems,
-                currentPath: p.currentPath, elapsedSeconds: elapsed
+                currentPath: p.currentPath, elapsedSeconds: elapsed, scannedBytes: p.scannedBytes
             ))
         }
 
@@ -135,7 +136,7 @@ final class CleanViewModel: ObservableObject {
                         let elapsed = Int(Date().timeIntervalSince(scanStartTime ?? Date()))
                         state = .scanning(progress: ScanProgress(
                             currentItem: index + 1, totalItems: totalItems,
-                            currentPath: childPath, elapsedSeconds: elapsed
+                            currentPath: childPath, elapsedSeconds: elapsed, scannedBytes: scannedTotal
                         ))
                     }
                 }

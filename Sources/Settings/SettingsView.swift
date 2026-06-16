@@ -116,11 +116,27 @@ struct SettingsView: View {
                         .font(.custom("RobotoMono-Regular", size: 12))
                         .foregroundColor(Brand.textPrimary)
                     Spacer()
-                    Text("0.1.0")
+                    Text(UpdateChecker.currentVersion)
                         .font(.custom("RobotoMono-Light", size: 12))
                         .foregroundColor(Brand.textDim)
                 }
                 .padding(.vertical, 4)
+
+                // Check for Updates button
+                Button(action: { UpdateChecker.checkNow() }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.down.circle")
+                            .font(.system(size: 10))
+                        Text(L10n.updateCheck)
+                            .font(.custom("RobotoMono-Regular", size: 10))
+                    }
+                    .foregroundColor(Brand.accentOrange)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Brand.accentOrange.opacity(0.15))
+                    .cornerRadius(4)
+                }
+                .buttonStyle(.plain)
             }
         }
     }

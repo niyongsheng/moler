@@ -17,6 +17,9 @@ final class Store: ObservableObject {
         static let lastCleanDate      = "moler.lastCleanDate"
         static let totalFreedBytes    = "moler.totalFreedBytes"
         static let totalCleanCount    = "moler.totalCleanCount"
+        static let lastPurgeDate      = "moler.lastPurgeDate"
+        static let totalPurgeFreedBytes = "moler.totalPurgeFreedBytes"
+        static let totalPurgeCount    = "moler.totalPurgeCount"
     }
 
     // MARK: - Published Values
@@ -81,15 +84,39 @@ final class Store: ObservableObject {
         didSet { defaults.set(totalCleanCount, forKey: Key.totalCleanCount) }
     }
 
+    /// Timestamp of the most recent purge operation — separate from lastCleanDate.
+    @Published var lastPurgeDate: Date? {
+        didSet { defaults.set(lastPurgeDate, forKey: Key.lastPurgeDate) }
+    }
+
+    /// Cumulative bytes freed across all purge operations.
+    @Published var totalPurgeFreedBytes: Int64 {
+        didSet { defaults.set(totalPurgeFreedBytes, forKey: Key.totalPurgeFreedBytes) }
+    }
+
+    /// Total number of purge operations performed.
+    @Published var totalPurgeCount: Int {
+        didSet { defaults.set(totalPurgeCount, forKey: Key.totalPurgeCount) }
+    }
+
     // MARK: - Init
 
     private init() {
         self.hasOnboarded = defaults.bool(forKey: Key.hasOnboarded)
 
         // Language: read the first preferred language from AppleLanguages.
+        // Normalise: the system may store "zh-Hans-CN" but we only use "zh-Hans".
         // Use _language (no didSet) to avoid persisting the same value on init.
-        let preferred = defaults.stringArray(forKey: Key.language)?.first
-        self._language = Published(initialValue: preferred ?? "")
+        let raw = defaults.stringArray(forKey: Key.language)?.first ?? ""
+        let normalised: String
+        if raw.hasPrefix("zh-Hans") {
+            normalised = "zh-Hans"
+        } else if raw.hasPrefix("en") {
+            normalised = "en"
+        } else {
+            normalised = ""
+        }
+        self._language = Published(initialValue: normalised)
 
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         self.lastScanPath = defaults.string(forKey: Key.lastScanPath) ?? home
@@ -105,6 +132,16 @@ final class Store: ObservableObject {
         }
 
         self.totalCleanCount = defaults.integer(forKey: Key.totalCleanCount)
+
+        self.lastPurgeDate = defaults.object(forKey: Key.lastPurgeDate) as? Date
+
+        if let num = defaults.object(forKey: Key.totalPurgeFreedBytes) as? NSNumber {
+            self.totalPurgeFreedBytes = num.int64Value
+        } else {
+            self.totalPurgeFreedBytes = 0
+        }
+
+        self.totalPurgeCount = defaults.integer(forKey: Key.totalPurgeCount)
     }
 
     // MARK: - Actions
@@ -114,5 +151,12 @@ final class Store: ObservableObject {
         totalFreedBytes += freedBytes
         totalCleanCount += 1
         lastCleanDate = Date()
+    }
+
+    /// Record a successful purge operation (separate from clean counters).
+    func recordPurge(freedBytes: Int64, itemsRemoved: Int) {
+        totalPurgeFreedBytes += freedBytes
+        totalPurgeCount += 1
+        lastPurgeDate = Date()
     }
 }

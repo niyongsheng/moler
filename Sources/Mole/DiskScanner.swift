@@ -25,6 +25,10 @@ struct DiskScanResult {
     let totalFiles: Int
     let entries: [DiskScanEntry]
     let scannedAt: Date
+
+    /// 5-minute staleness threshold (TOCTOU prevention)
+    static let stalenessInterval: TimeInterval = 300
+    var isStale: Bool { Date().timeIntervalSince(scannedAt) > Self.stalenessInterval }
 }
 
 // MARK: - Scanner

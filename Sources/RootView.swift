@@ -7,6 +7,7 @@ enum Pane: Equatable {
     case purge
     case optimize
     case analyze
+    case software
     case settings
 }
 
@@ -19,6 +20,7 @@ struct RootView: View {
         (.purge,    "xmark.bin",                   L10n.navPurge),
         (.optimize, "arrow.triangle.2.circlepath", L10n.navOptimize),
         (.analyze,  "chart.pie",                   L10n.navAnalyze),
+        (.software, "gearshape.2",                 L10n.navSoftware),
     ]
 
     var body: some View {
@@ -104,9 +106,13 @@ struct RootView: View {
                 }
                 .buttonStyle(.plain)
 
-                Text("v0.1.0")
-                    .font(.system(size: 10))
-                    .foregroundColor(Brand.textDim.opacity(0.5))
+                Button(action: { UpdateChecker.checkNow() }) {
+                    Text("v\(UpdateChecker.currentVersion)")
+                        .font(.system(size: 10))
+                        .foregroundColor(Brand.textDim.opacity(0.5))
+                }
+                .buttonStyle(.plain)
+                .help(L10n.updateCheck)
             }
             .padding(.bottom, 16)
         }
@@ -149,12 +155,14 @@ struct RootView: View {
                 .visible(activePane == .overview)
             CleanView()
                 .visible(activePane == .clean)
-            placeholderView(for: L10n.navPurge)
+            PurgeView()
                 .visible(activePane == .purge)
             OptimizeView()
                 .visible(activePane == .optimize)
-            placeholderView(for: L10n.navAnalyze)
+            AnalyzeView()
                 .visible(activePane == .analyze)
+            SoftwareView()
+                .visible(activePane == .software)
             SettingsView()
                 .visible(activePane == .settings)
         }

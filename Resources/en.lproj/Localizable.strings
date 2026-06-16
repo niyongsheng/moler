@@ -12,6 +12,8 @@
 "nav.optimize.sub" = "SERVICES";
 "nav.analyze" = "ANALYZE";
 "nav.analyze.sub" = "DISK_MAP";
+"nav.software" = "SOFTWARE";
+"nav.software.sub" = "ABOUT";
 "nav.offline" = "MODULE OFFLINE";
 
 /* === Clean: Idle === */
@@ -68,6 +70,18 @@
 "error.mo_failed" = "mo exited with code %d: %@";
 "error.parse_failed" = "Failed to parse mo output: %@";
 
+/* === Install === */
+"install.title" = "Mole engine required";
+"install.message" = "Moler is a GUI for the Mole CLI (`mo`) — it does the scanning and cleanup. Install it, then Recheck.";
+"install.subtitle" = "WITH HOMEBREW";
+"install.copy" = "Copy";
+"install.copied" = "Copied";
+"install.recheck" = "Recheck";
+"install.checking" = "Checking…";
+"install.still_missing" = "Still not finding `mo` on PATH. If you just installed it, open a new terminal first, or relaunch Moler.";
+"install.other_options" = "No Homebrew? Other install options →";
+"install.quit" = "Quit";
+
 /* === Privacy === */
 "privacy.title" = "Full Disk Access Required";
 "privacy.message" = "Moler needs Full Disk Access to scan and clean files on your Mac.\n\nOpen System Settings → Privacy & Security → Full Disk Access, then enable the toggle for Moler.";
@@ -87,6 +101,35 @@
 "overview.quick_scan" = "INITIATE_SCAN";
 "overview.quick_settings" = "SETTINGS";
 
+/* === Purge: Idle === */
+"purge.title" = "PURGE_PROJECTS";
+"purge.subtitle" = "REMOVE_OLD_BUILD_ARTIFACTS";
+"purge.scan_path" = "SCAN_PATHS";
+"purge.initiate" = "SCAN_PROJECTS";
+"purge.scanning" = "SCANNING_PROJECTS";
+"purge.scanning.hint" = "> SCANNING_PROJECT_DIRECTORIES...";
+"purge.cancel" = "CANCEL";
+"purge.stop" = "STOP";
+
+/* === Purge: Review === */
+"purge.review.title" = "SELECT_TO_PURGE";
+"purge.review.total" = "TOTAL";
+"purge.review.execute" = "PURGE";
+
+/* === Purge: Running === */
+"purge.run.title" = "PURGE_IN_PROGRESS";
+"purge.run.subtitle" = "DO_NOT_INTERRUPT";
+"purge.run.status" = "STATUS";
+"purge.run.executing" = "Purging project artifacts...";
+"purge.run.init" = "> INITIALIZING_PURGE_SEQUENCE...";
+
+/* === Purge: Done === */
+"purge.done.title" = "PURGE_COMPLETE";
+"purge.done.subtitle" = "ALL_SELECTED_ARTIFACTS_REMOVED";
+"purge.done.space_freed" = "SPACE_FREED";
+"purge.done.items_removed" = "ITEMS_REMOVED";
+"purge.done.new_scan" = "NEW_SCAN";
+
 /* === Settings === */
 "settings.title" = "Settings";
 "settings.general" = "GENERAL";
@@ -104,3 +147,14 @@
 /* === Settings: About === */
 "settings.about" = "ABOUT";
 "settings.version" = "Version";
+
+/* === Update === */
+"update.check" = "Check for Updates";
+"update.check_result" = "Update available";
+"update.up_to_date" = "You're up to date";
+"update.up_to_date_body" = "Moler %@ is the latest release.";
+"update.available" = "Moler %@ is available (you have %@). Download it from the release page.";
+"update.error" = "Couldn't check for updates";
+"update.error_body" = "GitHub didn't answer. Try again later, or open the releases page.";
+"update.release_page" = "Open Release Page";
+"update.close" = "Close";

@@ -1,23 +1,63 @@
 import SwiftUI
 
-/// Review scan results before cleaning. Shows a sortable list with reticle checkboxes.
+// MARK: - Category grouping
+
+private enum ReviewCategory: String, CaseIterable {
+    case devTools = "Developer Tools"
+    case appCaches = "App Caches"
+    case browser = "Browser"
+    case logs = "Logs"
+    case trash = "Trash"
+    case other = "Other"
+
+    init(for entry: DiskScanEntry) {
+        let p = entry.path.lowercased()
+        if p.contains("deriveddata") || p.contains("xcode") || p.contains("node_modules") || p.contains(".gradle") || p.contains("carthage") { self = .devTools; return }
+        if p.contains("library/caches") || p.contains(".cache") || p.contains("cache") { self = .appCaches; return }
+        if p.contains("safari") || p.contains("chrome") || p.contains("firefox") || p.contains("chromium") || p.contains("cookies") { self = .browser; return }
+        if p.contains(".log") || p.contains("diagnosticreports") || p.contains("crash") { self = .logs; return }
+        if p.contains(".trash") || p.contains("trash") { self = .trash; return }
+        self = .other
+    }
+}
+
+/// Review scan results before cleaning.
 struct CleanReviewView: View {
     @ObservedObject var vm: CleanViewModel
     let result: DiskScanResult
 
+    private var grouped: [(ReviewCategory, [DiskScanEntry])] {
+        Dictionary(grouping: result.entries, by: ReviewCategory.init)
+            .sorted { $0.key.rawValue < $1.key.rawValue }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            header
-                .padding(.bottom, Brand.margin)
+            header.frame(maxHeight: 100).padding(.bottom, Brand.margin)
 
-            // File list
+            // Stale banner
+            if result.isStale {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
+                    Text("Scan results are over 5 minutes old — rescan before cleaning.")
+                        .monoFont(9)
+                    Spacer()
+                    Button("Rescan") { vm.startScan() }
+                        .monoFont(9).foregroundColor(Brand.accentOrange)
+                }
+                .foregroundColor(Brand.accentGold)
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .background(Brand.accentGold.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .padding(.bottom, 8)
+            }
+
             fileList
 
-            // Footer with action buttons
-            footer
-                .padding(.top, Brand.margin)
+            // Floating pill footer
+            pillFooter
         }
+        .overlay(alignment: .bottom) { pillFooter }
     }
 
     // MARK: - Header
@@ -37,133 +77,157 @@ struct CleanReviewView: View {
         }
     }
 
-    // MARK: - File List
+    // MARK: - File List (grouped by category)
 
     private var fileList: some View {
         ScrollView {
-            LazyVStack(spacing: 0) {
-                // Select all / deselect all toggle
+            LazyVStack(spacing: 4) {
+                // Select all / deselect all
                 selectAllRow
-                    .padding(.bottom, 2)
-
-                Divider()
-                    .background(Brand.lineColor)
 
                 if result.entries.isEmpty {
                     Text(L10n.cleanReviewNoFiles)
-                        .monoFont(12)
-                        .foregroundColor(Brand.textDim)
-                        .padding(.vertical, 32)
+                        .monoFont(12).foregroundColor(Brand.textDim).padding(.vertical, 32)
                 } else {
-                    ForEach(result.entries) { entry in
-                        FileEntryRow(
-                            entry: entry,
-                            isSelected: vm.selectedPaths.contains(entry.path),
-                            onToggle: { vm.toggleSelection(entry.path) }
-                        )
-                        Divider()
-                            .background(Brand.lineColor.opacity(0.3))
+                    ForEach(grouped, id: \.0.rawValue) { category, entries in
+                        categoryCard(category: category, entries: entries)
                     }
                 }
             }
         }
         .background(Brand.bgCard.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 4))
-        .overlay(
-            RoundedRectangle(cornerRadius: 4)
-                .stroke(Brand.lineColor, lineWidth: 0.5)
-        )
+        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Brand.lineColor, lineWidth: 0.5))
+    }
+
+    // MARK: - Category Card
+
+    private func categoryCard(category: ReviewCategory, entries: [DiskScanEntry]) -> some View {
+        let selected = entries.filter { vm.selectedPaths.contains($0.path) }
+        let allSelected = selected.count == entries.count
+        let mixed = selected.count > 0 && !allSelected
+
+        return VStack(spacing: 0) {
+            Button(action: {
+                if allSelected || mixed {
+                    for e in entries { vm.selectedPaths.remove(e.path) }
+                } else {
+                    for e in entries { vm.selectedPaths.insert(e.path) }
+                }
+            }) {
+                HStack(spacing: 8) {
+                    // Tri-state indicator
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 3)
+                            .stroke(Brand.lineColor, lineWidth: 1)
+                            .frame(width: 14, height: 14)
+                        if allSelected {
+                            Image(systemName: "checkmark").font(.system(size: 9, weight: .bold))
+                                .foregroundColor(Brand.accentOrange)
+                        } else if mixed {
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(Brand.accentOrange)
+                                .frame(width: 8, height: 8)
+                        }
+                    }
+
+                    Text(category.rawValue.uppercased())
+                        .titleFont(11).kerning(2).foregroundColor(Brand.textPrimary)
+                    Spacer()
+                    Text("\(formatBytes(entries.reduce(0){$0+$1.size})) • \(entries.count)")
+                        .monoFont(9).foregroundColor(Brand.textDim)
+                }
+                .padding(.horizontal, 10).padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+            .background(Brand.bgElevated.opacity(0.5))
+
+            ForEach(entries) { entry in
+                FileEntryRow(
+                    entry: entry,
+                    isSelected: vm.selectedPaths.contains(entry.path),
+                    onToggle: { vm.toggleSelection(entry.path) }
+                )
+                Divider().background(Brand.lineColor.opacity(0.15))
+            }
+        }
+        .background(Brand.bgCard.opacity(0.3))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Brand.lineColor.opacity(0.2), lineWidth: 0.5))
     }
 
     // MARK: - Select All Row
 
     private var selectAllRow: some View {
         let allSelected = vm.selectedPaths.count == result.entries.count
-
         return Button(action: {
-            if allSelected {
-                vm.selectedPaths = []
-            } else {
-                vm.selectedPaths = Set(result.entries.map(\.path))
-            }
+            vm.selectedPaths = allSelected ? [] : Set(result.entries.map(\.path))
         }) {
             HStack(spacing: 6) {
-                ReticleCheck(selected: allSelected)
-                    .frame(width: 14, height: 14)
+                ReticleCheck(selected: allSelected).frame(width: 14, height: 14)
                 Text(allSelected ? L10n.cleanReviewDeselectAll : L10n.cleanReviewSelectAll)
-                    .monoFont(10)
-                    .foregroundColor(Brand.accentGold)
+                    .monoFont(10).foregroundColor(Brand.accentGold)
                 Spacer()
+                if result.isStale {
+                    Text("STALE").monoFont(8).foregroundColor(Brand.accentRed)
+                        .padding(.horizontal, 6).padding(.vertical, 2)
+                        .background(Brand.accentRed.opacity(0.1))
+                        .clipShape(Capsule())
+                }
             }
-            .padding(.horizontal, Brand.marginTight + 6)
-            .padding(.vertical, 6)
+            .padding(.horizontal, Brand.marginTight + 6).padding(.vertical, 6)
         }
         .buttonStyle(.plain)
     }
 
-    // MARK: - Footer
+    // MARK: - Floating Pill Footer
 
-    private var footer: some View {
-        HStack(spacing: 16) {
-            // Back button
+    private var pillFooter: some View {
+        let count = vm.selectedCount(from: result)
+        let bytes = vm.selectedTotalBytes(from: result)
+        let hasSelection = !vm.selectedPaths.isEmpty
+
+        return HStack(spacing: 12) {
+            // Back
             Button(action: { vm.reset() }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "arrow.left")
-                    Text(L10n.cleanReviewBack)
-                        .titleFont(11)
-                        .kerning(3)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Brand.lineColor, lineWidth: 1)
-                )
-                .foregroundColor(Brand.textDim)
+                Image(systemName: "arrow.left").font(.system(size: 12, weight: .medium))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plain).foregroundColor(Brand.textDim)
+
+            Divider().frame(height: 20).overlay(Brand.lineColor)
+
+            // Live totals
+            if hasSelection {
+                Text("\(count) selected")
+                    .monoFont(10).foregroundColor(Brand.textPrimary)
+                Text(formatBytes(bytes))
+                    .monoFont(12).foregroundColor(Brand.accentOrange)
+            } else {
+                Text("Nothing selected")
+                    .monoFont(10).foregroundColor(Brand.textDim)
+            }
 
             Spacer()
 
-            // Selected stats
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(String(format: L10n.cleanReviewFilesSelected, vm.selectedCount(from: result)))
-                    .monoFont(10)
-                    .foregroundColor(Brand.textDim)
-                Text(formatBytes(vm.selectedTotalBytes(from: result)))
-                    .monoFont(12)
-                    .foregroundColor(Brand.accentGold)
-            }
-
-            // Clean button
+            // Execute
             Button(action: { vm.startClean() }) {
                 HStack(spacing: 6) {
-                    Image(systemName: "trash")
-                    Text(L10n.cleanReviewExecute)
-                        .titleFont(12)
-                        .kerning(4)
+                    Image(systemName: "trash").font(.system(size: 11))
+                    Text(L10n.cleanReviewExecute).titleFont(11).kerning(3)
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(
-                    vm.selectedPaths.isEmpty
-                        ? Brand.lineColor.opacity(0.3)
-                        : Brand.accentOrange.opacity(0.2)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(
-                            vm.selectedPaths.isEmpty ? Brand.lineColor : Brand.accentOrange,
-                            lineWidth: 1
-                        )
-                )
-                .foregroundColor(
-                    vm.selectedPaths.isEmpty ? Brand.textDim : Brand.accentOrange
-                )
+                .padding(.horizontal, 16).padding(.vertical, 8)
+                .background(hasSelection ? Brand.accentOrange : Brand.lineColor.opacity(0.3))
+                .foregroundColor(hasSelection ? .white : Brand.textDim)
+                .clipShape(Capsule())
             }
-            .buttonStyle(.plain)
-            .disabled(vm.selectedPaths.isEmpty)
+            .buttonStyle(.plain).disabled(!hasSelection)
         }
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .background(Brand.bgElevated.opacity(0.95))
+        .clipShape(Capsule())
+        .overlay(Capsule().stroke(Brand.lineColor, lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.3), radius: 8, y: -2)
+        .padding(.horizontal, 40).padding(.bottom, 16)
     }
 }
 
@@ -175,12 +239,12 @@ struct CleanReviewView: View {
             totalSize: 4_200_000_000,
             totalFiles: 1247,
             entries: [
-                DiskScanEntry(id: "/1", name: "Library", path: "/Users/nico/Library", size: 2_100_000_000, isDir: true),
+                DiskScanEntry(id: "/1", name: "Library", path: "/Users/nico/Library/Caches", size: 2_100_000_000, isDir: true),
                 DiskScanEntry(id: "/2", name: ".cache", path: "/Users/nico/.cache", size: 800_000_000, isDir: true),
                 DiskScanEntry(id: "/3", name: "Downloads", path: "/Users/nico/Downloads", size: 500_000_000, isDir: true),
                 DiskScanEntry(id: "/4", name: "node_modules", path: "/Users/nico/node_modules", size: 300_000_000, isDir: true),
             ],
-            scannedAt: Date()
+            scannedAt: Date().addingTimeInterval(-400)
         )
     )
     .frame(width: 900, height: 600)

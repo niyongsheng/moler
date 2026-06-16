@@ -174,15 +174,12 @@ struct SystemMonitorContent: View {
                 // Label
                 VStack {
                     Spacer()
-                    HStack {
-                        Spacer()
-                        Text("SOL SYSTEM // OPTIMIZE")
-                            .font(.custom(Brand.monoFont, size: 10))
-                            .foregroundColor(Brand.textDim.opacity(0.5))
-                            .tracking(2.5)
-                            .padding(.trailing, 24)
-                            .padding(.bottom, 16)
-                    }
+                    Text("SOL SYSTEM // OPTIMIZE")
+                        .font(.custom(Brand.monoFont, size: 10))
+                        .foregroundColor(Brand.textDim.opacity(0.5))
+                        .tracking(2.5)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.bottom, 16)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }

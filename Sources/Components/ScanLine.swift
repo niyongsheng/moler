@@ -9,7 +9,7 @@ struct ScanLine: View {
     @State private var centerGlow: CGFloat = 1.0
     @State private var orbitRotation: Double = 0
 
-    private let ringSizes: [CGFloat] = [30, 50, 75, 95]
+    private let ringSizes: [CGFloat] = [55, 85, 115, 145]
     private let orbitSpeeds: [Double] = [4, 8, 15, 25]
     private let dotColors: [Color] = [Brand.accentGold, Brand.accentBlue, Brand.accentOrange, Brand.accentRed]
 
@@ -68,13 +68,13 @@ struct ScanLine: View {
                 .shadow(color: Brand.accentOrange.opacity(0.3), radius: 12)
 
             // Tick marks (cardinal + sub-cardinal)
-            ForEach(0..<8) { i in
-                let isMain = i % 2 == 0
+            ForEach(0..<12) { i in
+                let isMain = i % 3 == 0
                 Rectangle()
                     .fill(isMain ? Brand.lineColor : Brand.lineColor.opacity(0.3))
-                    .frame(width: 1, height: isMain ? 10 : 5)
-                    .offset(y: -62)
-                    .rotationEffect(.degrees(Double(i) * 45))
+                    .frame(width: 1, height: isMain ? 12 : 6)
+                    .offset(y: -106)
+                    .rotationEffect(.degrees(Double(i) * 30))
             }
 
             // Center glow core (pulsing)
@@ -82,22 +82,22 @@ struct ScanLine: View {
                 // Outer glow ring
                 Circle()
                     .stroke(Brand.accentOrange.opacity(0.3), lineWidth: 1)
-                    .frame(width: 16, height: 16)
+                    .frame(width: 24, height: 24)
                     .scaleEffect(centerGlow)
 
                 // Inner glow
                 Circle()
                     .fill(Brand.accentOrange.opacity(0.5))
-                    .frame(width: 10, height: 10)
-                    .blur(radius: 3)
+                    .frame(width: 16, height: 16)
+                    .blur(radius: 4)
 
                 // Center dot
                 Circle()
                     .fill(Brand.accentOrange)
-                    .frame(width: 5, height: 5)
+                    .frame(width: 8, height: 8)
             }
         }
-        .frame(width: 130, height: 130)
+        .frame(width: 220, height: 220)
         .onAppear {
             // Scan line sweep
             withAnimation(.linear(duration: 2.5).repeatForever(autoreverses: false)) {

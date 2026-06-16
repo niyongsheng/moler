@@ -14,14 +14,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var windowController: NSWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Start as accessory app (no Dock icon by default)
-        NSApp.setActivationPolicy(.regular)
-
         // Set up the main menu (Cmd-, → Settings)
         setupMainMenu()
 
-        // Show the main window
-        openMainWindow()
+        // No `mo` engine yet → guided install instead of a dead-end quit.
+        // Discovery can shell out to `which mo`, so run off main thread.
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let found = MoleCLI.findExecutable() != nil
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if found {
+                    NSApp.setActivationPolicy(.regular)
+                    self.openMainWindow()
+                } else {
+                    NSApp.setActivationPolicy(.regular)
+                    self.showInstallWindow()
+                }
+            }
+        }
     }
 
     // MARK: - Main Menu
@@ -57,6 +67,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     @objc private func openSettingsFromMenu() {
         openSettingsWindow()
+    }
+
+    // MARK: - Install Window
+
+    private var installWC: NSWindowController?
+
+    /// Guided install window when `mo` is missing.
+    private func showInstallWindow() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 340),
+            styleMask: [.titled, .closable, .fullSizeContentView],
+            backing: .buffered, defer: false)
+        window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
+        window.isReleasedWhenClosed = false
+        window.center()
+        let view = MoleInstallView(onReady: { [weak self] in
+            self?.installWC?.close()
+            self?.installWC = nil
+            self?.openMainWindow()
+        })
+        window.contentViewController = NSHostingController(rootView: view)
+        let wc = NSWindowController(window: window)
+        installWC = wc
+        wc.showWindow(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     // MARK: - Main Window
