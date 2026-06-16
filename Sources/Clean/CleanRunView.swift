@@ -4,6 +4,8 @@ import SwiftUI
 struct CleanRunView: View {
     let log: [String]
     let progress: Double
+    let elapsedSeconds: Int
+    var onCancel: (() -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -11,7 +13,7 @@ struct CleanRunView: View {
             InstrumentPanel(
                 title: L10n.cleanRunTitle,
                 subtitle: L10n.cleanRunSubtitle,
-                badge: "\(Int(progress * 100))%"
+                badge: "\(elapsedSeconds)s"
             ) {
                 DataRow(label: L10n.cleanRunStatus, value: L10n.cleanRunExecuting)
             }
@@ -56,6 +58,27 @@ struct CleanRunView: View {
             ProgressGlow(progress: progress)
                 .frame(maxWidth: .infinity)
                 .padding(.top, Brand.margin)
+
+            // Cancel button
+            if let onCancel {
+                Button(action: onCancel) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10))
+                        Text(L10n.cleanCancel)
+                            .monoFont(10)
+                    }
+                    .foregroundColor(Brand.textDim)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Brand.lineColor, lineWidth: 0.5)
+                    )
+                }
+                .buttonStyle(.plain)
+                .padding(.top, Brand.margin)
+            }
         }
     }
 
@@ -87,7 +110,8 @@ struct CleanRunView: View {
             "Removed: npm/_cacache/... (340MB)",
             "Cleaning temp files...",
         ],
-        progress: 0.65
+        progress: 0.65,
+        elapsedSeconds: 42
     )
     .frame(width: 700, height: 400)
     .padding()

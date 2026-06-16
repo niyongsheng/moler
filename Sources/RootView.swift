@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Navigation pane for the main content area.
 enum Pane: Equatable {
+    case overview
     case clean
     case purge
     case optimize
@@ -11,7 +12,7 @@ enum Pane: Equatable {
 
 /// The root content view for the single-window app.
 struct RootView: View {
-    @State private var activePane: Pane = .clean
+    @State private var activePane: Pane = .overview
 
     private let sidebarTabs: [(pane: Pane, icon: String, title: String)] = [
         (.clean,    "trash",                       L10n.navClean),
@@ -26,16 +27,14 @@ struct RootView: View {
             sidebar
                 .frame(width: 200)
 
-            // Divider
-            Rectangle()
-                .fill(Brand.lineColor.opacity(0.3))
-                .frame(width: 1)
+            // Divider — animated serif stripes
+            SerifDivider(pulseActive: activePane == .overview)
 
             // Content
             mainContent
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(Brand.bgNavy)
+        .topoBackground(lineOpacity: 0.25)
         .environment(\.colorScheme, .dark)
         .onReceive(NotificationCenter.default.publisher(for: .showSettingsPane)) { _ in
             activePane = .settings
@@ -46,19 +45,27 @@ struct RootView: View {
 
     private var sidebar: some View {
         VStack(spacing: 0) {
-            // App branding
-            VStack(spacing: 6) {
-                Image("Logo")
-                    .resizable()
-                    .renderingMode(.template)
-                    .foregroundColor(Brand.accentOrange)
-                    .frame(width: 48, height: 48)
-                Text("Moler")
-                    .font(.custom("Jura-Medium", size: 16))
-                    .foregroundColor(Brand.textPrimary)
+            // App branding — click to go to Overview
+            Button {
+                withAnimation(.easeOut(duration: 0.16)) { activePane = .overview }
+            } label: {
+                VStack(spacing: 6) {
+                    Image("Logo")
+                        .resizable()
+                        .renderingMode(.template)
+                        .foregroundColor(activePane == .overview ? Brand.accentOrange : Brand.accentOrange.opacity(0.7))
+                        .frame(width: 48, height: 48)
+                    Text("Moler")
+                        .font(.custom("Jura-Medium", size: 16))
+                        .foregroundColor(activePane == .overview ? Brand.textPrimary : Brand.textDim)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
             }
+            .buttonStyle(.plain)
             .padding(.top, 24)
             .padding(.bottom, 28)
+            .padding(.horizontal, 12)
 
             // Nav items
             VStack(spacing: 2) {
@@ -134,14 +141,22 @@ struct RootView: View {
 
     // MARK: - Main Content
 
-    @ViewBuilder
     private var mainContent: some View {
-        switch activePane {
-        case .clean:    CleanView()
-        case .purge:    placeholderView(for: L10n.navPurge)
-        case .optimize: placeholderView(for: L10n.navOptimize)
-        case .analyze:  placeholderView(for: L10n.navAnalyze)
-        case .settings: SettingsView()
+        ZStack {
+            // Keep all views alive in the hierarchy so their state persists
+            // when switching tabs (e.g. CleanView's scan progress).
+            OverviewView(onNavigate: { activePane = $0 })
+                .visible(activePane == .overview)
+            CleanView()
+                .visible(activePane == .clean)
+            placeholderView(for: L10n.navPurge)
+                .visible(activePane == .purge)
+            placeholderView(for: L10n.navOptimize)
+                .visible(activePane == .optimize)
+            placeholderView(for: L10n.navAnalyze)
+                .visible(activePane == .analyze)
+            SettingsView()
+                .visible(activePane == .settings)
         }
     }
 
@@ -160,4 +175,14 @@ struct RootView: View {
 
 #Preview {
     RootView()
+}
+
+// MARK: - View Extension
+
+extension View {
+    /// Keep the view in the hierarchy but hide it from display and hit testing.
+    /// Use to preserve in-flight state (e.g. CleanView scan) when switching tabs.
+    func visible(_ isVisible: Bool) -> some View {
+        self.opacity(isVisible ? 1 : 0).allowsHitTesting(isVisible)
+    }
 }

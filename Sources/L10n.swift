@@ -40,6 +40,8 @@ enum L10n {
     static let cleanElapsed   = String(localized: "clean.scanning.elapsed")
     static let cleanFiles    = String(localized: "clean.files")
     static let cleanSize     = String(localized: "clean.size")
+    static let cleanCancel   = String(localized: "clean.cancel")
+    static let cleanStop     = String(localized: "clean.stop")
 
     // MARK: - Clean Review
 
@@ -89,6 +91,20 @@ enum L10n {
     static let privacyMessage = String(localized: "privacy.message")
     static let privacyOpenSettings = String(localized: "privacy.open_settings")
     static let privacyLater = String(localized: "privacy.later")
+
+    // MARK: - Overview
+
+    static let overviewTitle       = String(localized: "overview.title")
+    static let overviewSubtitle    = String(localized: "overview.subtitle")
+    static let overviewTotalFreed  = String(localized: "overview.total_freed")
+    static let overviewCleanCount  = String(localized: "overview.clean_count")
+    static let overviewLastClean   = String(localized: "overview.last_clean")
+    static let overviewLastScan    = String(localized: "overview.last_scan")
+    static let overviewDiskCapacity = String(localized: "overview.disk_capacity")
+    static let overviewDiskFree    = String(localized: "overview.disk_free")
+    static let overviewDiskUsage   = String(localized: "overview.disk_usage")
+    static let overviewQuickScan   = String(localized: "overview.quick_scan")
+    static let overviewQuickSettings = String(localized: "overview.quick_settings")
 
     // MARK: - Settings
 

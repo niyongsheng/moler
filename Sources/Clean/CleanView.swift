@@ -32,7 +32,7 @@ struct CleanView: View {
         case .review(let result):
             CleanReviewView(vm: vm, result: result)
         case .running(let log, let progress):
-            CleanRunView(log: log, progress: progress)
+            CleanRunView(log: log, progress: progress, elapsedSeconds: Int(Date().timeIntervalSince(vm.cleanStartTime ?? Date())), onCancel: { vm.cancelClean() })
         case .done(let freedBytes, let filesRemoved):
             CleanResultView(
                 freedBytes: freedBytes,
@@ -40,6 +40,11 @@ struct CleanView: View {
                 onDone: { vm.reset() }
             )
         }
+    }
+
+    /// Navigate back to the Clean tab from Overview's quick action.
+    func activate() {
+        // no-op for now; resets handled by view lifecycle
     }
 
     // MARK: - Idle State
@@ -123,18 +128,60 @@ struct CleanView: View {
                 TypewriterLabel(L10n.cleanScanningHint, speed: 0.05)
 
                 HStack(spacing: 24) {
-                    DataRow(label: L10n.cleanFiles, value: progress.filesFound >= 0 ? Format.count(progress.filesFound) : "...")
-                    DataRow(label: L10n.cleanSize, value: progress.totalBytes >= 0 ? formatBytes(progress.totalBytes) : "...")
+                    DataRow(label: L10n.cleanFiles, value: "\(progress.currentItem)/\(progress.totalItems)")
                     DataRow(label: L10n.cleanElapsed, value: "\(progress.elapsedSeconds)s")
                 }
+
+                // Current path being scanned
+                Text(progress.currentPath)
+                    .monoFont(9)
+                    .foregroundColor(Brand.textDim.opacity(0.7))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(maxWidth: 400)
             }
 
             ProgressGlow(progress: min(0.3 + Double(progress.elapsedSeconds) * 0.02, 0.9))
                 .frame(width: 200)
 
-            Text(L10n.cleanScanningWait)
-                .monoFont(10)
-                .foregroundColor(Brand.textDim)
+            // Action buttons
+            HStack(spacing: 12) {
+                // Stop — preserve scanned results
+                Button(action: { vm.stopScan() }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 10))
+                        Text(L10n.cleanStop)
+                            .monoFont(10)
+                    }
+                    .foregroundColor(Brand.accentOrange)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Brand.accentOrange, lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+
+                // Cancel — discard everything
+                Button(action: { vm.cancelScan() }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10))
+                        Text(L10n.cleanCancel)
+                            .monoFont(10)
+                    }
+                    .foregroundColor(Brand.textDim)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 6)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Brand.lineColor, lineWidth: 0.5)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
 
             Spacer()
         }

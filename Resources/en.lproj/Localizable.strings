@@ -29,6 +29,8 @@
 "clean.scanning.hint" = "> ANALYZING_DISK_STRUCTURE...";
 "clean.scanning.wait" = "This may take a minute...";
 "clean.scanning.elapsed" = "ELAPSED";
+"clean.cancel" = "CANCEL";
+"clean.stop" = "STOP";
 "clean.files" = "FILES";
 "clean.size" = "SIZE";
 
@@ -71,6 +73,19 @@
 "privacy.message" = "Moler needs Full Disk Access to scan and clean files on your Mac.\n\nOpen System Settings → Privacy & Security → Full Disk Access, then enable the toggle for Moler.";
 "privacy.open_settings" = "Open Settings";
 "privacy.later" = "Later";
+
+/* === Overview === */
+"overview.title" = "CONTROL_CENTER";
+"overview.subtitle" = "SYSTEM_OVERVIEW_v1.0";
+"overview.total_freed" = "TOTAL_FREED";
+"overview.clean_count" = "CLEAN_COUNT";
+"overview.last_clean" = "LAST_CLEAN";
+"overview.last_scan" = "LAST_SCAN";
+"overview.disk_capacity" = "DISK_CAPACITY";
+"overview.disk_free" = "DISK_FREE";
+"overview.disk_usage" = "DISK_USAGE";
+"overview.quick_scan" = "INITIATE_SCAN";
+"overview.quick_settings" = "SETTINGS";
 
 /* === Settings === */
 "settings.title" = "Settings";

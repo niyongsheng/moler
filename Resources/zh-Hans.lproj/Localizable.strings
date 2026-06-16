@@ -29,6 +29,8 @@
 "clean.scanning.hint" = "> 正在分析磁盘结构...";
 "clean.scanning.wait" = "可能需要一分钟左右...";
 "clean.scanning.elapsed" = "已用时间";
+"clean.cancel" = "取消";
+"clean.stop" = "停止";
 "clean.files" = "文件数";
 "clean.size" = "大小";
 
@@ -71,6 +73,19 @@
 "privacy.message" = "Moler 需要全磁盘访问权限才能扫描和清理 Mac 上的文件。\n\n打开 系统设置 → 隐私与安全性 → 全磁盘访问权限，然后为 Moler 开启开关。";
 "privacy.open_settings" = "打开设置";
 "privacy.later" = "稍后";
+
+/* === 概览 === */
+"overview.title" = "控制中心";
+"overview.subtitle" = "系统概览 v1.0";
+"overview.total_freed" = "累计释放";
+"overview.clean_count" = "清理次数";
+"overview.last_clean" = "上次清理";
+"overview.last_scan" = "上次扫描";
+"overview.disk_capacity" = "磁盘容量";
+"overview.disk_free" = "可用空间";
+"overview.disk_usage" = "磁盘占用";
+"overview.quick_scan" = "开始扫描";
+"overview.quick_settings" = "设置";
 
 /* === 设置 === */
 "settings.title" = "设置";
