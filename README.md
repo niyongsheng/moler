@@ -7,13 +7,14 @@
 
 ![Pages](https://img.shields.io/badge/Developing-1.0.0-brightgreen.svg?style=flat-square)
 ---
-<iframe src="//player.bilibili.com/player.html?isOutside=true&aid=116758367242043&bvid=BV1gkju6WEp9&cid=39156452940&p=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true"></iframe>
+
+<img alt="demo" src="https://github.com/user-attachments/assets/29536116-533f-45dd-bb28-f1d28e94eda5" />
 
 ## Install
 
 ```bash
-brew trust niyongsheng/moler
-
+brew tap niyongsheng/moler
+brew trust niyongsheng/tap-moler
 brew install --cask moler
 ```
 https://github.com/niyongsheng/moler/releases
