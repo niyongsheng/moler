@@ -58,7 +58,7 @@ struct CleanView: View {
                 Reticle(strokeColor: Brand.accentOrange.opacity(0.5), lineWidth: 0.5, armLength: 20)
                     .frame(width: 120, height: 120)
 
-                Image(systemName: "antenna.radiowaves.left.and.right")
+                Image(systemName: "trash")
                     .font(.system(size: 42))
                     .foregroundColor(Brand.accentOrange)
             }
@@ -192,25 +192,7 @@ struct CleanView: View {
     // MARK: - Error Banner
 
     private func errorBanner(_ message: String) -> some View {
-        HStack {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(Brand.accentRed)
-            Text(message)
-                .monoFont(11)
-                .foregroundColor(Brand.accentRed)
-            Spacer()
-            Button(L10n.errorDismiss) { vm.errorMessage = nil }
-                .monoFont(10)
-                .foregroundColor(Brand.textDim)
-        }
-        .padding(Brand.marginTight)
-        .background(Brand.bgCard.opacity(0.95))
-        .overlay(
-            Rectangle()
-                .fill(Brand.accentRed)
-                .frame(height: 1),
-            alignment: .bottom
-        )
+        ErrorBanner(message: message) { vm.errorMessage = nil }
     }
 }
 

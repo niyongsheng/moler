@@ -20,6 +20,18 @@ final class Store: ObservableObject {
         static let lastPurgeDate      = "moler.lastPurgeDate"
         static let totalPurgeFreedBytes = "moler.totalPurgeFreedBytes"
         static let totalPurgeCount    = "moler.totalPurgeCount"
+
+        static let lastOptimizeDate            = "moler.lastOptimizeDate"
+        static let totalOptimizeCount          = "moler.totalOptimizeCount"
+        static let lastOptimizeOptimizations   = "moler.lastOptimizeOptimizations"
+
+        static let lastSoftwareDate        = "moler.lastSoftwareDate"
+        static let totalSoftwareRemoved    = "moler.totalSoftwareRemoved"
+        static let totalSoftwareBytesFreed = "moler.totalSoftwareBytesFreed"
+
+        static let lastAnalyzePath   = "moler.lastAnalyzePath"
+        static let lastAnalyzeDate   = "moler.lastAnalyzeDate"
+        static let totalAnalyzeCount = "moler.totalAnalyzeCount"
     }
 
     // MARK: - Published Values
@@ -49,7 +61,7 @@ final class Store: ObservableObject {
     /// Display name for the current language setting.
     var languageDisplayName: String {
         switch language {
-        case "zh-Hans": return "中文"
+        case "zh-Hans": return "简体中文"
         case "en":      return "English"
         default:        return "跟随系统"
         }
@@ -99,6 +111,51 @@ final class Store: ObservableObject {
         didSet { defaults.set(totalPurgeCount, forKey: Key.totalPurgeCount) }
     }
 
+    /// Timestamp of the most recent optimize operation.
+    @Published var lastOptimizeDate: Date? {
+        didSet { defaults.set(lastOptimizeDate, forKey: Key.lastOptimizeDate) }
+    }
+
+    /// Total number of optimize operations performed.
+    @Published var totalOptimizeCount: Int {
+        didSet { defaults.set(totalOptimizeCount, forKey: Key.totalOptimizeCount) }
+    }
+
+    /// Number of optimizations applied in the last optimize run.
+    @Published var lastOptimizeOptimizations: Int {
+        didSet { defaults.set(lastOptimizeOptimizations, forKey: Key.lastOptimizeOptimizations) }
+    }
+
+    /// Timestamp of the most recent software uninstall.
+    @Published var lastSoftwareDate: Date? {
+        didSet { defaults.set(lastSoftwareDate, forKey: Key.lastSoftwareDate) }
+    }
+
+    /// Total number of apps removed by the Software tab.
+    @Published var totalSoftwareRemoved: Int {
+        didSet { defaults.set(totalSoftwareRemoved, forKey: Key.totalSoftwareRemoved) }
+    }
+
+    /// Cumulative bytes freed by app uninstalls.
+    @Published var totalSoftwareBytesFreed: Int64 {
+        didSet { defaults.set(totalSoftwareBytesFreed, forKey: Key.totalSoftwareBytesFreed) }
+    }
+
+    /// The last directory analysed.
+    @Published var lastAnalyzePath: String {
+        didSet { defaults.set(lastAnalyzePath, forKey: Key.lastAnalyzePath) }
+    }
+
+    /// Timestamp of the most recent analyse operation.
+    @Published var lastAnalyzeDate: Date? {
+        didSet { defaults.set(lastAnalyzeDate, forKey: Key.lastAnalyzeDate) }
+    }
+
+    /// Total number of analyse operations performed.
+    @Published var totalAnalyzeCount: Int {
+        didSet { defaults.set(totalAnalyzeCount, forKey: Key.totalAnalyzeCount) }
+    }
+
     // MARK: - Init
 
     private init() {
@@ -142,6 +199,22 @@ final class Store: ObservableObject {
         }
 
         self.totalPurgeCount = defaults.integer(forKey: Key.totalPurgeCount)
+
+        self.lastOptimizeDate = defaults.object(forKey: Key.lastOptimizeDate) as? Date
+        self.totalOptimizeCount = defaults.integer(forKey: Key.totalOptimizeCount)
+        self.lastOptimizeOptimizations = defaults.integer(forKey: Key.lastOptimizeOptimizations)
+
+        self.lastSoftwareDate = defaults.object(forKey: Key.lastSoftwareDate) as? Date
+        self.totalSoftwareRemoved = defaults.integer(forKey: Key.totalSoftwareRemoved)
+        if let num = defaults.object(forKey: Key.totalSoftwareBytesFreed) as? NSNumber {
+            self.totalSoftwareBytesFreed = num.int64Value
+        } else {
+            self.totalSoftwareBytesFreed = 0
+        }
+
+        self.lastAnalyzePath = defaults.string(forKey: Key.lastAnalyzePath) ?? home
+        self.lastAnalyzeDate = defaults.object(forKey: Key.lastAnalyzeDate) as? Date
+        self.totalAnalyzeCount = defaults.integer(forKey: Key.totalAnalyzeCount)
     }
 
     // MARK: - Actions
@@ -158,5 +231,26 @@ final class Store: ObservableObject {
         totalPurgeFreedBytes += freedBytes
         totalPurgeCount += 1
         lastPurgeDate = Date()
+    }
+
+    /// Record a successful optimize operation.
+    func recordOptimize(optimizationsApplied: Int) {
+        totalOptimizeCount += 1
+        lastOptimizeDate = Date()
+        lastOptimizeOptimizations = optimizationsApplied
+    }
+
+    /// Record a successful analyse operation.
+    func recordAnalyze(path: String) {
+        totalAnalyzeCount += 1
+        lastAnalyzeDate = Date()
+        lastAnalyzePath = path
+    }
+
+    /// Record a successful software uninstall operation.
+    func recordSoftwareUninstall(appsRemoved: Int, bytesFreed: Int64) {
+        totalSoftwareRemoved += appsRemoved
+        totalSoftwareBytesFreed += bytesFreed
+        lastSoftwareDate = Date()
     }
 }

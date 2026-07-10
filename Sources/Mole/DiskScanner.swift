@@ -47,8 +47,12 @@ enum DiskScanner {
         let result = try MoleProcess.run(
             executable: mo,
             args: ["analyze", "--json", path],
-            timeout: 300 // 5-minute timeout for large scans
+            timeout: 3600 // 1-hour timeout; home dir scans can take 30+ min
         )
+
+        if result.timedOut {
+            throw MoleError.timedOut(timeout: 3600)
+        }
 
         guard result.exitCode == 0 else {
             throw MoleError.failed(exitCode: result.exitCode, stderr: result.stderr)

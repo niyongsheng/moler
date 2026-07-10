@@ -15,6 +15,34 @@ final class JupiterScene: SCNScene {
     let cameraNode = SCNNode()
     var targetZoom: CGFloat = 28
 
+    // MARK: - Reactive animation properties
+
+    /// Master animation intensity: 0 = idle, 1 = running full speed
+    var animationIntensity: CGFloat = 0 {
+        didSet { spinSpeedMultiplier = 1.0 + animationIntensity * 3.0 }
+    }
+    private var spinSpeedMultiplier: CGFloat = 1.0
+
+    /// Camera zoom smoothing target (existing, reused here)
+    /// - idle: 28  - running: 42 (pull back to see the whole system)
+
+    /// Updates animation intensity based on the current Optimize state.
+    func updateForRunning(_ isRunning: Bool) {
+        animationIntensity = isRunning ? 1.0 : 0.0
+        targetZoom = isRunning ? 42 : 28
+    }
+
+    /// Brief celebratory pulse when optimization completes.
+    func pulseDone() {
+        // Quick flash: spin up then settle
+        animationIntensity = 0.3
+        targetZoom = 26
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.animationIntensity = 0
+            self?.targetZoom = 28
+        }
+    }
+
     // MARK: - Moon data
     private struct Moon {
         let node: SCNNode
@@ -493,14 +521,32 @@ final class JupiterScene: SCNScene {
             cameraNode.position.z = currentZ + diff * min(1, CGFloat(dt) * 4)
         }
 
-        spinNode.eulerAngles.y     += delta * 0.175       // planet rotation
-        redSpotNode.eulerAngles.y  -= delta * 0.025       // GRS westward drift
-        redSpotNode.eulerAngles.x   = CGFloat(0.002 * sin(time * 0.5))
-        atmosphereNode.eulerAngles.y += delta * 0.12      // atmosphere parallax
-        ringNode.eulerAngles.y     += delta * 0.175       // rings
+        // Camera lateral sway during running (gentle orbit feel)
+        if animationIntensity > 0 {
+            cameraNode.position.x = sin(time * 0.3) * animationIntensity * 0.8
+        } else {
+            cameraNode.position.x = 0
+        }
 
+        // Planet core — dramatic speed up during optimize
+        spinNode.eulerAngles.y     += delta * 0.175 * spinSpeedMultiplier
+
+        // Great Red Spot — drifts faster, oscillates more during running
+        redSpotNode.eulerAngles.y  -= delta * 0.025 * spinSpeedMultiplier
+        redSpotNode.eulerAngles.x   = CGFloat(0.002 * sin(time * 0.5) + animationIntensity * 0.004 * sin(time * 1.3))
+
+        // Atmosphere — parallax layer, extra speed during running
+        atmosphereNode.eulerAngles.y += delta * 0.12 * (1.0 + animationIntensity * 2.0)
+
+        // Rings — subtle tilt wobble during optimization
+        let ringWobble = animationIntensity * 0.02 * sin(time * 0.8)
+        ringNode.eulerAngles.x = -.pi / 2 + ringWobble
+        ringNode.eulerAngles.y += delta * 0.175 * spinSpeedMultiplier
+
+        // Moons — orbit faster during running
+        let moonSpeedBoost = 1.0 + animationIntensity * 1.5
         for i in 0..<moons.count {
-            moons[i].angle += moons[i].orbitSpeed * delta
+            moons[i].angle += moons[i].orbitSpeed * delta * moonSpeedBoost
             moons[i].node.eulerAngles.y = moons[i].angle
             moons[i].spinNode.eulerAngles.y = -moons[i].angle
         }

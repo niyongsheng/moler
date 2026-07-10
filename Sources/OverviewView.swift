@@ -10,15 +10,16 @@ struct OverviewView: View {
 
     var body: some View {
         ScrollView([.vertical], showsIndicators: false) {
-            VStack(spacing: 24) {
-                headerSection
-                statsCard
-                liveSystemCards
-                diskCard
-                quickActions
+            VStack(spacing: 20) {
+                headerBar
+                toolGrid
+                systemRow
+                networkSection
+                diskSection
+                quickBar
             }
-            .padding(.horizontal, 32)
-            .padding(.vertical, 28)
+            .padding(.horizontal, 28)
+            .padding(.vertical, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task { loadDiskInfo() }
@@ -26,64 +27,136 @@ struct OverviewView: View {
         .onDisappear { monitor.stop() }
     }
 
-    // MARK: - Header
+    // MARK: - Header Bar
 
-    private var headerSection: some View {
-        VStack(spacing: 16) {
-            ZStack {
-                Reticle(strokeColor: Brand.accentOrange.opacity(0.5), lineWidth: 0.5, armLength: 18)
-                    .frame(width: 100, height: 100)
+    private var headerBar: some View {
+        HStack {
+            // Title
+            HStack(spacing: 10) {
                 Image(systemName: "gauge.with.dots.needle.33percent")
-                    .font(.system(size: 42))
+                    .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(Brand.accentOrange)
-            }
-            VStack(spacing: 6) {
                 Text(L10n.overviewTitle)
-                    .titleFont(28).kerning(8)
+                    .titleFont(20).kerning(6)
                     .foregroundColor(Brand.accentOrange)
-                Text(L10n.overviewSubtitle)
-                    .monoFont(10)
-                    .foregroundColor(Brand.textDim)
             }
-        }
-        .padding(.top, 20)
-    }
 
-    // MARK: - Stats Card
+            Spacer()
 
-    private var statsCard: some View {
-        GlassCard {
-            VStack(spacing: Brand.unit * 2) {
-                DataRow(label: L10n.overviewTotalFreed, value: formatBytes(Store.shared.totalFreedBytes))
-                DataRow(label: L10n.overviewCleanCount, value: "\(Store.shared.totalCleanCount)")
-                DataRow(label: L10n.overviewLastClean, value: Store.shared.lastCleanDate?.formatted() ?? L10n.cleanNever)
-                DataRow(label: L10n.overviewLastScan, value: Store.shared.lastScanPath)
-            }
-        }
-        .frame(maxWidth: 500)
-    }
-
-    // MARK: - Live System Cards
-
-    private var liveSystemCards: some View {
-        VStack(spacing: 12) {
+            // Health score + uptime
             if let s = monitor.stats {
-                HStack(spacing: 12) {
-                    cpuCard(s)
-                    memoryCard(s)
+                HStack(spacing: 16) {
+                    // Health score
+                    HStack(spacing: 4) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(healthColor(s.healthScore))
+                        Text("\(s.healthScore)")
+                            .titleFont(16)
+                            .foregroundColor(healthColor(s.healthScore))
+                    }
+
+                    // Uptime
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 9))
+                            .foregroundColor(Brand.textDim)
+                        Text(Format.uptime(s.uptimeSeconds))
+                            .monoFont(10)
+                            .foregroundColor(Brand.textDim)
+                    }
                 }
-                networkCard(s)
+            }
+        }
+        .padding(.bottom, 4)
+    }
+
+    private func healthColor(_ score: Int) -> Color {
+        score > 90 ? Brand.accentGold : score > 70 ? Brand.accentOrange : Brand.accentRed
+    }
+
+    // MARK: - Tool Stats Grid
+
+    private var toolGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+            toolCard(icon: "trash",       label: "CLEAN",     color: Brand.accentOrange, stats: [
+                ("FREED", formatBytes(Store.shared.totalFreedBytes)),
+                ("COUNT", "\(Store.shared.totalCleanCount)"),
+                ("LAST",  Format.relativeDate(Store.shared.lastCleanDate)),
+            ])
+            toolCard(icon: "xmark.bin",   label: "PURGE",     color: Brand.accentOrange, stats: [
+                ("FREED", formatBytes(Store.shared.totalPurgeFreedBytes)),
+                ("COUNT", "\(Store.shared.totalPurgeCount)"),
+                ("LAST",  Format.relativeDate(Store.shared.lastPurgeDate)),
+            ])
+            toolCard(icon: "arrow.triangle.2.circlepath", label: "OPTIMIZE", color: Brand.accentOrange, stats: [
+                ("OPS",   "\(Store.shared.totalOptimizeCount)"),
+                ("LAST",  "\(Store.shared.lastOptimizeOptimizations)"),
+                ("DATE",  Format.relativeDate(Store.shared.lastOptimizeDate)),
+            ])
+            toolCard(icon: "chart.pie",   label: "ANALYZE",   color: Brand.accentOrange, stats: [
+                ("COUNT", "\(Store.shared.totalAnalyzeCount)"),
+                ("LAST",  Format.relativeDate(Store.shared.lastAnalyzeDate)),
+                ("PATH",  Format.abbreviatePath(Store.shared.lastAnalyzePath, maxLen: 18)),
+            ])
+            toolCard(icon: "gearshape.2", label: "SOFTWARE",  color: Brand.accentOrange, stats: [
+                ("REMOVED", "\(Store.shared.totalSoftwareRemoved)"),
+                ("FREED",   formatBytes(Store.shared.totalSoftwareBytesFreed)),
+                ("LAST",    Format.relativeDate(Store.shared.lastSoftwareDate)),
+            ])
+        }
+    }
+
+    private func toolCard(icon: String, label: String, color: Color, stats: [(String, String)]) -> some View {
+        InstrumentPanel(title: "", badge: nil) {
+            VStack(alignment: .leading, spacing: 6) {
+                // Icon + label (InstrumentPanel header hidden; this is the heading)
+                HStack(spacing: 6) {
+                    Image(systemName: icon)
+                        .font(.system(size: 12))
+                        .foregroundColor(color)
+                    Text(label)
+                        .titleFont(11).kerning(3)
+                        .foregroundColor(color)
+                }
+                .padding(.top, 4)
+
+                ForEach(stats.indices, id: \.self) { i in
+                    let (l, v) = stats[i]
+                    HStack(spacing: 4) {
+                        Text("> \(l):")
+                            .monoFont(8)
+                            .foregroundColor(Brand.textDim)
+                        Text(v)
+                            .monoFont(9)
+                            .foregroundColor(Brand.accentGold)
+                            .lineLimit(1)
+                        Spacer()
+                    }
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
+        }
+    }
+
+    // MARK: - System Row (CPU + Memory)
+
+    private var systemRow: some View {
+        HStack(spacing: 12) {
+            if let s = monitor.stats {
+                cpuCard(s)
+                memoryCard(s)
             } else if monitor.isLoading {
                 loadingIndicator
             }
         }
-        .frame(maxWidth: 600)
     }
 
     private var loadingIndicator: some View {
         HStack(spacing: 8) {
             PulseGlow()
-            Text("Loading system data…")
+            Text(L10n.overviewLoading)
                 .monoFont(10)
                 .foregroundColor(Brand.textDim)
         }
@@ -94,28 +167,31 @@ struct OverviewView: View {
     // MARK: - CPU Card
 
     private func cpuCard(_ s: SystemStats) -> some View {
-        GlassCard {
+        InstrumentPanel(title: "CPU", badge: s.hardware.cpuModel) {
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("CPU").titleFont(12).kerning(3).foregroundColor(Brand.accentOrange)
-                    Spacer()
-                    Text(s.hardware.cpuModel).monoFont(8).foregroundColor(Brand.textDim)
-                }
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(Int(s.cpu.usage))").titleFont(32).foregroundColor(cpuColor(s.cpu.usage))
+                    Text("\(Int(s.cpu.usage))").titleFont(36).foregroundColor(cpuColor(s.cpu.usage))
                     Text("%").monoFont(12).foregroundColor(Brand.textDim)
                     Spacer()
-                    Text("\(s.cpu.coreCount) cores").monoFont(9).foregroundColor(Brand.textDim)
+                    Text(String(format: L10n.overviewCpuCores, s.cpu.coreCount)).monoFont(9).foregroundColor(Brand.textDim)
                 }
                 ProgressGlow(progress: s.cpu.usage / 100).frame(height: 4)
-                HStack(spacing: 12) {
+
+                HStack(spacing: 8) {
                     loadChip("1m", s.cpu.load1)
                     loadChip("5m", s.cpu.load5)
                     loadChip("15m", s.cpu.load15)
                 }
+
+                // Network RX sparkline (mini preview)
+                if !monitor.rxHistory.isEmpty {
+                    Sparkline(values: Array(monitor.rxHistory.suffix(15)), color: Brand.accentOrange, lineWidth: 1)
+                        .frame(height: 24)
+                }
             }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
         }
-        .frame(maxWidth: .infinity)
     }
 
     private func loadChip(_ label: String, _ value: Double) -> some View {
@@ -134,162 +210,167 @@ struct OverviewView: View {
     // MARK: - Memory Card
 
     private func memoryCard(_ s: SystemStats) -> some View {
-        GlassCard {
+        InstrumentPanel(title: "MEMORY", badge: Format.bytes(Int64(s.memory.total))) {
             VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("MEM").titleFont(12).kerning(3).foregroundColor(Brand.accentBlue)
-                    Spacer()
-                    Text(Format.bytes(Int64(s.memory.total))).monoFont(8).foregroundColor(Brand.textDim)
-                }
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(Int(s.memory.usedPercent))").titleFont(32).foregroundColor(memColor(s.memory.usedPercent))
+                    Text("\(Int(s.memory.usedPercent))").titleFont(36).foregroundColor(memColor(s.memory.usedPercent))
                     Text("%").monoFont(12).foregroundColor(Brand.textDim)
                     Spacer()
                     Text("\(Format.bytes(Int64(s.memory.used))) / \(Format.bytes(Int64(s.memory.total)))")
                         .monoFont(9).foregroundColor(Brand.textDim)
                 }
                 ProgressGlow(progress: s.memory.usedPercent / 100).frame(height: 4)
+
                 if s.memory.swapUsed > 0 {
                     HStack(spacing: 4) {
-                        Text("SWAP").monoFont(8).foregroundColor(Brand.textDim)
-                        Text(Format.bytes(Int64(s.memory.swapUsed))).monoFont(9).foregroundColor(Brand.accentGold)
+                        Text(L10n.overviewSwap).monoFont(8).foregroundColor(Brand.textDim)
+                        Text("\(Format.bytes(Int64(s.memory.swapUsed))) / \(Format.bytes(Int64(s.memory.swapTotal)))")
+                            .monoFont(9).foregroundColor(Brand.accentGold)
                     }
                 }
+                if !s.memory.pressure.isEmpty {
+                    Text(s.memory.pressure).monoFont(8).foregroundColor(Brand.textDim.opacity(0.7))
+                }
+
+                // Network TX sparkline (mini preview)
+                if !monitor.txHistory.isEmpty {
+                    Sparkline(values: Array(monitor.txHistory.suffix(15)), color: Brand.accentBlue, lineWidth: 1)
+                        .frame(height: 24)
+                }
             }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 8)
         }
-        .frame(maxWidth: .infinity)
     }
 
     private func memColor(_ pct: Double) -> Color {
         pct > 85 ? Brand.accentRed : pct > 65 ? Brand.accentGold : Brand.accentBlue
     }
 
-    // MARK: - Network Card
+    // MARK: - Network Section (full width)
 
-    private func networkCard(_ s: SystemStats) -> some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("NET").titleFont(12).kerning(3).foregroundColor(Brand.accentGold)
-                    Spacer()
-                    if let net = s.network.first {
-                        Text(net.name).monoFont(8).foregroundColor(Brand.textDim)
-                    }
-                }
-                if let net = s.network.first {
+    private var networkSection: some View {
+        Group {
+            if let s = monitor.stats, let net = s.network.first {
+                InstrumentPanel(title: "NETWORK", badge: net.name) {
                     HStack(spacing: 16) {
-                        // Left: rates + disk IO
+                        // Rates
                         VStack(alignment: .leading, spacing: 8) {
                             HStack(spacing: 24) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("↓ DOWN").monoFont(8).foregroundColor(Brand.textDim)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(L10n.overviewDown).monoFont(8).foregroundColor(Brand.textDim)
                                     Text(net.rxRateMbs.map { "\(String(format: "%.1f", $0)) MB/s" } ?? "—")
-                                        .monoFont(14).foregroundColor(Brand.accentOrange)
+                                        .monoFont(16).foregroundColor(Brand.accentOrange)
                                 }
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("↑ UP").monoFont(8).foregroundColor(Brand.textDim)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(L10n.overviewUp).monoFont(8).foregroundColor(Brand.textDim)
                                     Text(net.txRateMbs.map { "\(String(format: "%.1f", $0)) MB/s" } ?? "—")
-                                        .monoFont(14).foregroundColor(Brand.accentBlue)
+                                        .monoFont(16).foregroundColor(Brand.accentBlue)
                                 }
                             }
                             HStack(spacing: 16) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("READ").monoFont(7).foregroundColor(Brand.textDim)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(L10n.overviewDiskRead).monoFont(7).foregroundColor(Brand.textDim)
                                     Text("\(String(format: "%.1f", s.diskIO.readRate)) MB/s")
                                         .monoFont(10).foregroundColor(Brand.accentOrange)
                                 }
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("WRITE").monoFont(7).foregroundColor(Brand.textDim)
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(L10n.overviewDiskWrite).monoFont(7).foregroundColor(Brand.textDim)
                                     Text("\(String(format: "%.1f", s.diskIO.writeRate)) MB/s")
                                         .monoFont(10).foregroundColor(Brand.accentBlue)
                                 }
                             }
                         }
+
                         Spacer()
-                        // Right: sparklines
+
+                        // Sparklines
                         if !monitor.rxHistory.isEmpty {
-                            VStack(spacing: 4) {
+                            VStack(spacing: 6) {
                                 Sparkline(values: monitor.rxHistory, color: Brand.accentOrange, lineWidth: 1.2)
-                                    .frame(width: 80, height: 28)
+                                    .frame(width: 120, height: 36)
                                 Sparkline(values: monitor.txHistory, color: Brand.accentBlue, lineWidth: 1.2)
-                                    .frame(width: 80, height: 28)
+                                    .frame(width: 120, height: 36)
                             }
                         }
                     }
-                } else {
-                    Text("No network data").monoFont(10).foregroundColor(Brand.textDim)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
                 }
             }
         }
-        .frame(maxWidth: .infinity)
     }
 
-    // MARK: - Disk Info
+    // MARK: - Disk Section (full width)
 
-    private var diskCard: some View {
+    private var diskSection: some View {
         GlassCard {
-            VStack(spacing: Brand.unit * 2) {
+            VStack(spacing: 8) {
+                HStack {
+                    Text(L10n.overviewDisk).titleFont(12).kerning(3).foregroundColor(Brand.accentOrange)
+                    Spacer()
+                    if let disk = monitor.stats?.disks.first {
+                        Text(disk.mount).monoFont(8).foregroundColor(Brand.textDim)
+                    }
+                }
+
                 if let disk = monitor.stats?.disks.first {
-                    DataRow(label: L10n.overviewDiskCapacity, value: Format.bytes(Int64(disk.total)))
-                    DataRow(label: L10n.overviewDiskFree, value: Format.bytes(Int64(disk.total - disk.used)))
-                    diskUsageBar(disk.usedPercent / 100)
+                    let pct = disk.usedPercent / 100
+                    let free = disk.total - disk.used
+                    HStack(spacing: 0) {
+                        Text("> " + L10n.overviewDiskUsage + ":")
+                            .monoFont(11).foregroundColor(Brand.textPrimary)
+                        Spacer()
+                        Text("\(Format.bytes(Int64(disk.used))) / \(Format.bytes(Int64(disk.total)))")
+                            .monoFont(10).foregroundColor(Brand.textDim)
+                    }
+                    ProgressGlow(progress: pct).frame(height: 6)
+                    HStack {
+                        Text(String(format: L10n.overviewFreeFormat, Format.bytes(Int64(free))))
+                            .monoFont(9).foregroundColor(pct > 0.9 ? Brand.accentRed : Brand.accentGold)
+                        Spacer()
+                        Text(String(format: L10n.overviewUsedFormat, Int(pct * 100)))
+                            .monoFont(9).foregroundColor(pct > 0.9 ? Brand.accentRed : pct > 0.75 ? Brand.accentGold : Brand.textDim)
+                    }
                 } else {
                     DataRow(label: L10n.overviewDiskCapacity, value: formatBytes(diskCapacity))
                     DataRow(label: L10n.overviewDiskFree, value: formatBytes(diskFree))
                     if diskCapacity > 0 {
-                        diskUsageBar(Double(diskCapacity - diskFree) / Double(diskCapacity))
+                        let pct = Double(diskCapacity - diskFree) / Double(diskCapacity)
+                        ProgressGlow(progress: pct).frame(height: 6)
                     }
                 }
             }
-        }
-        .frame(maxWidth: 500)
-    }
-
-    private func diskUsageBar(_ pct: Double) -> some View {
-        VStack(spacing: 4) {
-            HStack(spacing: 0) {
-                Text("> " + L10n.overviewDiskUsage + ":").monoFont(11).foregroundColor(Brand.textPrimary)
-                Spacer()
-                Text("\(Int(pct * 100))%")
-                    .monoFont(11)
-                    .foregroundColor(pct > 0.9 ? Brand.accentRed : pct > 0.75 ? Brand.accentGold : Brand.accentOrange)
-            }
-            ProgressGlow(progress: pct).frame(height: 6)
         }
     }
 
     // MARK: - Quick Actions
 
-    private var quickActions: some View {
-        HStack(spacing: 16) {
-            Button {
-                onNavigate(.clean)
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "play.fill").font(.system(size: 11))
-                    Text(L10n.overviewQuickScan).titleFont(12).kerning(4)
-                }
-                .padding(.horizontal, 24).padding(.vertical, 10)
-                .background(Brand.accentOrange.opacity(0.15))
-                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Brand.accentOrange, lineWidth: 1))
-                .foregroundColor(Brand.accentOrange)
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                onNavigate(.settings)
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "gearshape.fill").font(.system(size: 11))
-                    Text(L10n.overviewQuickSettings).titleFont(12).kerning(4)
-                }
-                .padding(.horizontal, 24).padding(.vertical, 10)
-                .background(Brand.accentBlue.opacity(0.15))
-                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Brand.accentBlue, lineWidth: 1))
-                .foregroundColor(Brand.accentBlue)
-            }
-            .buttonStyle(.plain)
+    private var quickBar: some View {
+        HStack(spacing: 12) {
+            quickBtn(icon: "trash", label: L10n.overviewQuickScan, color: Brand.accentOrange) { onNavigate(.clean) }
+            quickBtn(icon: "xmark.bin", label: "PURGE", color: Brand.accentOrange) { onNavigate(.purge) }
+            quickBtn(icon: "arrow.triangle.2.circlepath", label: "OPTIMIZE", color: Brand.accentOrange) { onNavigate(.optimize) }
+            quickBtn(icon: "chart.pie", label: "ANALYZE", color: Brand.accentOrange) { onNavigate(.analyze) }
+            quickBtn(icon: "gearshape.2", label: "SOFTWARE", color: Brand.accentOrange) { onNavigate(.software) }
+            Spacer()
+            quickBtn(icon: "gearshape.fill", label: L10n.overviewQuickSettings, color: Brand.accentBlue) { onNavigate(.settings) }
         }
+        .padding(.top, 8)
+    }
+
+    private func quickBtn(icon: String, label: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: icon).font(.system(size: 10))
+                Text(label).monoFont(10)
+            }
+            .foregroundColor(color)
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .background(color.opacity(0.1))
+            .overlay(RoundedRectangle(cornerRadius: 4).stroke(color, lineWidth: 0.5))
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Disk Info Loading

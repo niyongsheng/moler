@@ -68,7 +68,7 @@ enum MoleCLI {
 
     /// Run `mo` with the given args and capture stdout + stderr.
     /// Blocks until exit. Callers must run on a background queue.
-    static func capture(args: [String], stdin: String? = nil, timeout: TimeInterval = 10) throws -> CapturedProcess {
+    static func capture(args: [String], stdin: String? = nil, timeout: TimeInterval = 10, env: [String: String]? = nil) throws -> CapturedProcess {
         guard let mo = findExecutable() else {
             throw MoleError.notFound
         }
@@ -76,7 +76,8 @@ enum MoleCLI {
             executable: mo,
             args: args,
             stdin: stdin,
-            timeout: timeout
+            timeout: timeout,
+            env: env
         )
     }
 }
@@ -95,6 +96,7 @@ struct CapturedProcess {
 enum MoleError: Error, LocalizedError {
     case notFound
     case failed(exitCode: Int32, stderr: String)
+    case timedOut(timeout: TimeInterval)
     case parseFailed(String)
 
     var errorDescription: String? {
@@ -103,6 +105,8 @@ enum MoleError: Error, LocalizedError {
             return L10n.errorMoNotFound
         case .failed(let code, let stderr):
             return String(format: L10n.errorMoFailed, code, String(stderr.prefix(200)))
+        case .timedOut(let timeout):
+            return String(format: L10n.errorTimedOut, Int(timeout) / 60)
         case .parseFailed(let msg):
             return String(format: L10n.errorParseFailed, msg)
         }

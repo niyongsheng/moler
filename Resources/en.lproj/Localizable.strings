@@ -68,6 +68,7 @@
 "error.dismiss" = "DISMISS";
 "error.mo_not_found" = "Mole CLI (`mo`) not found. Install with: brew install mole";
 "error.mo_failed" = "mo exited with code %d: %@";
+"error.timed_out" = "Scan timed out after %d minutes. The home directory may be too large — try scanning a subdirectory instead.";
 "error.parse_failed" = "Failed to parse mo output: %@";
 
 /* === Install === */
@@ -100,6 +101,16 @@
 "overview.disk_usage" = "DISK_USAGE";
 "overview.quick_scan" = "INITIATE_SCAN";
 "overview.quick_settings" = "SETTINGS";
+"overview.loading" = "LOADING_SYSTEM_DATA…";
+"overview.cpu_cores" = "%d CORES";
+"overview.swap" = "SWAP";
+"overview.down" = "↓ DOWN";
+"overview.up" = "↑ UP";
+"overview.disk_read" = "DISK_READ";
+"overview.disk_write" = "DISK_WRITE";
+"overview.disk" = "DISK";
+"overview.free_format" = "FREE %@";
+"overview.used_format" = "%d%% USED";
 
 /* === Purge: Idle === */
 "purge.title" = "PURGE_PROJECTS";
@@ -129,6 +140,73 @@
 "purge.done.space_freed" = "SPACE_FREED";
 "purge.done.items_removed" = "ITEMS_REMOVED";
 "purge.done.new_scan" = "NEW_SCAN";
+
+/* === Optimize: Idle === */
+"optimize.title" = "SYSTEM_OPTIMIZATION";
+"optimize.subtitle" = "OPTIMIZE_MODULE_v1.0";
+"optimize.last_run" = "LAST_OPTIMIZE";
+"optimize.total_count" = "TOTAL_OPTIMIZE";
+"optimize.total_opts" = "LAST_OPTIMIZATIONS";
+"optimize.never" = "NEVER";
+"optimize.preview" = "PREVIEW";
+"optimize.initiate" = "OPTIMIZE";
+
+/* === Optimize: Running === */
+"optimize.run.title" = "OPTIMIZE_IN_PROGRESS";
+"optimize.run.status" = "STATUS";
+"optimize.run.executing" = "EXECUTING";
+"optimize.cancel" = "CANCEL";
+"optimize.dry_run" = "DRY RUN";
+
+/* === Analyze: Idle === */
+"analyze.title" = "DISK USAGE ANALYZER";
+"analyze.subtitle" = "Treemap disk profiler";
+"analyze.last_scan" = "LAST_SCAN";
+"analyze.last_date" = "LAST_ANALYSIS";
+"analyze.total_count" = "TOTAL_ANALYZES";
+"analyze.never" = "NEVER";
+"analyze.scan_home" = "SCAN HOME";
+
+/* === Analyze: Scanning === */
+"analyze.scanning" = "SCANNING_DIRECTORY";
+"analyze.cancel" = "CANCEL";
+"analyze.or" = "OR";
+"analyze.select_folder" = "SELECT FOLDER...";
+
+/* === Software === */
+"software.title" = "SOFTWARE_UNINSTALL";
+"software.subtitle" = "UNINSTALL_MODULE_v1.0";
+"software.scan_apps" = "SCAN_APPS";
+"software.last_scan" = "LAST_SCAN";
+"software.total_removed" = "TOTAL_REMOVED";
+"software.never" = "NEVER";
+"software.loading" = "LOADING_APP_INVENTORY...";
+"software.cancel" = "CANCEL";
+"software.no_apps" = "NO_APPS_FOUND";
+"software.remove" = "REMOVE";
+"software.deselect_all" = "DESELECT_ALL";
+"software.auto_selected" = "AUTO_SELECTED";
+"software.needs_review" = "NEEDS_REVIEW";
+"software.sort_name" = "NAME";
+"software.sort_size" = "SIZE";
+"software.size" = "SIZE";
+"software.removing" = "REMOVING";
+"software.done.title" = "UNINSTALL_COMPLETE";
+"software.done.subtitle" = "ALL_SELECTED_APPS_REMOVED";
+"software.done.apps_removed" = "APPS_REMOVED";
+"software.done.bytes_freed" = "BYTES_FREED";
+"software.done.duration" = "DURATION";
+"software.done.back" = "NEW_SCAN";
+
+/* === Optimize: Done === */
+"optimize.done.title" = "OPTIMIZE_COMPLETE";
+"optimize.done.subtitle" = "ALL_SERVICES_OPTIMIZED";
+"optimize.done.preview_title" = "PREVIEW_COMPLETE";
+"optimize.done.preview_subtitle" = "DRY_RUN_NO_CHANGES";
+"optimize.done.all_areas" = "AREAS_OPTIMIZED";
+"optimize.done.duration" = "DURATION";
+"optimize.done.no_categories" = "No optimization data available";
+"optimize.done.new_run" = "NEW_OPTIMIZE";
 
 /* === Settings === */
 "settings.title" = "Settings";

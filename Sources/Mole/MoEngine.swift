@@ -7,11 +7,13 @@ struct MoCommand {
     let args: [String]
     let stdin: String?
     let timeout: TimeInterval
+    let env: [String: String]?
 
-    init(args: [String], stdin: String? = nil, timeout: TimeInterval = 10) {
+    init(args: [String], stdin: String? = nil, timeout: TimeInterval = 10, env: [String: String]? = nil) {
         self.args = args
         self.stdin = stdin
         self.timeout = timeout
+        self.env = env
     }
 }
 
@@ -50,7 +52,8 @@ final class MoEngine {
         try MoleCLI.capture(
             args: command.args,
             stdin: command.stdin,
-            timeout: command.timeout
+            timeout: command.timeout,
+            env: command.env
         )
     }
 
@@ -73,6 +76,38 @@ final class MoEngine {
     /// This is a destructive operation — callers must gate behind user confirmation.
     func clean() throws -> CapturedProcess {
         try capture(MoCommand(args: ["clean"], timeout: 300))
+    }
+
+    // MARK: Optimize
+
+    /// Run `mo optimize --dry-run` to preview optimizations.
+    func optimizeDryRun() throws -> CapturedProcess {
+        try capture(MoCommand(args: ["optimize", "--dry-run"], timeout: 120))
+    }
+
+    /// Run `mo optimize` for real. Returns streaming-style capture.
+    func optimize() throws -> CapturedProcess {
+        try capture(MoCommand(args: ["optimize"], timeout: 300))
+    }
+
+    // MARK: Uninstall
+
+    /// List installed apps via `mo uninstall --list`.
+    func uninstallList() throws -> CapturedProcess {
+        try capture(MoCommand(args: ["uninstall", "--list"], timeout: 180))
+    }
+
+    /// Preview what files would be removed for a given app.
+    func uninstallDryRun(name: String) throws -> CapturedProcess {
+        try capture(MoCommand(args: ["uninstall", "--dry-run", name],
+                              stdin: "y\n", timeout: 30,
+                              env: ["NO_COLOR": "1"]))
+    }
+
+    /// Uninstall an app using `mo uninstall <name>`.
+    func uninstall(name: String) throws -> CapturedProcess {
+        try capture(MoCommand(args: ["uninstall", name],
+                              stdin: "y\n", timeout: 300))
     }
 }
 

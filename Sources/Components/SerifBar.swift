@@ -45,8 +45,11 @@ struct SerifBar: View {
 // MARK: - Vertical Divider
 
 struct SerifDivider: View {
-    var width: CGFloat = 2
+    enum Orientation: Equatable { case vertical, horizontal }
+
+    var thickness: CGFloat = 2
     var pulseActive: Bool = true
+    var orientation: Orientation = .vertical
 
     private let phaseOffsets: [Double] = [0, 0.25, 0.5, 0.75]
     private let colors: [Color] = [Brand.accentRed, Brand.accentOrange, Brand.accentGold, Brand.accentBlue]
@@ -58,118 +61,279 @@ struct SerifDivider: View {
     @ViewBuilder
     private var animatedBody: some View {
         GeometryReader { geo in
-            let h = geo.size.height
-            ZStack(alignment: .top) {
-                // Static colored stripes
-                VStack(spacing: 0) {
-                    ForEach(0..<4, id: \.self) { i in colors[i] }
-                }
-                .frame(width: width, height: h)
-                
-                // Moving light point
-                MovingLight(totalHeight: h, stripeWidth: width)
+            if orientation == .vertical {
+                verticalAnimatedBody(geo: geo)
+            } else {
+                horizontalAnimatedBody(geo: geo)
             }
-            .frame(width: width, height: h)
         }
-        .frame(width: width)
+        .frame(width: orientation == .vertical ? thickness : nil)
+        .frame(height: orientation == .horizontal ? thickness : nil)
         .allowsHitTesting(false)
     }
 
-    /// A glowing comet that flows from bottom to top through the stripes.
+    @ViewBuilder
+    private func verticalAnimatedBody(geo: GeometryProxy) -> some View {
+        let h = geo.size.height
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                ForEach(0..<4, id: \.self) { i in colors[i] }
+            }
+            .frame(width: thickness, height: h)
+            MovingLight(totalLength: h, stripeLength: h / 4, thickness: thickness, direction: .vertical)
+        }
+        .frame(width: thickness, height: h)
+    }
+
+    @ViewBuilder
+    private func horizontalAnimatedBody(geo: GeometryProxy) -> some View {
+        let w = geo.size.width
+        ZStack(alignment: .leading) {
+            HStack(spacing: 0) {
+                ForEach(0..<4, id: \.self) { i in colors[i] }
+            }
+            .frame(width: w, height: thickness)
+            MovingLight(totalLength: w, stripeLength: w / 4, thickness: thickness, direction: .horizontal)
+        }
+        .frame(width: w, height: thickness)
+    }
+
+    /// A glowing comet that flows through the stripes.
     /// The leading light adopts the color of the stripe it's passing through,
     /// with a fading tail trailing behind.
     private struct MovingLight: View {
-        let totalHeight: CGFloat
-        let stripeWidth: CGFloat
+        let totalLength: CGFloat
+        let stripeLength: CGFloat
+        let thickness: CGFloat
+        let direction: Direction
         @State private var pos: Double = 0
         private let timer = Timer.publish(every: 1.0/30, on: .main, in: .common).autoconnect()
-        
+
         private let colors: [Color] = [Brand.accentRed, Brand.accentOrange, Brand.accentGold, Brand.accentBlue]
         private let tailLength: CGFloat = 280
-        
+
+        enum Direction { case vertical, horizontal }
+
         var body: some View {
             let cycle = pos.truncatingRemainder(dividingBy: 10) / 10
-            // Bottom → top: y=0 at top, y=totalHeight at bottom
-            let lightY = totalHeight * (1 - cycle)
-            let stripeH = totalHeight / 4
-            let idx: Int = stripeH > 0 ? min(3, max(0, Int(lightY / stripeH))) : 0
+            if direction == .vertical { verticalBody(cycle: cycle) }
+            else { horizontalBody(cycle: cycle) }
+        }
+
+        // MARK: - Vertical (bottom → top)
+
+        private func verticalBody(cycle: Double) -> some View {
+            // Bottom → top: y=0 at top, y=totalLength at bottom
+            let lightPos = totalLength * (1 - cycle)
+            let idx: Int = stripeLength > 0 ? min(3, max(0, Int(lightPos / stripeLength))) : 0
             let color = colors[idx]
-            
-            let flareY = lightY - 6
+            let flarePos = lightPos - 6
             return ZStack(alignment: .top) {
-                // Long sweeping tail with soft glow
-                LinearGradient(
-                    colors: [color.opacity(0.7), color.opacity(0.35), color.opacity(0.12), color.opacity(0.03), color.opacity(0)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(width: stripeWidth + 8, height: tailLength)
-                .blur(radius: 5)
-                .offset(y: lightY)
-                .opacity(0.9)
-                
-                // Tail inner glow (brighter core of the tail)
-                LinearGradient(
-                    colors: [color.opacity(0.5), color.opacity(0.15), color.opacity(0)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(width: stripeWidth + 2, height: tailLength * 0.7)
-                .blur(radius: 3)
-                .offset(y: lightY + tailLength * 0.15)
-                
-                // Outer aura
-                Circle()
-                    .fill(color.opacity(0.25))
-                    .frame(width: 36, height: 36)
-                    .blur(radius: 12)
-                    .offset(y: flareY - 12)
-                
-                // Medium glow
-                Circle()
-                    .fill(color.opacity(0.5))
-                    .frame(width: 20, height: 20)
-                    .blur(radius: 7)
-                    .offset(y: flareY - 4)
-                
-                // Inner glow
-                Circle()
-                    .fill(color)
-                    .frame(width: 10, height: 10)
-                    .blur(radius: 4)
-                    .offset(y: flareY)
-                
-                // Bright white core
-                Circle()
-                    .fill(.white)
-                    .frame(width: 4, height: 4)
-                    .shadow(color: color, radius: 12)
-                    .shadow(color: .white, radius: 6)
-                    .offset(y: flareY + 2)
-                
-                // Trailing sparkle dots
-                ForEach(0..<3, id: \.self) { i in
-                    let d: CGFloat = 50 + CGFloat(i) * 40
-                    Circle()
-                        .fill(color.opacity(0.3 - Double(i) * 0.08))
-                        .frame(width: CGFloat(3 - i), height: CGFloat(3 - i))
-                        .blur(radius: CGFloat(i))
-                        .offset(y: lightY + d)
-                }
+                sweepingTail(color: color, sizeW: thickness + 8, sizeH: tailLength, innerW: thickness + 2)
+                    .offset(y: lightPos)
+                innerTailGlow(color: color, sizeW: thickness + 2, offset: lightPos + tailLength * 0.15)
+                outerAura(color: color, offset: flarePos - 12, axis: true)
+                mediumGlow(color: color, offset: flarePos - 4, axis: true)
+                innerGlow(color: color, offset: flarePos, axis: true)
+                whiteCore(color: color, offset: flarePos + 2, axis: true)
+                sparkleDots(color: color, baseOffset: lightPos, axis: true)
             }
             .onReceive(timer) { _ in pos += 1.0/30 }
+        }
+
+        // MARK: - Horizontal (left → right)
+
+        private func horizontalBody(cycle: Double) -> some View {
+            // Left → right: x=0 at left, x=totalLength at right
+            let lightPos = totalLength * cycle
+            // Fixed comet color — does not change when passing different stripe colors
+            let tailColor = Brand.accentOrange
+            let glowColor = Brand.accentOrange
+
+            return ZStack(alignment: .leading) {
+                // Layer 1 — Outer dust tail (widest, most blurry, farthest-reaching)
+                taperedTail(color: tailColor, opacity: 0.12, lengthRatio: 1.0, heightMul: 3.5, blur: 10)
+                    .offset(x: lightPos - tailLength)
+                // Layer 2 — Mid dust tail
+                taperedTail(color: tailColor, opacity: 0.20, lengthRatio: 0.75, heightMul: 2.5, blur: 7)
+                    .offset(x: lightPos - tailLength * 0.75)
+                // Layer 3 — Inner ion tail (narrower, sharper)
+                taperedTail(color: tailColor, opacity: 0.35, lengthRatio: 0.55, heightMul: 1.5, blur: 4)
+                    .offset(x: lightPos - tailLength * 0.55)
+                // Layer 4 — Bright core tail
+                taperedTail(color: tailColor, opacity: 0.60, lengthRatio: 0.30, heightMul: 1.0, blur: 1.5)
+                    .offset(x: lightPos - tailLength * 0.30)
+
+                // Scattered particles along the tail
+                particleTrail(color: tailColor, lightPos: lightPos)
+
+                // Head glow — outer aura (horizontal capsule sweeps wider than circle)
+                Capsule()
+                    .fill(glowColor.opacity(0.15))
+                    .frame(width: 60, height: thickness * 5)
+                    .blur(radius: 12)
+                    .offset(x: lightPos - 30)
+                // Head glow — medium
+                Circle()
+                    .fill(glowColor.opacity(0.35))
+                    .frame(width: 28, height: 28)
+                    .blur(radius: 8)
+                    .offset(x: lightPos, y: 0)
+                // Head glow — inner
+                Circle()
+                    .fill(glowColor)
+                    .frame(width: 12, height: 12)
+                    .blur(radius: 4)
+                    .offset(x: lightPos, y: 0)
+                // White core — teardrop shape (bulb forward, point trailing)
+                CometHead()
+                    .fill(.white)
+                    .frame(width: 22, height: 6)
+                    .shadow(color: glowColor, radius: 12)
+                    .shadow(color: .white, radius: 6)
+                    .offset(x: lightPos - 4, y: 0)
+            }
+            .onReceive(timer) { _ in pos += 1.0/30 }
+        }
+
+        /// A single tapered tail segment — Capsule with blur creates a soft conical glow.
+        private func taperedTail(color: Color, opacity: Double, lengthRatio: CGFloat, heightMul: CGFloat, blur: CGFloat) -> some View {
+            Capsule()
+                .fill(color.opacity(opacity))
+                .frame(width: tailLength * lengthRatio, height: thickness * heightMul)
+                .blur(radius: blur)
+        }
+
+        /// Small scattered particles trailing the comet head, mimicking a dust trail.
+        private func particleTrail(color: Color, lightPos: CGFloat) -> some View {
+            ForEach(0..<6, id: \.self) { i in
+                let t = 0.12 + CGFloat(i) * 0.12
+                let dist = tailLength * t
+                let opacity = max(0.02, 0.22 - Double(i) * 0.03)
+                let size: CGFloat = max(1.5, 3 - CGFloat(i) * 0.3)
+                let yOff: CGFloat = (i.isMultiple(of: 2) ? 1 : -1) * CGFloat(i % 3 + 1) * 1.5
+                if opacity > 0.02 || i == 0 {
+                    Circle()
+                        .fill(color.opacity(opacity))
+                        .frame(width: size, height: size)
+                        .blur(radius: 0.5)
+                        .offset(x: lightPos - dist, y: yOff)
+                }
+            }
+        }
+
+        /// Teardrop-shaped comet head — bulb faces forward (right), point trails left.
+        private struct CometHead: Shape {
+            func path(in rect: CGRect) -> Path {
+                Path { path in
+                    let midY = rect.midY
+                    let r = rect.height / 2
+                    let rightX = rect.maxX
+                    let leftX = rect.minX
+
+                    // Bulb: semicircle on the right (direction of travel)
+                    path.addArc(
+                        center: CGPoint(x: rightX - r, y: midY),
+                        radius: r,
+                        startAngle: Angle(radians: -.pi / 2),
+                        endAngle: Angle(radians: .pi / 2),
+                        clockwise: false
+                    )
+
+                    // Taper to a point on the left (trailing side)
+                    path.addLine(to: CGPoint(x: leftX, y: midY))
+                    path.closeSubpath()
+                }
+            }
+        }
+
+        // MARK: - Shared rendering helpers
+
+        private func sweepingTail(color: Color, sizeW: CGFloat, sizeH: CGFloat, innerW: CGFloat, horizontal: Bool = false) -> some View {
+            Group {
+                LinearGradient(
+                    colors: [color.opacity(0.7), color.opacity(0.35), color.opacity(0.12), color.opacity(0.03), color.opacity(0)],
+                    startPoint: horizontal ? .trailing : .top,
+                    endPoint: horizontal ? .leading : .bottom
+                )
+                .frame(width: sizeW, height: sizeH)
+                .blur(radius: 5)
+                .opacity(0.9)
+            }
+        }
+
+        private func innerTailGlow(color: Color, sizeW: CGFloat, offset: CGFloat, horizontal: Bool = false) -> some View {
+            LinearGradient(
+                colors: [color.opacity(0.5), color.opacity(0.15), color.opacity(0)],
+                startPoint: horizontal ? .trailing : .top,
+                endPoint: horizontal ? .leading : .bottom
+            )
+            .frame(width: horizontal ? tailLength * 0.7 : sizeW, height: horizontal ? sizeW : tailLength * 0.7)
+            .blur(radius: 3)
+        }
+
+        private func outerAura(color: Color, offset: CGFloat, axis: Bool) -> some View {
+            Circle()
+                .fill(color.opacity(0.25))
+                .frame(width: 36, height: 36)
+                .blur(radius: 12)
+                .offset(x: axis ? 0 : offset, y: axis ? offset : 0)
+        }
+
+        private func mediumGlow(color: Color, offset: CGFloat, axis: Bool) -> some View {
+            Circle()
+                .fill(color.opacity(0.5))
+                .frame(width: 20, height: 20)
+                .blur(radius: 7)
+                .offset(x: axis ? 0 : offset, y: axis ? offset : 0)
+        }
+
+        private func innerGlow(color: Color, offset: CGFloat, axis: Bool) -> some View {
+            Circle()
+                .fill(color)
+                .frame(width: 10, height: 10)
+                .blur(radius: 4)
+                .offset(x: axis ? 0 : offset, y: axis ? offset : 0)
+        }
+
+        private func whiteCore(color: Color, offset: CGFloat, axis: Bool) -> some View {
+            Circle()
+                .fill(.white)
+                .frame(width: 4, height: 4)
+                .shadow(color: color, radius: 12)
+                .shadow(color: .white, radius: 6)
+                .offset(x: axis ? 0 : offset, y: axis ? offset : 0)
+        }
+
+        private func sparkleDots(color: Color, baseOffset: CGFloat, axis: Bool) -> some View {
+            ForEach(0..<3, id: \.self) { i in
+                let d: CGFloat = 50 + CGFloat(i) * 40
+                Circle()
+                    .fill(color.opacity(0.3 - Double(i) * 0.08))
+                    .frame(width: CGFloat(3 - i), height: CGFloat(3 - i))
+                    .blur(radius: CGFloat(i))
+                    .offset(x: axis ? 0 : (baseOffset - d), y: axis ? (baseOffset + d) : 0)
+            }
         }
     }
 
     @ViewBuilder
     private var staticBody: some View {
         GeometryReader { geo in
-            VStack(spacing: 0) {
-                ForEach(0..<4, id: \.self) { i in colors[i] }
+            if orientation == .vertical {
+                VStack(spacing: 0) {
+                    ForEach(0..<4, id: \.self) { i in colors[i] }
+                }
+                .frame(width: thickness, height: geo.size.height)
+            } else {
+                HStack(spacing: 0) {
+                    ForEach(0..<4, id: \.self) { i in colors[i] }
+                }
+                .frame(width: geo.size.width, height: thickness)
             }
-            .frame(width: width, height: geo.size.height)
         }
-        .frame(width: width)
+        .frame(width: orientation == .vertical ? thickness : nil)
+        .frame(height: orientation == .horizontal ? thickness : nil)
         .allowsHitTesting(false)
     }
 }

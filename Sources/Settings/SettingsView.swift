@@ -156,7 +156,7 @@ struct SettingsView: View {
                     .tag("")
                 Text("English")
                     .tag("en")
-                Text("中文")
+                Text("简体中文")
                     .tag("zh-Hans")
             }
             .pickerStyle(.menu)

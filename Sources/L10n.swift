@@ -84,6 +84,8 @@ enum L10n {
     static let errorMoNotFound = String(localized: "error.mo_not_found")
     /// "mo exited with code %d: %@" — String(format: L10n.errorMoFailed, code, stderr)
     static let errorMoFailed = String(localized: "error.mo_failed")
+    /// "Scan timed out after %d minutes" — String(format: L10n.errorTimedOut, minutes)
+    static let errorTimedOut = String(localized: "error.timed_out")
     /// "Failed to parse mo output: %@" — String(format: L10n.errorParseFailed, msg)
     static let errorParseFailed = String(localized: "error.parse_failed")
 
@@ -119,6 +121,19 @@ enum L10n {
     static let overviewDiskUsage   = String(localized: "overview.disk_usage")
     static let overviewQuickScan   = String(localized: "overview.quick_scan")
     static let overviewQuickSettings = String(localized: "overview.quick_settings")
+
+    static let overviewLoading     = String(localized: "overview.loading")
+    static let overviewCpuCores    = String(localized: "overview.cpu_cores")
+    static let overviewSwap        = String(localized: "overview.swap")
+    static let overviewDown        = String(localized: "overview.down")
+    static let overviewUp          = String(localized: "overview.up")
+    static let overviewDiskRead    = String(localized: "overview.disk_read")
+    static let overviewDiskWrite   = String(localized: "overview.disk_write")
+    static let overviewDisk        = String(localized: "overview.disk")
+    /// "FREE %@" — String(format: L10n.overviewFreeFormat, bytesString)
+    static let overviewFreeFormat  = String(localized: "overview.free_format")
+    /// "%d%% USED" — String(format: L10n.overviewUsedFormat, percent)
+    static let overviewUsedFormat  = String(localized: "overview.used_format")
 
     // MARK: - Settings
 
@@ -171,6 +186,87 @@ enum L10n {
     static let purgeDoneSpaceFreed  = String(localized: "purge.done.space_freed")
     static let purgeDoneItemsRemoved = String(localized: "purge.done.items_removed")
     static let purgeDoneNewScan     = String(localized: "purge.done.new_scan")
+
+    // MARK: - Optimize Idle
+
+    static let optimizeTitle     = String(localized: "optimize.title")
+    static let optimizeSubtitle  = String(localized: "optimize.subtitle")
+    static let optimizeLastRun   = String(localized: "optimize.last_run")
+    static let optimizeTotalCount = String(localized: "optimize.total_count")
+    static let optimizeTotalOpts = String(localized: "optimize.total_opts")
+    static let optimizeNever     = String(localized: "optimize.never")
+    static let optimizePreview   = String(localized: "optimize.preview")
+    static let optimizeInitiate  = String(localized: "optimize.initiate")
+
+    // MARK: - Optimize Running
+
+    static let optimizeRunTitle    = String(localized: "optimize.run.title")
+    static let optimizeRunStatus   = String(localized: "optimize.run.status")
+    static let optimizeRunExecuting = String(localized: "optimize.run.executing")
+    static let optimizeCancel      = String(localized: "optimize.cancel")
+    static let optimizeDryRun      = String(localized: "optimize.dry_run")
+
+    // MARK: - Optimize Done
+
+    static let optimizeDoneTitle    = String(localized: "optimize.done.title")
+    static let optimizeDoneSubtitle = String(localized: "optimize.done.subtitle")
+    static let optimizeDonePreviewTitle = String(localized: "optimize.done.preview_title")
+    static let optimizeDonePreviewSubtitle = String(localized: "optimize.done.preview_subtitle")
+    static let optimizeDoneAllAreas = String(localized: "optimize.done.all_areas")
+    static let optimizeDoneDuration = String(localized: "optimize.done.duration")
+    static let optimizeDoneNoCategories = String(localized: "optimize.done.no_categories")
+    static let optimizeDoneNewRun   = String(localized: "optimize.done.new_run")
+
+    // MARK: - Analyze Idle
+
+    static let analyzeTitle     = String(localized: "analyze.title")
+    static let analyzeSubtitle  = String(localized: "analyze.subtitle")
+    static let analyzeLastScan  = String(localized: "analyze.last_scan")
+    static let analyzeLastDate  = String(localized: "analyze.last_date")
+    static let analyzeTotalCount = String(localized: "analyze.total_count")
+    static let analyzeNever     = String(localized: "analyze.never")
+    static let analyzeScanHome  = String(localized: "analyze.scan_home")
+
+    // MARK: - Analyze Scanning
+
+    static let analyzeScanning  = String(localized: "analyze.scanning")
+    static let analyzeCancel    = String(localized: "analyze.cancel")
+
+    // MARK: - Analyze: Path Picker
+
+    /// "OR" — divider between preset pills and folder picker
+    static let analyzeOr = String(localized: "analyze.or")
+    /// "SELECT FOLDER..."
+    static let analyzeSelectFolder = String(localized: "analyze.select_folder")
+
+    // MARK: - Software
+
+    static let softwareTitle     = String(localized: "software.title")
+    static let softwareSubtitle  = String(localized: "software.subtitle")
+    static let softwareScanApps  = String(localized: "software.scan_apps")
+    static let softwareLastScan  = String(localized: "software.last_scan")
+    static let softwareTotalRemoved = String(localized: "software.total_removed")
+    static let softwareNever     = String(localized: "software.never")
+    static let softwareLoading   = String(localized: "software.loading")
+    static let softwareCancel    = String(localized: "software.cancel")
+    static let softwareNoApps    = String(localized: "software.no_apps")
+    static let softwareRemove    = String(localized: "software.remove")
+    static let softwareDeselectAll = String(localized: "software.deselect_all")
+    static let softwareAutoSelected = String(localized: "software.auto_selected")
+    static let softwareNeedsReview = String(localized: "software.needs_review")
+    static let softwareSortedByName  = String(localized: "software.sort_name")
+    static let softwareSortedBySize  = String(localized: "software.sort_size")
+    static let softwareSize     = String(localized: "software.size")
+
+    // MARK: - Software Running & Done
+
+    static let softwareRemoving     = String(localized: "software.removing")
+    static let softwareDoneTitle    = String(localized: "software.done.title")
+    static let softwareDoneSubtitle = String(localized: "software.done.subtitle")
+    static let softwareDoneAppsRemoved = String(localized: "software.done.apps_removed")
+    static let softwareDoneBytesFreed  = String(localized: "software.done.bytes_freed")
+    static let softwareDoneDuration    = String(localized: "software.done.duration")
+    static let softwareDoneBack        = String(localized: "software.done.back")
 
     // MARK: - Settings: About
 

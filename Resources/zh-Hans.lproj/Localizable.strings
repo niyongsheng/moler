@@ -4,15 +4,15 @@
 */
 
 /* === 导航 === */
-"nav.clean" = "清理";
+"nav.clean" = "系统清理";
 "nav.clean.sub" = "深度扫描";
-"nav.purge" = "清除";
+"nav.purge" = "项目清除";
 "nav.purge.sub" = "项目残留";
-"nav.optimize" = "优化";
+"nav.optimize" = "系统优化";
 "nav.optimize.sub" = "系统服务";
-"nav.analyze" = "分析";
+"nav.analyze" = "磁盘分析";
 "nav.analyze.sub" = "磁盘图谱";
-"nav.software" = "软件";
+"nav.software" = "软件管理";
 "nav.software.sub" = "关于";
 "nav.offline" = "模块未上线";
 
@@ -68,6 +68,7 @@
 "error.dismiss" = "关闭";
 "error.mo_not_found" = "未找到 Mole CLI (`mo`)。请运行: brew install mole";
 "error.mo_failed" = "mo 执行失败 (退出码 %d): %@";
+"error.timed_out" = "扫描超时（%d 分钟）。家目录文件过多，建议扫描子目录。";
 "error.parse_failed" = "解析 mo 输出失败: %@";
 
 /* === 安装引导 === */
@@ -100,6 +101,16 @@
 "overview.disk_usage" = "磁盘占用";
 "overview.quick_scan" = "开始扫描";
 "overview.quick_settings" = "设置";
+"overview.loading" = "正在加载系统数据…";
+"overview.cpu_cores" = "%d 核";
+"overview.swap" = "交换内存";
+"overview.down" = "↓ 下载";
+"overview.up" = "↑ 上传";
+"overview.disk_read" = "磁盘读取";
+"overview.disk_write" = "磁盘写入";
+"overview.disk" = "磁盘";
+"overview.free_format" = "可用 %@";
+"overview.used_format" = "已用 %d%%";
 
 /* === 清除项目残留：待机 === */
 "purge.title" = "清除项目残留";
@@ -129,6 +140,73 @@
 "purge.done.space_freed" = "释放空间";
 "purge.done.items_removed" = "清除项数";
 "purge.done.new_scan" = "重新扫描";
+
+/* === 优化：待机 === */
+"optimize.title" = "系统维护优化";
+"optimize.subtitle" = "优化模块 v1.0";
+"optimize.last_run" = "上次优化";
+"optimize.total_count" = "优化次数";
+"optimize.total_opts" = "上次优化项数";
+"optimize.never" = "从未";
+"optimize.preview" = "预览";
+"optimize.initiate" = "开始优化";
+
+/* === 优化：执行中 === */
+"optimize.run.title" = "优化执行中";
+"optimize.run.status" = "状态";
+"optimize.run.executing" = "执行中";
+"optimize.cancel" = "取消";
+"optimize.dry_run" = "试运行";
+
+/* === 分析：待机 === */
+"analyze.title" = "磁盘用量分析";
+"analyze.subtitle" = "树图磁盘剖析器";
+"analyze.last_scan" = "上次扫描";
+"analyze.last_date" = "上次分析";
+"analyze.total_count" = "分析次数";
+"analyze.never" = "从未";
+"analyze.scan_home" = "扫描主目录";
+
+/* === 分析：扫描中 === */
+"analyze.scanning" = "正在扫描目录";
+"analyze.cancel" = "取消";
+"analyze.or" = "或";
+"analyze.select_folder" = "选择文件夹...";
+
+/* === 软件管理 === */
+"software.title" = "应用卸载";
+"software.subtitle" = "卸载模块 v1.0";
+"software.scan_apps" = "扫描应用";
+"software.last_scan" = "上次扫描";
+"software.total_removed" = "累计卸载";
+"software.never" = "从未";
+"software.loading" = "正在加载应用列表...";
+"software.cancel" = "取消";
+"software.no_apps" = "未发现应用";
+"software.remove" = "卸载";
+"software.deselect_all" = "取消全选";
+"software.auto_selected" = "自动选择";
+"software.needs_review" = "需要审核";
+"software.sort_name" = "名称";
+"software.sort_size" = "大小";
+"software.size" = "大小";
+"software.removing" = "正在卸载";
+"software.done.title" = "卸载完成";
+"software.done.subtitle" = "所有选中应用已移除";
+"software.done.apps_removed" = "已卸载应用";
+"software.done.bytes_freed" = "释放空间";
+"software.done.duration" = "耗时";
+"software.done.back" = "重新扫描";
+
+/* === 优化：完成 === */
+"optimize.done.title" = "优化完成";
+"optimize.done.subtitle" = "所有服务已优化";
+"optimize.done.preview_title" = "预览完成";
+"optimize.done.preview_subtitle" = "试运行模式，未作修改";
+"optimize.done.all_areas" = "优化项数";
+"optimize.done.duration" = "耗时";
+"optimize.done.no_categories" = "暂无优化数据";
+"optimize.done.new_run" = "重新优化";
 
 /* === 设置 === */
 "settings.title" = "设置";

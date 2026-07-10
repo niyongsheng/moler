@@ -10,6 +10,17 @@
 
 <img alt="demo" src="https://github.com/user-attachments/assets/0669c787-92b9-48f9-94ff-726b17d3084b" />
 
+## Features
+
+| Module | Icon | Description |
+|--------|------|-------------|
+| **Overview** | 📊 | System health score, CPU/Memory/Network/Disk metrics, tool statistics |
+| **Clean** | 🗑 | Deep scan directories, review results, and free up disk space |
+| **Purge** | ✖️ | Remove old Xcode, Gradle, CocoaPods, and other build artifacts |
+| **Optimize** | 🔄 | Refresh system caches & services with **dry-run preview** support |
+| **Analyze** | 🎛 | Disk usage treemap visualization — all items shown, **color-coded by file type** |
+| **Software** | ⚙️ | Scan and uninstall applications with size info |
+
 ## Install
 
 ```bash
@@ -17,7 +28,10 @@ brew tap niyongsheng/moler
 brew trust niyongsheng/tap-moler
 brew install --cask moler
 ```
-https://github.com/niyongsheng/moler/releases
+
+> [!IMPORTANT]
+> 
+> The `mo` CLI from [Mole](https://github.com/tw93/Mole) must be installed separately: `brew install mole`
 
 ## License
 

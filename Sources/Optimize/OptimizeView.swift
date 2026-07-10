@@ -1,7 +1,7 @@
 import SwiftUI
 import SceneKit
 
-// MARK: - Custom SCNView that prevents window dragging & handles scroll‑to‑zoom
+// MARK: - Custom SCNView that prevents window dragging & handles scroll-to-zoom
 
 final class JupiterSCNView: SCNView {
     override var mouseDownCanMoveWindow: Bool { false }
@@ -10,8 +10,6 @@ final class JupiterSCNView: SCNView {
 
     override func scrollWheel(with event: NSEvent) {
         guard let scene = sceneRef else { return }
-        // Each scroll tick adjusts the target zoom.
-        // event.scrollingDeltaY is positive = scroll up (zoom in).
         let delta = -event.scrollingDeltaY * 0.5
         scene.targetZoom = max(12, min(60, scene.targetZoom + delta))
     }
@@ -20,13 +18,152 @@ final class JupiterSCNView: SCNView {
 // MARK: - Optimize Tab View
 
 struct OptimizeView: View {
+    @StateObject private var vm = OptimizeViewModel()
+
+    /// Current animation driving state derived from vm.state
+    private var isAnimating: Bool {
+        if case .running = vm.state { return true }
+        return false
+    }
+
+    /// Non-idle states (running or done) trigger different scene behaviour
+    private var scenePhase: ScenePhase {
+        switch vm.state {
+        case .running:   return .active
+        case .done:      return .done
+        default:         return .idle
+        }
+    }
+
+    enum ScenePhase { case idle, active, done }
+
     var body: some View {
         ZStack {
-            SceneKitJupiterView()
+            // 3D background — phase is passed directly for updateNSView
+            SceneKitJupiterView(scenePhase: scenePhase)
 
-            // Scanning in progress…
+            // Foreground UI
+            VStack(spacing: 0) {
+                content
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .top) {
+            if let error = vm.errorMessage {
+                errorBanner(error)
+            }
+        }
+    }
+
+    // MARK: - Content by State
+
+    @ViewBuilder
+    private var content: some View {
+        switch vm.state {
+        case .idle, .error:
+            idleView
+        case .running(let progress):
+            OptimizeRunView(
+                progress: progress,
+                onCancel: { vm.cancel() }
+            )
+        case .done(let result):
+            OptimizeDoneView(
+                result: result,
+                onReset: { vm.reset() }
+            )
+        }
+    }
+
+    // MARK: - Idle State
+
+    private var idleView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+
+            // Central icon with reticle
+            ZStack {
+                Reticle(strokeColor: Brand.accentOrange.opacity(0.5), lineWidth: 0.5, armLength: 20)
+                    .frame(width: 120, height: 120)
+
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 42))
+                    .foregroundColor(Brand.accentOrange)
+            }
+
+            // Title
+            VStack(spacing: 6) {
+                Text(L10n.optimizeTitle)
+                    .titleFont(28)
+                    .kerning(8)
+                    .foregroundColor(Brand.accentOrange)
+
+                Text(L10n.optimizeSubtitle)
+                    .monoFont(10)
+                    .foregroundColor(Brand.textDim)
+            }
+
+            // Stats from last optimize
+            GlassCard {
+                VStack(spacing: Brand.unit * 2) {
+                    DataRow(label: L10n.optimizeLastRun, value: Store.shared.lastOptimizeDate?.formatted() ?? L10n.optimizeNever)
+                    DataRow(label: L10n.optimizeTotalCount, value: "\(Store.shared.totalOptimizeCount)")
+                    DataRow(label: L10n.optimizeTotalOpts, value: "\(Store.shared.lastOptimizeOptimizations)")
+                }
+            }
+            .frame(maxWidth: 400)
+
+            // Action buttons
+            HStack(spacing: 16) {
+                // Preview button
+                Button(action: { vm.startPreview() }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "eye.fill")
+                        Text(L10n.optimizePreview)
+                            .titleFont(14)
+                            .kerning(6)
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 12)
+                    .background(Brand.accentGold.opacity(0.15))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Brand.accentGold, lineWidth: 1)
+                    )
+                    .foregroundColor(Brand.accentGold)
+                }
+                .buttonStyle(.plain)
+
+                // Optimize button
+                Button(action: { vm.startOptimize() }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.fill")
+                        Text(L10n.optimizeInitiate)
+                            .titleFont(14)
+                            .kerning(6)
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 12)
+                    .background(Brand.accentOrange.opacity(0.15))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Brand.accentOrange, lineWidth: 1)
+                    )
+                    .foregroundColor(Brand.accentOrange)
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Error Banner
+
+    private func errorBanner(_ message: String) -> some View {
+        ErrorBanner(message: message) { vm.errorMessage = nil }
     }
 }
 
@@ -34,6 +171,13 @@ struct OptimizeView: View {
 
 struct SceneKitJupiterView: NSViewRepresentable {
     typealias NSViewType = JupiterSCNView
+
+    /// Current scene animation phase — drives the Jupiter visual state.
+    let scenePhase: OptimizeView.ScenePhase
+
+    init(scenePhase: OptimizeView.ScenePhase) {
+        self.scenePhase = scenePhase
+    }
 
     func makeNSView(context: Context) -> JupiterSCNView {
         let scene = JupiterScene()
@@ -47,7 +191,7 @@ struct SceneKitJupiterView: NSViewRepresentable {
         scnView.isPlaying = true
         scnView.showsStatistics = false
 
-        scnView.sceneRef = scene      // for scroll‑wheel zoom
+        scnView.sceneRef = scene
 
         // Mouse drag for camera rotation
         let pan = NSPanGestureRecognizer(
@@ -57,10 +201,28 @@ struct SceneKitJupiterView: NSViewRepresentable {
         scnView.addGestureRecognizer(pan)
         context.coordinator.scene = scene
 
+        // Apply initial phase
+        apply(phase: scenePhase, to: scene)
+
         return scnView
     }
 
-    func updateNSView(_ nsView: JupiterSCNView, context: Context) {}
+    func updateNSView(_ nsView: JupiterSCNView, context: Context) {
+        guard let scene = nsView.scene as? JupiterScene else { return }
+        apply(phase: scenePhase, to: scene)
+    }
+
+    private func apply(phase: OptimizeView.ScenePhase, to scene: JupiterScene) {
+        switch phase {
+        case .active:
+            scene.updateForRunning(true)
+        case .done:
+            scene.updateForRunning(false)
+            scene.pulseDone()
+        case .idle:
+            scene.updateForRunning(false)
+        }
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator()
@@ -96,8 +258,7 @@ final class Coordinator: NSObject {
     }
 }
 
-// MARK: - Solar System Monitor Overlay (inspired by planetUi.js system monitor)
-
-// Solar system monitor moved to Sources/Components/SystemMonitorOverlay.swift
-
-
+#Preview("Idle") {
+    OptimizeView()
+        .frame(width: 900, height: 640)
+}

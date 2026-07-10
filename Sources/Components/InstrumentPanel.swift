@@ -29,8 +29,10 @@ struct InstrumentPanel<Content: View>: View {
 
             // Panel body
             VStack(alignment: .leading, spacing: Brand.unit) {
-                // Header
-                header
+                // Header (hidden when title is empty — content provides its own heading)
+                if !title.isEmpty {
+                    header
+                }
 
                 // Content area
                 content()

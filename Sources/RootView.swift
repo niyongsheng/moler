@@ -14,6 +14,7 @@ enum Pane: Equatable {
 /// The root content view for the single-window app.
 struct RootView: View {
     @State private var activePane: Pane = .overview
+    @State private var sidebarVisible: Bool = true
 
     private let sidebarTabs: [(pane: Pane, icon: String, title: String)] = [
         (.clean,    "trash",                       L10n.navClean),
@@ -24,18 +25,35 @@ struct RootView: View {
     ]
 
     var body: some View {
-        HStack(spacing: 0) {
-            // Sidebar
-            sidebar
-                .frame(width: 200)
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                // Sidebar (collapsible)
+                ZStack(alignment: .topTrailing) {
+                    sidebar
+                    // Toggle button when sidebar is visible
+                    if sidebarVisible {
+                        sidebarToggleButton
+                            .padding(.top, 28)
+                            .padding(.trailing, 2)
+                    }
+                }
+                .frame(width: sidebarVisible ? 200 : 0)
+                .clipped()
 
-            // Divider — animated serif stripes
-            SerifDivider(pulseActive: activePane == .overview)
+                // Show-sidebar button when hidden
+                if !sidebarVisible {
+                    sidebarRevealButton
+                }
 
-            // Content
-            mainContent
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // Content
+                mainContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+
+            // Bottom divider — animated serif stripes
+            SerifDivider(thickness: 8, pulseActive: activePane == .overview, orientation: .horizontal)
         }
+        .animation(.easeInOut(duration: 0.2), value: sidebarVisible)
         .topoBackground(lineOpacity: 0.25)
         .environment(\.colorScheme, .dark)
         .onReceive(NotificationCenter.default.publisher(for: .showSettingsPane)) { _ in
@@ -143,6 +161,33 @@ struct RootView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Sidebar Toggle
+
+    private var sidebarToggleButton: some View {
+        Button(action: { sidebarVisible.toggle() }) {
+            Image(systemName: "sidebar.left")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(Brand.textDim)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var sidebarRevealButton: some View {
+        Button(action: { sidebarVisible.toggle() }) {
+            HStack(spacing: 3) {
+                Image(systemName: "sidebar.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(Brand.accentOrange)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 24)
+            .background(Brand.bgCard.opacity(0.3))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, 0)
     }
 
     // MARK: - Main Content

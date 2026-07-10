@@ -12,11 +12,19 @@ enum MoleProcess {
         executable: String,
         args: [String],
         stdin: String? = nil,
-        timeout: TimeInterval = 10
+        timeout: TimeInterval = 10,
+        env: [String: String]? = nil
     ) throws -> CapturedProcess {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: executable)
         task.arguments = args
+
+        // Optional environment overrides
+        if let env {
+            var merged = ProcessInfo.processInfo.environment
+            for (k, v) in env { merged[k] = v }
+            task.environment = merged
+        }
 
         let outPipe = Pipe()
         let errPipe = Pipe()

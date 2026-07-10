@@ -29,6 +29,27 @@ private final class SimplexNoise {
 final class MarsScene: SCNScene {
     let interactionNode=SCNNode();let spinNode=SCNNode();let atmosNode=SCNNode()
     let cameraNode=SCNNode();var targetZoom:CGFloat=30
+
+    // MARK: - Reactive animation (driven by SoftwareView state)
+    /// 0 = idle, 0.6 = scanning/loading, 0.3 = done
+    var animationIntensity: CGFloat = 0
+
+    func updateForLoading(_ isLoading: Bool) {
+        animationIntensity = isLoading ? 0.6 : 0.0
+        targetZoom = isLoading ? 38 : 30
+        interactionNode.eulerAngles.x = isLoading ? 0.35 : 0.2
+    }
+
+    func pulseDone() {
+        animationIntensity = 0.3
+        targetZoom = 26
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.animationIntensity = 0
+            self?.targetZoom = 30
+            self?.interactionNode.eulerAngles.x = 0.2
+        }
+    }
+
     private struct Moon{let orbitNode:SCNNode;let meshNode:SCNNode;let radius:Float;let speed:Float;var angle:Float;let spinNode:SCNNode}
     private var moons:[Moon]=[];private var lastTime:TimeInterval=0
 
@@ -137,10 +158,19 @@ final class MarsScene: SCNScene {
         if lastTime==0{lastTime=time;return};let dt=min(time-lastTime,0.05);lastTime=time;let d=CGFloat(dt)
         let cz=cameraNode.position.z;let df=targetZoom-CGFloat(cz)
         if abs(df)>0.01{cameraNode.position.z=cz+df*min(1,CGFloat(dt)*4)}
-        spinNode.eulerAngles.y+=d*0.15
-        atmosNode.eulerAngles.y+=d*0.18
+        // Camera lateral sway during loading
+        if animationIntensity > 0 {
+            cameraNode.position.x = sin(time * 0.4) * animationIntensity * 0.8
+        } else {
+            cameraNode.position.x = 0
+        }
+        // Speed boosted by animationIntensity: idle 1x → scanning ~8x
+        let speedMul=1.0+animationIntensity*7.0
+        spinNode.eulerAngles.y+=d*0.15*speedMul
+        atmosNode.eulerAngles.y+=d*0.18*(1.0+animationIntensity*4.0)
+        let moonBoost=1.0+animationIntensity*4.0
         for i in 0..<moons.count{
-            moons[i].angle+=moons[i].speed*Float(dt)*60
+            moons[i].angle+=moons[i].speed*Float(dt)*60*Float(moonBoost)
             moons[i].orbitNode.eulerAngles.y=CGFloat(moons[i].angle)
             moons[i].spinNode.eulerAngles.z+=d*0.6;moons[i].spinNode.eulerAngles.y+=d*0.3
         }

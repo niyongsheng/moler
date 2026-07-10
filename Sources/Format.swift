@@ -25,6 +25,43 @@ enum Format {
         formatter.numberStyle = .decimal
         return formatter.string(from: NSNumber(value: value)) ?? "\(value)"
     }
+
+    // MARK: - Relative Date
+
+    /// Format a date relative to now: "just now", "3m ago", "2h ago", "5d ago".
+    static func relativeDate(_ date: Date?) -> String {
+        guard let date else { return "Never" }
+        let interval = Date().timeIntervalSince(date)
+        if interval < 60 { return "just now" }
+        let m = Int(interval / 60)
+        if m < 60 { return "\(m)m ago" }
+        let h = m / 60
+        if h < 24 { return "\(h)h ago" }
+        let d = h / 24
+        return "\(d)d ago"
+    }
+
+    // MARK: - Uptime
+
+    /// Format seconds into compact duration: "2d 3h", "45m", "12s".
+    static func uptime(_ seconds: Int) -> String {
+        let d = seconds / 86400
+        let h = (seconds % 86400) / 3600
+        if d > 0 { return "\(d)d \(h)h" }
+        let m = seconds / 60
+        return m > 0 ? "\(m)m" : "\(seconds)s"
+    }
+
+    // MARK: - Path
+
+    /// Shorten a file path by replacing home with `~` and truncating the prefix.
+    static func abbreviatePath(_ path: String, maxLen: Int) -> String {
+        guard path.count > maxLen else { return path }
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let abbrev = path.replacingOccurrences(of: home, with: "~")
+        guard abbrev.count > maxLen else { return abbrev }
+        return "..." + abbrev.suffix(maxLen - 3)
+    }
 }
 
 // MARK: - Byte Unit Constants

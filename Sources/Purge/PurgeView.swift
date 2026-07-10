@@ -33,28 +33,162 @@ struct PurgeView: View {
             ZStack {
                 Reticle(strokeColor: Brand.accentOrange.opacity(0.5), lineWidth: 0.5, armLength: 20)
                     .frame(width: 120, height: 120)
-                Image(systemName: "hammer.fill").font(.system(size: 42)).foregroundColor(Brand.accentOrange)
+                Image(systemName: "xmark.bin").font(.system(size: 42)).foregroundColor(Brand.accentOrange)
             }
             VStack(spacing: 6) {
                 Text(L10n.purgeTitle).titleFont(28).kerning(8).foregroundColor(Brand.accentOrange)
                 Text(L10n.purgeSubtitle).monoFont(10).foregroundColor(Brand.textDim)
             }
-            GlassCard {
-                VStack(spacing: Brand.unit * 2) {
-                    DataRow(label: L10n.purgeScanPath, value: "~/Library/Developer, ~/Library/Caches, ~/.gradle …")
+
+            // Scan target selector
+            VStack(spacing: 10) {
+                // Header
+                HStack {
+                    Text("\(vm.scanTargets.filter(\.isSelected).count)/\(vm.scanTargets.count) selected")
+                        .monoFont(10).foregroundColor(Brand.accentOrange)
+                    Spacer()
+                    Button(action: {
+                        let all = vm.scanTargets.allSatisfy(\.isSelected)
+                        vm.selectAllTargets(!all)
+                    }) {
+                        Text(vm.scanTargets.allSatisfy(\.isSelected) ? L10n.cleanReviewDeselectAll : L10n.cleanReviewSelectAll)
+                            .monoFont(10).foregroundColor(Brand.accentGold)
+                    }
+                    .buttonStyle(.plain)
                 }
-            }.frame(maxWidth: 400)
+
+                // Preset targets row
+                if !presetTargets.isEmpty {
+                    HStack(spacing: 6) {
+                        Text("PRESETS")
+                            .monoFont(8).kerning(2).foregroundColor(Brand.textDim.opacity(0.5))
+                        Brand.lineColor.frame(height: 0.5)
+                    }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(presetTargets) { target in
+                                targetPill(target, accentColor: Brand.accentOrange, showRemove: false)
+                            }
+                        }
+                    }
+                }
+
+                // Custom targets row (with ADD_PATH at the front)
+                    HStack(spacing: 6) {
+                        Text("CUSTOM")
+                            .monoFont(8).kerning(2).foregroundColor(Brand.textDim.opacity(0.5))
+                        Brand.lineColor.frame(height: 0.5)
+                    }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            // ADD_PATH button at the front of the row
+                            Button(action: addCustomPath) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "plus.circle")
+                                        .font(.system(size: 10))
+                                    Text("ADD_PATH")
+                                        .monoFont(9)
+                                }
+                                .padding(.horizontal, 12).padding(.vertical, 6)
+                                .background(.green.opacity(0.1))
+                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(.green, style: StrokeStyle(lineWidth: 0.5, dash: [3, 3])))
+                                .foregroundColor(.green)
+                            }
+                            .buttonStyle(.plain)
+                            .cornerRadius(4)
+
+                            ForEach(customTargets) { target in
+                                targetPill(target, accentColor: .green, showRemove: true)
+                            }
+                        }
+                    }
+            }
+            .padding(20)
+            .background(Brand.bgCard.opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Brand.lineColor, lineWidth: 0.5))
+            .frame(maxWidth: 560)
+
             Button(action: { vm.startScan() }) {
                 HStack(spacing: 8) {
                     Image(systemName: "play.fill")
                     Text(L10n.purgeInitiate).titleFont(14).kerning(6)
                 }
                 .padding(.horizontal, 32).padding(.vertical, 12)
-                .background(Brand.accentOrange.opacity(0.15))
-                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Brand.accentOrange, lineWidth: 1))
-                .foregroundColor(Brand.accentOrange)
-            }.buttonStyle(.plain)
+                .background(vm.hasSelectedTargets ? Brand.accentOrange.opacity(0.15) : Brand.lineColor.opacity(0.2))
+                .overlay(RoundedRectangle(cornerRadius: 4).stroke(vm.hasSelectedTargets ? Brand.accentOrange : Brand.lineColor, lineWidth: 1))
+                .foregroundColor(vm.hasSelectedTargets ? Brand.accentOrange : Brand.textDim)
+            }
+            .buttonStyle(.plain)
+            .disabled(!vm.hasSelectedTargets)
+
             Spacer()
+        }
+    }
+
+    /// Preset (built-in) scan targets.
+    private var presetTargets: [ScanTarget] {
+        vm.scanTargets.filter { !vm.isCustomTarget($0.id) }
+    }
+
+    /// Custom (user-added) scan targets.
+    private var customTargets: [ScanTarget] {
+        vm.scanTargets.filter { vm.isCustomTarget($0.id) }
+    }
+
+    /// A single toggleable pill for a scan target.
+    private func targetPill(_ target: ScanTarget, accentColor: Color, showRemove: Bool) -> some View {
+        HStack(spacing: 0) {
+            Button(action: { vm.toggleTarget(target.id) }) {
+                HStack(spacing: 4) {
+                    Image(systemName: target.isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 10))
+                    Text(target.name)
+                        .monoFont(10)
+                }
+                .padding(.leading, 12)
+                .padding(.vertical, 6)
+                .padding(.trailing, showRemove ? 2 : 12)
+            }
+            .buttonStyle(.plain)
+
+            if showRemove {
+                Button(action: { vm.removeTarget(target.id) }) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundColor(accentColor.opacity(0.6))
+                        .padding(.trailing, 8)
+                        .padding(.vertical, 6)
+                }
+                .buttonStyle(.plain)
+                .help("Remove this path")
+            }
+        }
+        .background(
+            target.isSelected
+                ? accentColor.opacity(0.2)
+                : Brand.bgCard
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(target.isSelected ? accentColor : Brand.lineColor,
+                        lineWidth: target.isSelected ? 1 : 0.5)
+        )
+        .foregroundColor(target.isSelected ? accentColor : Brand.textDim)
+        .cornerRadius(4)
+    }
+
+    /// Open a folder picker and add the chosen path as a custom scan target.
+    private func addCustomPath() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = false
+        panel.message = "Select a build artifacts or cache directory to purge"
+        panel.begin { [self] response in
+            if response == .OK, let url = panel.url {
+                vm.addCustomPath(url.path)
+            }
         }
     }
 
@@ -215,14 +349,7 @@ struct PurgeView: View {
     // MARK: - Error
 
     private func errorBanner(_ message: String) -> some View {
-        HStack {
-            Image(systemName: "exclamationmark.triangle.fill").foregroundColor(Brand.accentRed)
-            Text(message).monoFont(11).foregroundColor(Brand.accentRed)
-            Spacer()
-            Button(L10n.errorDismiss) { vm.errorMessage = nil }.monoFont(10).foregroundColor(Brand.textDim)
-        }
-        .padding(Brand.marginTight).background(Brand.bgCard.opacity(0.95))
-        .overlay(Rectangle().fill(Brand.accentRed).frame(height: 1), alignment: .bottom)
+        ErrorBanner(message: message) { vm.errorMessage = nil }
     }
 }
 

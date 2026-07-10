@@ -45,6 +45,30 @@ final class EarthScene: SCNScene {
     let cameraNode = SCNNode()
     var targetZoom: CGFloat = 25
 
+    // MARK: - Reactive animation (driven by AnalyzeView state)
+    /// 0 = idle, 1 = scanning full speed — read directly in animate(at:)
+    var animationIntensity: CGFloat = 0
+
+    func updateForScanning(_ isScanning: Bool) {
+        let wasScanning = animationIntensity > 0
+        animationIntensity = isScanning ? 1.0 : 0.0
+        targetZoom = isScanning ? 35 : 25
+        // Toggle wireframe visibility as a visible indicator of scanning state
+        if isScanning {
+            background.contents = NSColor.clear
+        }
+        if isScanning {
+            interactionNode.eulerAngles.x = 0.4
+        } else if wasScanning {
+            interactionNode.eulerAngles.x = 0.4
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+                self?.interactionNode.eulerAngles.x = 0.2
+            }
+        } else {
+            interactionNode.eulerAngles.x = 0.2
+        }
+    }
+
     private struct Moon { let orbitNode: SCNNode; let bodyNode: SCNNode; let speed: CGFloat; var angle: CGFloat }
     private var moon: Moon?
     private struct LEO { let orbitNode: SCNNode; let bodyNode: SCNNode; let speed: CGFloat; var angle: CGFloat }
@@ -211,7 +235,7 @@ final class EarthScene: SCNScene {
         moonOrbitGroup.addChildNode(mc)
         let sn = SCNNode()
         body.addChildNode(sn)
-        moon = Moon(orbitNode: mc, bodyNode: sn, speed: 0.0002, angle: CGFloat.random(in: 0...(2 * .pi)))
+        moon = Moon(orbitNode: mc, bodyNode: sn, speed: 0.0035, angle: CGFloat.random(in: 0...(2 * .pi)))
     }
 
     private func makeGeo(positions: [Float], colors: [Float], count: Int, pointSize: Float = 1.5, opacity: Float = 1) -> SCNGeometry {
@@ -238,15 +262,27 @@ final class EarthScene: SCNScene {
         let cz = cameraNode.position.z
         let df = targetZoom - CGFloat(cz)
         if abs(df) > 0.01 { cameraNode.position.z = cz + df * min(1, CGFloat(dt)*4) }
-        spinNode.eulerAngles.y += d * 0.09
+
+        // Camera lateral sway during scanning (gentle orbit feel)
+        if animationIntensity > 0 {
+            cameraNode.position.x = sin(time * 0.5) * animationIntensity * 1.5
+        } else {
+            cameraNode.position.x = 0
+        }
+
+        // Earth spins faster during scanning: idle 0.09 → scanning 0.9 rad/s (10x)
+        let spinSpeed = 0.09 * (1.0 + animationIntensity * 9.0)
+        spinNode.eulerAngles.y += d * spinSpeed
+
+        let speedBoost = 1.0 + animationIntensity * 2.0
         for i in 0..<leoSats.count {
-            leoSats[i].angle += leoSats[i].speed * d * 60
+            leoSats[i].angle += leoSats[i].speed * d * 60 * speedBoost
             leoSats[i].orbitNode.eulerAngles.y = leoSats[i].angle
             leoSats[i].bodyNode.eulerAngles.x += d * 1.2
             leoSats[i].bodyNode.eulerAngles.y += d * 1.8
         }
         if var m = moon {
-            m.angle += m.speed * d * 60
+            m.angle += m.speed * d * 60 * speedBoost
             m.orbitNode.eulerAngles.y = m.angle
             m.bodyNode.eulerAngles.y = -m.angle
             moon = m

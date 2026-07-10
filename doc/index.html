@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Moler — NASA-Punk macOS Disk Cleaner</title>
 <meta name="description" content="Moler is a NASA-Punk themed macOS disk cleaner — SwiftUI GUI for Mole CLI. Scan, clean, and optimize your Mac with style.">
-<link rel="icon" type="image/svg+xml" href="../logo.svg">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Cpath d='M605.8432 102.4c-89.03424 136.17152-139.66592 288.06784-158.87488 448.6976l187.68768 0c-15.712 61.10592-25.31712 121.34272-27.05792 180.70784 99.50976-9.60384 186.8032-35.77728 240.07296-69.83936l31.424 40.15744c-73.33632 42.76992-168.49152 70.70976-271.49824 81.18528 1.5744 31.05152 5.0944 61.14944 10.4832 91.06432 0.7296 3.95776 1.46048 7.9168 2.26432 11.86816 0.05888 0.29952 0.11904 0.59904 0.17792 0.89856 3.17824 15.49952 6.97344 30.94144 11.31904 46.32192L1024 933.46176 1024 102.4 605.8432 102.4zM744.6528 351.18208l-53.25824 0 0-123.08352 53.25824 0L744.6528 351.18208z' fill='%23e06236'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Jura:wght@300;500;700&family=Roboto+Mono:wght@300;400&display=swap" rel="stylesheet">
 
@@ -66,6 +66,9 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 .serif-bar{display:flex;height:4px;width:100%}
 .serif-bar .seg{flex:1}
 .serif-bar .s-1{background:var(--accent-red)}.serif-bar .s-2{background:var(--accent-orange)}.serif-bar .s-3{background:var(--accent-gold)}.serif-bar .s-4{background:var(--accent-blue)}
+.serif-comet{position:absolute;top:0;left:-80px;width:80px;height:4px;background:linear-gradient(90deg,transparent 0%,rgba(224,98,54,.6) 40%,rgba(224,98,54,1) 80%,#fff 100%);border-radius:0 2px 2px 0;animation:cometSweep 8s ease-in-out infinite;pointer-events:none;z-index:2}
+.serif-comet::after{content:'';position:absolute;right:-3px;top:-4px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 0 8px rgba(224,98,54,.8),0 0 18px rgba(224,98,54,.4),0 0 30px rgba(224,98,54,.2)}
+@keyframes cometSweep{0%{left:-80px;opacity:0}3%{opacity:1}75%{opacity:1}85%{opacity:0}100%{left:100%;opacity:0}}
 
 /* Download buttons */
 .download-buttons{display:flex;gap:12px;flex-wrap:wrap}
@@ -444,11 +447,12 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 </section>
 
 <!-- ═══════════════ Serif Divider ═══════════════ -->
-<div class="serif-bar" style="max-width:1100px;margin:0 auto;">
+<div class="serif-bar" style="max-width:1100px;margin:0 auto;position:relative;overflow:hidden;">
   <div class="seg s-1"></div>
   <div class="seg s-2"></div>
   <div class="seg s-3"></div>
   <div class="seg s-4"></div>
+  <div class="serif-comet"></div>
 </div>
 
 <!-- ═══════════════ Features ═══════════════ -->
