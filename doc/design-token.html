@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moler — NASA-Punk Design Tokens</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    background: #0e141f;
+    color: #e8e8e8;
+    font-family: 'Jura', 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 40px;
+  }
+  h1 {
+    font-size: 32px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    border-right: 3px solid #e06236;
+    padding-right: 20px;
+    display: inline-block;
+    margin: 0 0 8px 0;
+  }
+  .subtitle {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    color: #d7ab61;
+    letter-spacing: 1px;
+    margin-bottom: 40px;
+  }
+  h2 {
+    font-size: 18px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #e06236;
+    border-bottom: 1px solid #3b4e6b;
+    padding-bottom: 8px;
+    margin: 40px 0 20px;
+  }
+  h3 {
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: #d7ab61;
+    margin: 24px 0 12px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 12px;
+    margin-bottom: 16px;
+  }
+  th {
+    text-align: left;
+    color: #6d7d8c;
+    font-weight: 400;
+    letter-spacing: 1px;
+    padding: 8px 12px;
+    border-bottom: 1px solid #3b4e6b;
+  }
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(59, 78, 107, 0.3);
+    vertical-align: middle;
+  }
+  .swatch {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    vertical-align: middle;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .hex { color: #d7ab61; }
+  .dim { color: #6d7d8c; }
+  .token-ref { color: #2f4c79; }
+  .tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    background: rgba(47, 76, 121, 0.3);
+    color: #d7ab61;
+    letter-spacing: 0.5px;
+  }
+  .tag-css { background: rgba(224, 98, 54, 0.2); color: #e06236; }
+  .tag-swift { background: rgba(215, 171, 97, 0.2); color: #d7ab61; }
+  .note {
+    background: rgba(47, 76, 121, 0.15);
+    border-left: 3px solid #2f4c79;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #6d7d8c;
+    line-height: 1.6;
+    margin: 16px 0;
+  }
+  .stripe-row {
+    display: flex;
+    gap: 2px;
+    height: 20px;
+    margin: 8px 0;
+  }
+  .stripe { flex: 1; border-radius: 1px; }
+  .layout-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .layout-card {
+    background: #141c2b;
+    padding: 16px;
+    border-radius: 4px;
+  }
+  .layout-card .var { color: #e06236; }
+  .layout-card .val { color: #e8e8e8; }
+  code {
+    background: rgba(59, 78, 107, 0.3);
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 11px;
+    color: #d7ab61;
+  }
+</style>
+</head>
+<body>
+
+<h1>☉ Design Tokens</h1>
+<p class="subtitle">NASA-Punk Observatory — Moler macOS App · v0.2.0</p>
+
+<!-- ============================================================ -->
+<!-- COLORS -->
+<!-- ============================================================ -->
+<h2>1. Colors</h2>
+
+<h3>Background &amp; Surface</h3>
+<table>
+  <tr>
+    <th>Token</th><th>CSS Variable</th><th>Swift</th><th>Hex</th><th>Swatch</th><th>Usage</th>
+  </tr>
+  <tr>
+    <td><code>bg-navy</code></td>
+    <td><span class="token-ref">--bg-navy</span></td>
+    <td><code>Brand.bgNavy</code></td>
+    <td class="hex">#0e141f</td>
+    <td><span class="swatch" style="background:#0e141f"></span></td>
+    <td class="dim">Primary background (deep space navy)</td>
+  </tr>
+  <tr>
+    <td><code>bg-card</code></td>
+    <td class="dim">—</td>
+    <td><code>Brand.bgCard</code></td>
+    <td class="hex">#141c2b</td>
+    <td><span class="swatch" style="background:#141c2b"></span></td>
+    <td class="dim">Card / panel background</td>
+  </tr>
+  <tr>
+    <td><code>bg-elevated</code></td>
+    <td class="dim">—</td>
+    <td><code>Brand.bgElevated</code></td>
+    <td class="hex">#1a2333</td>
+    <td><span class="swatch" style="background:#1a2333"></span></td>
+    <td class="dim">Elevated surface (modals, overlays)</td>
+  </tr>
+</table>
+
+<h3>Accent</h3>
+<table>
+  <tr>
+    <th>Token</th><th>CSS Variable</th><th>Swift</th><th>Hex</th><th>Swatch</th><th>Usage</th>
+  </tr>
+  <tr>
+    <td><code>accent-orange</code></td>
+    <td><span class="token-ref">--const-orange</span></td>
+    <td><code>Brand.accentOrange</code></td>
+    <td class="hex">#e06236</td>
+    <td><span class="swatch" style="background:#e06236"></span></td>
+    <td class="dim">Primary accent, active elements, slider thumbs</td>
+  </tr>
+  <tr>
+    <td><code>accent-gold</code></td>
+    <td><span class="token-ref">--const-yellow</span></td>
+    <td><code>Brand.accentGold</code></td>
+    <td class="hex">#d7ab61</td>
+    <td><span class="swatch" style="background:#d7ab61"></span></td>
+    <td class="dim">Secondary highlight, sub-text, label-top</td>
+  </tr>
+  <tr>
+    <td><code>accent-red</code></td>
+    <td><span class="token-ref">--const-red</span></td>
+    <td><code>Brand.accentRed</code></td>
+    <td class="hex">#c82337</td>
+    <td><span class="swatch" style="background:#c82337"></span></td>
+    <td class="dim">Alert red, danger, warnings, stripe seg 1</td>
+  </tr>
+  <tr>
+    <td><code>accent-blue</code></td>
+    <td><span class="token-ref">--const-blue</span></td>
+    <td><code>Brand.accentBlue</code></td>
+    <td class="hex">#2f4c79</td>
+    <td><span class="swatch" style="background:#2f4c79"></span></td>
+    <td class="dim">Steel blue, calm/informational, stripe seg 4</td>
+  </tr>
+</table>
+
+<h3>Text &amp; Lines</h3>
+<table>
+  <tr>
+    <th>Token</th><th>CSS Variable</th><th>Swift</th><th>Hex</th><th>Swatch</th><th>Usage</th>
+  </tr>
+  <tr>
+    <td><code>text-primary</code></td>
+    <td><span class="token-ref">--text-white</span></td>
+    <td><code>Brand.textPrimary</code></td>
+    <td class="hex">#e8e8e8</td>
+    <td><span class="swatch" style="background:#e8e8e8"></span></td>
+    <td class="dim">Primary text (off-white)</td>
+  </tr>
+  <tr>
+    <td><code>text-dim</code></td>
+    <td><span class="token-ref">--text-dim</span></td>
+    <td><code>Brand.textDim</code></td>
+    <td class="hex">#6d7d8c</td>
+    <td><span class="swatch" style="background:#6d7d8c"></span></td>
+    <td class="dim">Dim secondary text, tick marks, terminal output</td>
+  </tr>
+  <tr>
+    <td><code>line-color</code></td>
+    <td><span class="token-ref">--line-color</span></td>
+    <td><code>Brand.lineColor</code></td>
+    <td class="hex">#3b4e6b</td>
+    <td><span class="swatch" style="background:#3b4e6b"></span></td>
+    <td class="dim">Dividers, borders, slider tracks, orbit paths</td>
+  </tr>
+  <tr>
+    <td><code>sun-glow</code></td>
+    <td><span class="token-ref">--sun-glow</span></td>
+    <td class="dim">—</td>
+    <td class="hex">#fff5cc</td>
+    <td><span class="swatch" style="background:#fff5cc"></span></td>
+    <td class="dim">Sun marker glow, system monitor central marker</td>
+  </tr>
+</table>
+
+<h3>Stripe Sequence (Serif Colorbar)</h3>
+<div class="stripe-row">
+  <div class="stripe" style="background:#c82337"></div>
+  <div class="stripe" style="background:#e06236"></div>
+  <div class="stripe" style="background:#d7ab61"></div>
+  <div class="stripe" style="background:#2f4c79"></div>
+</div>
+<table>
+  <tr><th>Index</th><th>Class</th><th>Color</th><th>Hex</th></tr>
+  <tr><td>1</td><td><code>.s-1</code></td><td>--const-red</td><td class="hex">#c82337</td></tr>
+  <tr><td>2</td><td><code>.s-2</code></td><td>--const-orange</td><td class="hex">#e06236</td></tr>
+  <tr><td>3</td><td><code>.s-3</code></td><td>--const-yellow</td><td class="hex">#d7ab61</td></tr>
+  <tr><td>4</td><td><code>.s-4</code></td><td>--const-blue</td><td class="hex">#2f4c79</td></tr>
+</table>
+<p class="note">
+  The 4-stripe serif sequence <span class="tag tag-css">.s-1</span> → <span class="tag tag-css">.s-4</span> is used in
+  <code>.brand-stripe</code> (vertical sidebar serifs) and
+  <code>.transition-curtain</code> (page transition curtain columns <code>.c1</code>–<code>.c4</code>).
+</p>
+
+<!-- ============================================================ -->
+<!-- TYPOGRAPHY -->
+<!-- ============================================================ -->
+<h2>2. Typography</h2>
+
+<table>
+  <tr><th>Name</th><th>Swift</th><th>CSS</th><th>File</th><th>Weight</th></tr>
+  <tr>
+    <td><code>Jura Bold</code></td>
+    <td><code>Brand.titleFont</code></td>
+    <td><code>font-weight: 700</code></td>
+    <td><code>Jura-Bold.ttf</code></td>
+    <td class="dim">700</td>
+  </tr>
+  <tr>
+    <td><code>Jura Medium</code></td>
+    <td><code>Brand.bodyFont</code></td>
+    <td><code>font-weight: 500</code></td>
+    <td><code>Jura-Medium.ttf</code></td>
+    <td class="dim">500</td>
+  </tr>
+  <tr>
+    <td><code>Jura Light</code></td>
+    <td><code>Brand.lightFont</code></td>
+    <td><code>font-weight: 300</code></td>
+    <td><code>Jura-Light.ttf</code></td>
+    <td class="dim">300</td>
+  </tr>
+  <tr>
+    <td><code>Roboto Mono Regular</code></td>
+    <td><code>Brand.monoFont</code></td>
+    <td><code>font-weight: 400</code></td>
+    <td><code>RobotoMono-Regular.ttf</code></td>
+    <td class="dim">400</td>
+  </tr>
+  <tr>
+    <td><code>Roboto Mono Light</code></td>
+    <td><code>Brand.monoLight</code></td>
+    <td class="dim">—</td>
+    <td><code>RobotoMono-Light.ttf</code></td>
+    <td class="dim">300</td>
+  </tr>
+</table>
+
+<h3>Usage Map</h3>
+<table>
+  <tr><th>Context</th><th>Font</th><th>Size</th><th>Swift Helper</th></tr>
+  <tr><td>Headings, titles</td><td><code>Jura Bold</code></td><td>18pt (default), 42pt (CSS h1)</td><td><code>.titleFont()</code></td></tr>
+  <tr><td>Body text</td><td><code>Jura Medium</code></td><td>14pt (default)</td><td><code>.bodyFont()</code></td></tr>
+  <tr><td>Data, mono display</td><td><code>Roboto Mono Regular</code></td><td>11pt (default), 10pt (labels), 11pt (CSS data)</td><td><code>.monoFont()</code></td></tr>
+  <tr><td>Sub-text, captions</td><td><code>Roboto Mono</code></td><td>11pt (CSS <code>.sub-text</code>)</td><td class="dim">—</td></tr>
+  <tr><td>Terminal output</td><td><code>Roboto Mono</code></td><td>11px (CSS <code>.terminal-output</code>)</td><td class="dim">—</td></tr>
+  <tr><td>Nav node labels</td><td><code>Jura Bold</code></td><td>14px (CSS <code>.node-label</code>)</td><td class="dim">—</td></tr>
+  <tr><td>Scrollbar ticks</td><td>—</td><td>6px height tick, 3px sub-tick</td><td class="dim">—</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- SPACING & LAYOUT -->
+<!-- ============================================================ -->
+<h2>3. Spacing &amp; Layout</h2>
+
+<h3>Core Spacing</h3>
+<table>
+  <tr><th>Token</th><th>Value</th><th>Swift</th><th>Usage</th></tr>
+  <tr><td><code>unit</code></td><td>4pt</td><td><code>Brand.unit</code></td><td>Base spacing unit</td></tr>
+  <tr><td><code>margin-tight</code></td><td>8pt (2× unit)</td><td><code>Brand.marginTight</code></td><td>Compact padding</td></tr>
+  <tr><td><code>margin</code></td><td>16pt (4× unit)</td><td><code>Brand.margin</code></td><td>Standard margin/padding</td></tr>
+  <tr><td><code>serif-width</code></td><td>4pt</td><td><code>Brand.serifWidth</code></td><td>Serif bar width</td></tr>
+</table>
+
+<h3>Display Insets (CSS — root-level)</h3>
+<div class="layout-grid">
+  <div class="layout-card">
+    <div class="var">--display-top-inset</div>
+    <div class="val">0px</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--display-right-inset</div>
+    <div class="val">0px</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--display-bottom-inset</div>
+    <div class="val">0px</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--display-left-inset</div>
+    <div class="val">0px</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--display-ui-padding</div>
+    <div class="val">0px</div>
+  </div>
+</div>
+<p class="note">
+  Display insets act like CSS <code>padding</code> on the viewport. All positioned children
+  (<code>#canvas-container</code>, <code>#ui-layer</code>, <code>#system-select-root</code>)
+  are inset accordingly. Defaults to 0 — override per-environment to reserve space for
+  OS chrome (menu bar, notch, safe areas).
+</p>
+
+<h3>System Monitor Dimensions (CSS)</h3>
+<div class="layout-grid">
+  <div class="layout-card">
+    <div class="var">--system-monitor-body-size</div>
+    <div class="val">260px</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--system-monitor-label-overflow</div>
+    <div class="val">34px</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--system-monitor-shell-width</div>
+    <div class="val">calc(260px + 34px × 2) = 328px</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--system-monitor-caption-line-height</div>
+    <div class="val">25px</div>
+  </div>
+</div>
+
+<h3>Serif / Colorbar Dimensions (CSS)</h3>
+<div class="layout-grid">
+  <div class="layout-card">
+    <div class="var">--segmented-colorbar-stripe-width</div>
+    <div class="val">12px</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--segmented-colorbar-outer-gap</div>
+    <div class="val">40px</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--segmented-colorbar-serif-size</div>
+    <div class="val">calc(12px + 40px) = 52px</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--stacked-colorbar-stripe-width</div>
+    <div class="val">12px (same)</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--stacked-colorbar-serif-size</div>
+    <div class="val">calc(12px × 4) = 48px</div>
+  </div>
+</div>
+
+<h3>Vertical Control Dimensions (CSS)</h3>
+<div class="layout-grid">
+  <div class="layout-card">
+    <div class="var">--vertical-control-body-height</div>
+    <div class="val">200px</div>
+  </div>
+  <div class="layout-card">
+    <div class="var">--vertical-control-label-offset</div>
+    <div class="val">25px</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- COMPONENT-SPECIFIC METRICS -->
+<!-- ============================================================ -->
+<h2>4. Component-specific Metrics</h2>
+
+<table>
+  <tr><th>Component</th><th>Property</th><th>Value</th><th>Source</th></tr>
+  <tr><td>Serif region</td><td><code>z-index</code></td><td>10</td><td class="dim">components.css</td></tr>
+  <tr><td>Brand stripe shadow (right)</td><td><code>box-shadow</code></td><td><code>-4px 0 15px rgba(0,0,0,0.3)</code></td><td class="dim">components.css</td></tr>
+  <tr><td>Stripe segment height</td><td>per segment</td><td>25% (1/4 of parent)</td><td class="dim">components.css</td></tr>
+  <tr><td>Topo canvas</td><td><code>z-index</code></td><td>0</td><td class="dim">components.css</td></tr>
+  <tr><td>Topo canvas</td><td><code>opacity</code></td><td>0.3</td><td class="dim">components.css</td></tr>
+  <tr><td>Canvas container</td><td><code>z-index</code></td><td>1</td><td class="dim">components.css</td></tr>
+  <tr><td>UI layer</td><td><code>z-index</code></td><td>5</td><td class="dim">components.css</td></tr>
+  <tr><td>System monitor container</td><td><code>z-index</code></td><td>50</td><td class="dim">components.css</td></tr>
+  <tr><td>Zoom controls</td><td><code>z-index</code></td><td>100</td><td class="dim">components.css</td></tr>
+  <tr><td>Header block</td><td><code>font-size</code></td><td>42px</td><td class="dim">components.css</td></tr>
+  <tr><td>Header block</td><td><code>letter-spacing</code></td><td>6px</td><td class="dim">components.css</td></tr>
+  <tr><td>Data block</td><td><code>line-height</code></td><td>2.4</td><td class="dim">components.css</td></tr>
+  <tr><td>Slider thumb</td><td>size</td><td>14×14px</td><td class="dim">components.css</td></tr>
+  <tr><td>Slider thumb hover</td><td><code>transform: scale</code></td><td>1.2</td><td class="dim">components.css</td></tr>
+  <tr><td>Reticle (default)</td><td>size</td><td>14×14px</td><td class="dim">components.css</td></tr>
+  <tr><td>Reticle (large)</td><td>size</td><td>24×24px</td><td class="dim">components.css</td></tr>
+  <tr><td>Reticle corner</td><td>width / height</td><td>3px</td><td class="dim">components.css</td></tr>
+  <tr><td>Sun marker</td><td>size</td><td>16×16px</td><td class="dim">components.css</td></tr>
+  <tr><td>Transition curtain</td><td><code>z-index</code></td><td>9999</td><td class="dim">transition.css</td></tr>
+  <tr><td>Transition curtain</td><td>wipe duration</td><td>0.8s</td><td class="dim">transition.css</td></tr>
+  <tr><td>Transition curtain</td><td>easing</td><td><code>cubic-bezier(0.7, 0, 0.3, 1)</code></td><td class="dim">transition.css</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- ANIMATIONS -->
+<!-- ============================================================ -->
+<h2>5. Animation Tokens</h2>
+
+<table>
+  <tr><th>Name</th><th>Keyframes</th><th>Duration</th><th>Applied To</th></tr>
+  <tr><td><code>rotateOrbit</code></td><td>0→360deg</td><td>varies per planet</td><td>Planet containers in system monitor</td></tr>
+  <tr><td><code>scanSys</code></td><td>0→360deg (conic)</td><td>12s linear infinite</td><td>Scanner trail &amp; line in system monitor</td></tr>
+  <tr><td><code>blink</code></td><td>opacity: 1↔0</td><td>1s infinite</td><td>Blink cursor (terminal)</td></tr>
+  <tr><td><code>spin</code></td><td>0→360deg</td><td>90s (sun), varies</td><td>Orbit rings, satellite orbits</td></tr>
+  <tr><td><code>orbit-anim</code></td><td>rotate+translateX</td><td>varies per satellite</td><td>Satellite markers</td></tr>
+  <tr><td><code>wipe-in</code></td><td>translateX -100%→0%</td><td>0.8s</td><td>Curtain exit animation</td></tr>
+  <tr><td><code>wipe-out</code></td><td>translateX 0%→100%</td><td>0.8s</td><td>Curtain intro animation</td></tr>
+</table>
+
+<h3>Planet Orbit Durations (System Monitor)</h3>
+<table>
+  <tr><th>Planet</th><th>Orbit Class</th><th>Duration (linear infinite)</th></tr>
+  <tr><td>Mercury</td><td><code>.c-mercury</code></td><td>4s</td></tr>
+  <tr><td>Venus</td><td><code>.c-venus</code></td><td>8s</td></tr>
+  <tr><td>Earth</td><td><code>.c-earth</code></td><td>15s</td></tr>
+  <tr><td>Mars</td><td><code>.c-mars</code></td><td>25s</td></tr>
+  <tr><td>Jupiter</td><td><code>.c-jupiter</code></td><td>50s</td></tr>
+  <tr><td>Saturn</td><td><code>.c-saturn</code></td><td>80s</td></tr>
+  <tr><td>Uranus</td><td><code>.c-uranus</code></td><td>110s</td></tr>
+  <tr><td>Neptune</td><td><code>.c-neptune</code></td><td>150s</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- PLANET COLORS -->
+<!-- ============================================================ -->
+<h2>6. Planet Colors (Nav System Select &amp; System Monitor)</h2>
+
+<table>
+  <tr><th>Planet</th><th>CSS Variable / Inline</th><th>Hex</th><th>Used In</th></tr>
+  <tr><td>Sun (Node)</td><td><code>--const-yellow</code></td><td class="hex">#d7ab61</td><td>Node label, glow</td></tr>
+  <tr><td>Mercury</td><td>Inline <code>#A5A5A5</code></td><td class="hex">#A5A5A5</td><td>Nav node + system monitor marker</td></tr>
+  <tr><td>Venus</td><td>Inline <code>#D4AF37</code></td><td class="hex">#D4AF37</td><td>Nav node; system monitor <code>#eec058</code></td></tr>
+  <tr><td>Earth</td><td>Inline <code>#2492eb</code></td><td class="hex">#2492eb</td><td>Nav node + system monitor <code>#4b70dd</code></td></tr>
+  <tr><td>Mars</td><td><code>--const-red</code> / <code>#DD4F31</code></td><td class="hex">#c82337 / #DD4F31</td><td>Nav node + system monitor <code>--const-red</code></td></tr>
+  <tr><td>Jupiter</td><td>Inline <code>#c78848</code></td><td class="hex">#c78848</td><td>Nav node; system monitor <code>#d8ca9d</code></td></tr>
+  <tr><td>Saturn</td><td>Inline <code>#e0d0a0</code></td><td class="hex">#e0d0a0</td><td>Nav node + ring; system monitor same</td></tr>
+  <tr><td>Uranus</td><td>Inline <code>#7fffd4</code></td><td class="hex">#7fffd4</td><td>Nav node + system monitor</td></tr>
+  <tr><td>Neptune</td><td>Inline <code>#3e54e8</code> / <code>#4b70dd</code></td><td class="hex">#3e54e8 / #4b70dd</td><td>Nav node; system monitor <code>#4b70dd</code></td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- SWIFT ↔ CSS MAPPING -->
+<!-- ============================================================ -->
+<h2>7. Swift ↔ CSS Token Map</h2>
+
+<table>
+  <tr><th>Brand.swift</th><th>tokens.css</th><th>Hex</th></tr>
+  <tr><td><code>bgNavy</code></td><td><span class="token-ref">--bg-navy</span></td><td class="hex">#0e141f</td></tr>
+  <tr><td><code>accentOrange</code></td><td><span class="token-ref">--const-orange</span></td><td class="hex">#e06236</td></tr>
+  <tr><td><code>accentGold</code></td><td><span class="token-ref">--const-yellow</span></td><td class="hex">#d7ab61</td></tr>
+  <tr><td><code>accentRed</code></td><td><span class="token-ref">--const-red</span></td><td class="hex">#c82337</td></tr>
+  <tr><td><code>accentBlue</code></td><td><span class="token-ref">--const-blue</span></td><td class="hex">#2f4c79</td></tr>
+  <tr><td><code>lineColor</code></td><td><span class="token-ref">--line-color</span></td><td class="hex">#3b4e6b</td></tr>
+  <tr><td><code>textPrimary</code></td><td><span class="token-ref">--text-white</span></td><td class="hex">#e8e8e8</td></tr>
+  <tr><td><code>textDim</code></td><td><span class="token-ref">--text-dim</span></td><td class="hex">#6d7d8c</td></tr>
+  <tr><td><code>titleFont</code> = "Jura-Bold"</td><td><code>Jura 700</code> @font-face</td><td class="dim">—</td></tr>
+  <tr><td><code>bodyFont</code> = "Jura-Medium"</td><td><code>Jura 500</code> @font-face</td><td class="dim">—</td></tr>
+  <tr><td><code>lightFont</code> = "Jura-Light"</td><td><code>Jura 300</code> @font-face</td><td class="dim">—</td></tr>
+  <tr><td><code>monoFont</code> = "RobotoMono-Regular"</td><td><code>Roboto Mono 400</code> @font-face</td><td class="dim">—</td></tr>
+  <tr><td><code>monoLight</code> = "RobotoMono-Light"</td><td class="dim">— (not in CSS)</td><td class="dim">—</td></tr>
+</table>
+
+<p class="note" style="margin-top: 40px;">
+  <strong>Reference:</strong> CSS source → <code>styles/tokens.css</code> ·
+  Components → <code>styles/components.css</code> ·
+  Swift → <code>Sources/Brand.swift</code> ·
+  Design reference → <code>/Users/nigang/Downloads/NASA-Punk_Observatory-main</code>
+</p>
+
+</body>
+</html>

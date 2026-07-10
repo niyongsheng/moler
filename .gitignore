@@ -17,9 +17,6 @@ Moler.xcodeproj/
 # Swift
 .swiftpm/
 
-# Claude
-CLAUDE.md
-
 # macOS
 .DS_Store
 
