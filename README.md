@@ -8,7 +8,7 @@
 [![爱发电](https://img.shields.io/badge/爱发电-Afdian-946ce6?style=for-the-badge&logo=github&logoColor=white)](https://ifdian.net/a/nico2026)
 ---
 
-<img alt="demo" src="https://github.com/user-attachments/assets/0669c787-92b9-48f9-94ff-726b17d3084b" />
+<img alt="demo" src="https://github.com/user-attachments/assets/ccc5b553-50e0-4930-b223-98cfb8018824" />
 
 ## Features
 
