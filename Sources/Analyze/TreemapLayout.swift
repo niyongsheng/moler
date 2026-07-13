@@ -117,50 +117,61 @@ enum TreemapLayout {
         return maxRatio / minRatio
     }
 
-    /// Layout a row along the shorter edge of the rectangle.
+    /// Layout a row along the longer edge of the rectangle.
+    /// The row fills the full extent of the longer side; thickness (short-side extent)
+    /// = totalArea / longerSide. Items are arranged along the longer side.
     private static func layoutRow(items: [(index: Int, area: Double)], rect: CGRect) -> [IndexedRect] {
         guard !items.isEmpty else { return [] }
 
         let totalArea = items.map(\.area).reduce(0, +)
         guard totalArea > 0 else { return items.map { IndexedRect(index: $0.index, rect: .zero) } }
 
-        let isVertical = rect.width >= rect.height
-        let sliceSize = totalArea / (isVertical ? rect.width : rect.height)
+        let longer = max(rect.width, rect.height)
+        let thickness = totalArea / longer
+        let isLandscape = rect.width >= rect.height
 
         var offset: CGFloat = 0
         var result: [IndexedRect] = []
 
         for item in items {
-            let itemSize: CGFloat = item.area / sliceSize
+            let itemExtent: CGFloat = item.area / thickness
             let cellRect: CGRect
 
-            if isVertical {
-                cellRect = CGRect(x: rect.minX, y: rect.minY + offset, width: sliceSize, height: itemSize)
+            if isLandscape {
+                // Landscape: items arranged HORIZONTALLY (along X). Thickness = height.
+                cellRect = CGRect(x: rect.minX + offset, y: rect.minY,
+                                 width: itemExtent, height: thickness)
             } else {
-                cellRect = CGRect(x: rect.minX + offset, y: rect.minY, width: itemSize, height: sliceSize)
+                // Portrait: items arranged VERTICALLY (along Y). Thickness = width.
+                cellRect = CGRect(x: rect.minX, y: rect.minY + offset,
+                                 width: thickness, height: itemExtent)
             }
 
             result.append(IndexedRect(index: item.index, rect: cellRect))
-            offset += itemSize
+            offset += itemExtent
         }
 
         return result
     }
 
     /// Compute the remaining rectangle after placing a row.
+    /// Row fills the full longer side; remaining space is on the opposite short side.
     private static func remainingRect(for row: [(index: Int, area: Double)], totalRect: CGRect) -> CGRect {
         let totalArea = row.map(\.area).reduce(0, +)
         guard totalArea > 0 else { return totalRect }
 
-        let isVertical = totalRect.width >= totalRect.height
-        let sliceSize = totalArea / (isVertical ? totalRect.width : totalRect.height)
+        let longer = max(totalRect.width, totalRect.height)
+        let thickness = totalArea / longer
+        let isLandscape = totalRect.width >= totalRect.height
 
-        if isVertical {
-            return CGRect(x: totalRect.minX + sliceSize, y: totalRect.minY,
-                         width: totalRect.width - sliceSize, height: totalRect.height)
+        if isLandscape {
+            // Landscape: row at top, remaining BELOW
+            return CGRect(x: totalRect.minX, y: totalRect.minY + thickness,
+                         width: totalRect.width, height: totalRect.height - thickness)
         } else {
-            return CGRect(x: totalRect.minX, y: totalRect.minY + sliceSize,
-                         width: totalRect.width, height: totalRect.height - sliceSize)
+            // Portrait: row on left, remaining to the RIGHT
+            return CGRect(x: totalRect.minX + thickness, y: totalRect.minY,
+                         width: totalRect.width - thickness, height: totalRect.height)
         }
     }
 }

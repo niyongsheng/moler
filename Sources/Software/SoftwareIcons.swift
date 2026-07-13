@@ -6,7 +6,11 @@ import Foundation
 /// Call `prewarm(_:)` **before** the app list is displayed (on a background thread)
 /// so that `icon(for:)` returns from cache immediately when the view renders.
 enum SoftwareIcons {
-    private static let cache = NSCache<NSString, NSImage>()
+    private static let cache: NSCache<NSString, NSImage> = {
+        let c = NSCache<NSString, NSImage>()
+        c.countLimit = 200
+        return c
+    }()
     private static let placeholder = NSWorkspace.shared.icon(for: .applicationBundle)
 
     /// Return a cached icon or a placeholder. SwiftUI will re-render when the

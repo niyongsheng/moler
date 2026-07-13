@@ -86,7 +86,21 @@ private let treemapPalette: [Color] = [
 /// - Everything else gets a deterministic colour derived from a hash of its name,
 ///   drawn from the 18-colour `treemapPalette` so adjacent blocks are visually distinct.
 func treemapColor(for entry: DiskScanEntry) -> Color {
-    if entry.isDir { return Brand.accentOrange }
+    if entry.isDir {
+        // Warm hue palette anchored near accentOrange — deterministic hash
+        // per directory name gives visual variety while keeping a warm anchor.
+        let dirPalette: [Color] = [
+            Brand.accentOrange,        // #e06236
+            Color(hex: "#d47a3a"),     // amber-orange
+            Color(hex: "#c4703a"),     // burnt orange
+            Color(hex: "#e88d4a"),     // lighter orange
+            Color(hex: "#cc6633"),     // deep orange
+            Color(hex: "#d7ab61"),     // gold
+        ]
+        let hash = entry.name.hash
+        let index = abs(hash) % dirPalette.count
+        return dirPalette[index]
+    }
 
     let ext = URL(fileURLWithPath: entry.path).pathExtension.lowercased()
 

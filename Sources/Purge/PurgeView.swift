@@ -21,7 +21,7 @@ struct PurgeView: View {
         case .scanning(let p): scanningView(p)
         case .review(let entries): reviewView(entries)
         case .running(let log): runView(log)
-        case .done(let f, let c): doneView(f, c)
+        case .done(let f, let c, let fail): doneView(f, c, fail)
         }
     }
 
@@ -319,10 +319,12 @@ struct PurgeView: View {
 
     // MARK: - Done
 
-    private func doneView(_ freedBytes: Int64, _ itemsRemoved: Int) -> some View {
+    private func doneView(_ freedBytes: Int64, _ itemsRemoved: Int, _ itemsFailed: Int = 0) -> some View {
         VStack(spacing: 24) {
             Spacer()
-            Image(systemName: "checkmark.circle.fill").font(.system(size: 48)).foregroundColor(.green)
+            Image(systemName: itemsFailed > 0 ? "checkmark.circle.trianglebadge.exclamationmark" : "checkmark.circle.fill")
+                .font(.system(size: 48))
+                .foregroundColor(itemsFailed > 0 ? Brand.accentOrange : .green)
             VStack(spacing: 6) {
                 Text(L10n.purgeDoneTitle).titleFont(24).kerning(6).foregroundColor(Brand.accentOrange)
                 Text(L10n.purgeDoneSubtitle).monoFont(10).foregroundColor(Brand.textDim)
@@ -331,6 +333,9 @@ struct PurgeView: View {
                 VStack(spacing: Brand.unit * 2) {
                     DataRow(label: L10n.purgeDoneSpaceFreed, value: formatBytes(freedBytes))
                     DataRow(label: L10n.purgeDoneItemsRemoved, value: "\(itemsRemoved)")
+                    if itemsFailed > 0 {
+                        DataRow(label: "Failed", value: "\(itemsFailed)")
+                    }
                 }
             }.frame(maxWidth: 300)
             Button(action: { vm.reset() }) {

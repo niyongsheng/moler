@@ -297,7 +297,12 @@ final class CleanViewModel: ObservableObject {
         let lock = NSLock()
         var errData = Data()
         errPipe.fileHandleForReading.readabilityHandler = { handle in
-            let d = handle.availableData; if !d.isEmpty { errData.append(d) }
+            let d = handle.availableData
+            if !d.isEmpty {
+                lock.lock()
+                errData.append(d)
+                lock.unlock()
+            }
         }
 
         do {
@@ -381,7 +386,9 @@ final class CleanViewModel: ObservableObject {
 
 private func estimateFreedBytes(from text: String) -> Int64 {
     var total: Int64 = 0
-    let pattern = try! NSRegularExpression(pattern: "(\\d+\\.?\\d*)\\s*(TB|GB|MB|KB|B)", options: .caseInsensitive)
+    guard let pattern = try? NSRegularExpression(pattern: "(\\d+\\.?\\d*)\\s*(TB|GB|MB|KB|B)", options: .caseInsensitive) else {
+        return 0
+    }
     let nsText = text as NSString
     for match in pattern.matches(in: text, options: [], range: NSRange(location: 0, length: nsText.length)) {
         guard match.numberOfRanges >= 3,

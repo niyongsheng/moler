@@ -200,6 +200,7 @@ final class SoftwareViewModel: ObservableObject {
         Task.detached(priority: .userInitiated) { [weak self] in
             var totalRemoved = 0
             var totalBytes: Int64 = 0
+            var failedNames: [String] = []
             let start = Date()
 
             for app in apps {
@@ -208,16 +209,19 @@ final class SoftwareViewModel: ObservableObject {
                     if result.exitCode == 0 {
                         totalRemoved += 1
                         totalBytes += app.sizeBytes
+                    } else {
+                        failedNames.append(app.name)
                     }
                     // Update progress text for next app
-                    if apps.count > 1, let next = apps.dropFirst(totalRemoved).first {
+                    let done = totalRemoved + failedNames.count
+                    if apps.count > 1, done < apps.count {
+                        let next = apps[done]
                         await MainActor.run { [weak self] in
                             self?.state = .running(detail: "\(L10n.softwareRemoving) \(next.name)...")
                         }
                     }
                 } catch {
-                    // Continue with remaining apps
-                    continue
+                    failedNames.append(app.name)
                 }
             }
 
@@ -229,6 +233,7 @@ final class SoftwareViewModel: ObservableObject {
                     appNames: apps.map(\.name),
                     filesRemoved: totalRemoved,
                     bytesFreed: totalBytes,
+                    failedAppNames: failedNames,
                     durationSeconds: duration,
                     timestamp: Date()
                 )

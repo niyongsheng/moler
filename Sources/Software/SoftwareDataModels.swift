@@ -80,6 +80,7 @@ struct UninstallResult: Equatable {
     let appNames: [String]
     let filesRemoved: Int
     let bytesFreed: Int64
+    let failedAppNames: [String]
     let durationSeconds: Int
     let timestamp: Date
 }

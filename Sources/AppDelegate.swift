@@ -9,7 +9,14 @@ extension Notification.Name {
 
 /// The central application delegate — owns the window, orchestrates startup.
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
-    static var shared: AppDelegate { NSApp.delegate as! AppDelegate }
+    /// Weak reference set during `init()` so callers can reach the delegate
+    /// without force-casting `NSApp.delegate`.
+    static private(set) weak var shared: AppDelegate?
+
+    override init() {
+        super.init()
+        AppDelegate.shared = self
+    }
 
     private var windowController: NSWindowController?
 

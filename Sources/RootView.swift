@@ -196,17 +196,18 @@ struct RootView: View {
         ZStack {
             // Keep all views alive in the hierarchy so their state persists
             // when switching tabs (e.g. CleanView's scan progress).
+            // SceneKit views receive isVisible to pause rendering when inactive.
             OverviewView(onNavigate: { activePane = $0 })
                 .visible(activePane == .overview)
             CleanView()
                 .visible(activePane == .clean)
             PurgeView()
                 .visible(activePane == .purge)
-            OptimizeView()
+            OptimizeView(isVisible: activePane == .optimize)
                 .visible(activePane == .optimize)
-            AnalyzeView()
+            AnalyzeView(isVisible: activePane == .analyze)
                 .visible(activePane == .analyze)
-            SoftwareView()
+            SoftwareView(isVisible: activePane == .software)
                 .visible(activePane == .software)
             SettingsView()
                 .visible(activePane == .settings)

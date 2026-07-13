@@ -5,7 +5,7 @@ enum PurgeState: Equatable {
     case scanning(progress: ScanProgress)
     case review(entries: [PurgeEntry])
     case running(log: [String])
-    case done(freedBytes: Int64, itemsRemoved: Int)
+    case done(freedBytes: Int64, itemsRemoved: Int, itemsFailed: Int = 0)
 }
 
 struct PurgeEntry: Identifiable, Equatable {
@@ -217,20 +217,24 @@ final class PurgeViewModel: ObservableObject {
         Task.detached(priority: .userInitiated) { [weak self] in
             var log: [String] = []
             var freed: Int64 = 0
+            var removedCount = 0
+            var failedCount = 0
             for entry in toPurge {
                 if Task.isCancelled { break }
                 let size = directorySize(entry.path)
                 do {
                     try FileManager.default.removeItem(atPath: entry.path)
                     freed += size
+                    removedCount += 1
                     log.append("Removed \(entry.name) (\(formatBytes(size)))")
                 } catch {
+                    failedCount += 1
                     log.append("Failed: \(entry.name) — \(error.localizedDescription)")
                 }
                 await MainActor.run { self?.state = .running(log: log) }
             }
             await MainActor.run {
-                self?.state = .done(freedBytes: freed, itemsRemoved: toPurge.count)
+                self?.state = .done(freedBytes: freed, itemsRemoved: removedCount, itemsFailed: failedCount)
             }
         }
     }

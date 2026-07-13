@@ -48,6 +48,13 @@ final class SystemMonitor: ObservableObject {
         isLoading = stats == nil
 
         Task.detached(priority: .utility) { [weak self] in
+            // Ensure isFetching is always reset, even on unexpected early exits
+            defer {
+                Task { @MainActor [weak self] in
+                    self?.isFetching = false
+                }
+            }
+
             do {
                 guard let mo = MoleCLI.findExecutable() else { throw MoleError.notFound }
                 let result = try MoleProcess.run(executable: mo, args: ["status", "--json"], timeout: 10)
@@ -67,7 +74,6 @@ final class SystemMonitor: ObservableObject {
                     self.lastFetchedAt = Date()
                     self.isLoading = false
                     self.error = nil
-                    self.isFetching = false
 
                     // Append network samples to rolling buffer
                     if let net = stats.network.first {
@@ -85,7 +91,6 @@ final class SystemMonitor: ObservableObject {
                     if self?.stats == nil {
                         self?.error = error.localizedDescription
                     }
-                    self?.isFetching = false
                 }
             }
         }

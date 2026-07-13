@@ -16,6 +16,11 @@ final class MarsSCNView: SCNView {
 
 struct SoftwareView: View {
     @StateObject private var vm = SoftwareViewModel()
+    let isVisible: Bool
+
+    init(isVisible: Bool = true) {
+        self.isVisible = isVisible
+    }
 
     private var isLoading: Bool {
         if case .loading = vm.state { return true }
@@ -25,7 +30,7 @@ struct SoftwareView: View {
     var body: some View {
         ZStack {
             // 3D Mars background
-            SceneKitMarsView(isLoading: isLoading)
+            SceneKitMarsView(isLoading: isLoading, isVisible: isVisible)
 
             // Foreground UI
             content
@@ -438,15 +443,18 @@ struct AppRow: View {
 struct SceneKitMarsView: NSViewRepresentable {
     typealias NSViewType = MarsSCNView
     let isLoading: Bool
+    let isVisible: Bool
 
-    init(isLoading: Bool = false) {
+    init(isLoading: Bool = false, isVisible: Bool = true) {
         self.isLoading = isLoading
+        self.isVisible = isVisible
     }
 
     func makeNSView(context: Context) -> MarsSCNView {
         let scene = MarsScene(); let v = MarsSCNView()
         v.scene = scene; v.backgroundColor = .clear; v.allowsCameraControl = false
-        v.antialiasingMode = .multisampling4X; v.delegate = scene; v.loops = true; v.isPlaying = true
+        v.antialiasingMode = .multisampling4X; v.delegate = scene; v.loops = true
+        v.isPlaying = isVisible || isLoading
         v.sceneRef = scene
         let pan = NSPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
         v.addGestureRecognizer(pan); context.coordinator.scene = scene
@@ -455,6 +463,7 @@ struct SceneKitMarsView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: MarsSCNView, context: Context) {
+        nsView.isPlaying = isVisible || isLoading
         guard let scene = nsView.sceneRef else { return }
         scene.updateForLoading(isLoading)
     }

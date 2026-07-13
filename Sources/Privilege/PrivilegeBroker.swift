@@ -31,8 +31,9 @@ enum PrivilegeBroker {
                                    encoding: .utf8) ?? ""
 
             if task.terminationStatus != 0 {
-                // User cancelled auth dialog → error -128
-                if stderrStr.contains("User canceled") || task.terminationStatus == 1 {
+                // User cancelled auth dialog → osascript returns -128 (userCanceledErr)
+                // Also check exit code 1 (legacy fallback for some osascript versions)
+                if task.terminationStatus == -128 || task.terminationStatus == 1 {
                     return -128
                 }
                 fputs("[PrivilegeBroker] Elevated command failed (exit \(task.terminationStatus)): \(stderrStr.prefix(200))\n",

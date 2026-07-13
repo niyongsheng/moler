@@ -19,6 +19,11 @@ final class JupiterSCNView: SCNView {
 
 struct OptimizeView: View {
     @StateObject private var vm = OptimizeViewModel()
+    let isVisible: Bool
+
+    init(isVisible: Bool = true) {
+        self.isVisible = isVisible
+    }
 
     /// Current animation driving state derived from vm.state
     private var isAnimating: Bool {
@@ -39,8 +44,8 @@ struct OptimizeView: View {
 
     var body: some View {
         ZStack {
-            // 3D background — phase is passed directly for updateNSView
-            SceneKitJupiterView(scenePhase: scenePhase)
+            // 3D background — phase + tab visibility
+            SceneKitJupiterView(scenePhase: scenePhase, isVisible: isVisible)
 
             // Foreground UI
             VStack(spacing: 0) {
@@ -174,9 +179,12 @@ struct SceneKitJupiterView: NSViewRepresentable {
 
     /// Current scene animation phase — drives the Jupiter visual state.
     let scenePhase: OptimizeView.ScenePhase
+    /// Whether the parent tab is currently active in RootView.
+    let isVisible: Bool
 
-    init(scenePhase: OptimizeView.ScenePhase) {
+    init(scenePhase: OptimizeView.ScenePhase, isVisible: Bool = true) {
         self.scenePhase = scenePhase
+        self.isVisible = isVisible
     }
 
     func makeNSView(context: Context) -> JupiterSCNView {
@@ -188,7 +196,7 @@ struct SceneKitJupiterView: NSViewRepresentable {
         scnView.antialiasingMode = .multisampling4X
         scnView.delegate = scene
         scnView.loops = true
-        scnView.isPlaying = true
+        scnView.isPlaying = isVisible
         scnView.showsStatistics = false
 
         scnView.sceneRef = scene
@@ -208,6 +216,7 @@ struct SceneKitJupiterView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: JupiterSCNView, context: Context) {
+        nsView.isPlaying = isVisible || scenePhase == .active
         guard let scene = nsView.scene as? JupiterScene else { return }
         apply(phase: scenePhase, to: scene)
     }

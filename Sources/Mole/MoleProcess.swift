@@ -39,18 +39,39 @@ enum MoleProcess {
 
         try task.run()
 
-        // Drain stderr concurrently so it can't fill and block the child.
-        var errData = Data()
-        let errQueue = DispatchQueue(label: "dev.moler.process.err")
-        errQueue.async {
-            errData = errPipe.fileHandleForReading.readDataToEndOfFile()
-        }
-
         // Write stdin and close so child sees EOF.
         if let inPipe, let stdin, let data = stdin.data(using: .utf8) {
             let handle = inPipe.fileHandleForWriting
             try? handle.write(contentsOf: data)
             try? handle.close()
+        }
+
+        // Drain stdout and stderr concurrently via readabilityHandler so
+        // neither pipe buffer can fill and deadlock the child process.
+        var outData = Data()
+        var errData = Data()
+        let drainGroup = DispatchGroup()
+        drainGroup.enter()
+        drainGroup.enter()
+
+        outPipe.fileHandleForReading.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            if chunk.isEmpty {
+                // EOF — stop monitoring and signal completion
+                outPipe.fileHandleForReading.readabilityHandler = nil
+                drainGroup.leave()
+            } else {
+                outData.append(chunk)
+            }
+        }
+        errPipe.fileHandleForReading.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            if chunk.isEmpty {
+                errPipe.fileHandleForReading.readabilityHandler = nil
+                drainGroup.leave()
+            } else {
+                errData.append(chunk)
+            }
         }
 
         // Timeout: terminate the child if it runs too long.
@@ -63,10 +84,11 @@ enum MoleProcess {
         }
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + timeout, execute: killer)
 
-        let outData = outPipe.fileHandleForReading.readDataToEndOfFile()
         task.waitUntilExit()
         killer.cancel()
-        errQueue.sync {}
+
+        // Wait for both pipes to finish draining
+        _ = drainGroup.wait(timeout: .now() + 2)
 
         return CapturedProcess(
             stdout: String(data: outData, encoding: .utf8) ?? "",
