@@ -22,7 +22,9 @@ final class SystemMonitor: ObservableObject {
         guard timer == nil else { return }
         fetch()
         timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
-            self?.fetch()
+            Task { @MainActor [weak self] in
+                self?.fetch()
+            }
         }
     }
 

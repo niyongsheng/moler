@@ -13,6 +13,8 @@ struct SystemStats: Codable {
     let uptimeSeconds: Int
     let healthScore: Int
     let healthScoreMsg: String
+    let thermal: ThermalStats?
+    let batteries: [BatteryStats]
 
     enum CodingKeys: String, CodingKey {
         case collectedAt = "collected_at"
@@ -22,6 +24,8 @@ struct SystemStats: Codable {
         case uptimeSeconds = "uptime_seconds"
         case healthScore = "health_score"
         case healthScoreMsg = "health_score_msg"
+        case thermal
+        case batteries
     }
 
     init(from decoder: Decoder) throws {
@@ -41,6 +45,8 @@ struct SystemStats: Codable {
         uptimeSeconds = try c.decode(Int.self, forKey: .uptimeSeconds)
         healthScore = try c.decode(Int.self, forKey: .healthScore)
         healthScoreMsg = try c.decodeIfPresent(String.self, forKey: .healthScoreMsg) ?? ""
+        thermal = try c.decodeIfPresent(ThermalStats.self, forKey: .thermal)
+        batteries = try c.decodeIfPresent([BatteryStats].self, forKey: .batteries) ?? []
     }
 }
 
@@ -104,6 +110,56 @@ struct DiskIOStats: Codable {
     }
 
     init() { readRate = 0; writeRate = 0 }
+}
+
+// MARK: - Thermal
+
+struct ThermalStats: Codable {
+    let cpuTemp: Double
+    let gpuTemp: Double
+    let batteryTemp: Double
+    let fanSpeed: Double
+    let fanCount: Int
+    let systemPower: Double
+    let adapterPower: Double
+    let batteryPower: Double
+
+    enum CodingKeys: String, CodingKey {
+        case cpuTemp = "cpu_temp"
+        case gpuTemp = "gpu_temp"
+        case batteryTemp = "battery_temp"
+        case fanSpeed = "fan_speed"
+        case fanCount = "fan_count"
+        case systemPower = "system_power"
+        case adapterPower = "adapter_power"
+        case batteryPower = "battery_power"
+    }
+}
+
+// MARK: - Battery
+
+struct BatteryStats: Codable {
+    let percent: Int
+    let status: String
+    let timeLeft: String
+    let health: String
+    let cycleCount: Int
+    let capacity: Int
+
+    enum CodingKeys: String, CodingKey {
+        case percent, status, health, capacity
+        case timeLeft = "time_left"
+        case cycleCount = "cycle_count"
+    }
+}
+
+extension BatteryStats {
+    /// Whether the battery is currently being charged.
+    var isCharging: Bool { status == "charging" || status == "finishing charge" }
+    /// Whether the battery is fully charged.
+    var isCharged: Bool { status == "charged" }
+    /// Whether the battery is discharging (on battery power).
+    var isDischarging: Bool { status == "discharging" }
 }
 
 // MARK: - Disk

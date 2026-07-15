@@ -239,7 +239,7 @@ struct RootView: View {
                 .visible(activePane == .overview)
             CleanView()
                 .visible(activePane == .clean)
-            PurgeView()
+            PurgeView(isVisible: activePane == .purge)
                 .visible(activePane == .purge)
             OptimizeView(isVisible: activePane == .optimize)
                 .visible(activePane == .optimize)

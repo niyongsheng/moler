@@ -2,13 +2,24 @@ import SwiftUI
 
 struct PurgeView: View {
     @StateObject private var vm = PurgeViewModel()
+    let isVisible: Bool
+
+    init(isVisible: Bool = true) {
+        self.isVisible = isVisible
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            content
+        ZStack {
+            // Mercury 3D background
+            SceneKitMercuryView(isScanning: vm.isScanning, isVisible: isVisible)
+
+            // Foreground UI
+            VStack(spacing: 0) {
+                content
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 20)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .top) {
             if let error = vm.errorMessage { errorBanner(error) }
@@ -197,7 +208,6 @@ struct PurgeView: View {
     private func scanningView(_ progress: ScanProgress) -> some View {
         VStack(spacing: 24) {
             Spacer()
-            ScanLine().frame(width: 300, height: 300)
             VStack(spacing: 8) {
                 Text(L10n.purgeScanning).titleFont(18).kerning(6).foregroundColor(Brand.accentOrange)
                 Text(L10n.purgeScanningHint).monoFont(10).foregroundColor(Brand.textDim)
@@ -310,7 +320,7 @@ struct PurgeView: View {
                 .background(Brand.bgCard.opacity(0.5))
                 .clipShape(RoundedRectangle(cornerRadius: 4))
                 .overlay(RoundedRectangle(cornerRadius: 4).stroke(Brand.lineColor, lineWidth: 0.5))
-                .onChange(of: log.count) { _ in
+                .onChange(of: log.count) {
                     if let last = log.last { withAnimation { proxy.scrollTo(last, anchor: .bottom) } }
                 }
             }

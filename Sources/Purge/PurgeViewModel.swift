@@ -126,6 +126,9 @@ final class PurgeViewModel: ObservableObject {
         for i in scanTargets.indices { scanTargets[i].isSelected = select }
     }
 
+    /// Whether the view model is currently in the scanning state.
+    var isScanning: Bool { if case .scanning = state { true } else { false } }
+
     /// Whether at least one target is selected.
     var hasSelectedTargets: Bool {
         scanTargets.contains(where: \.isSelected)

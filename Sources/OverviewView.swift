@@ -8,12 +8,16 @@ struct OverviewView: View {
     @State private var diskCapacity: Int64 = 0
     @State private var diskFree: Int64 = 0
 
+    // Popover state
+    @State private var showHealthTip = false
+
     var body: some View {
         ScrollView([.vertical], showsIndicators: false) {
             VStack(spacing: 20) {
                 headerBar
                 toolGrid
                 systemRow
+                batterySection
                 networkSection
                 diskSection
                 quickBar
@@ -43,10 +47,11 @@ struct OverviewView: View {
 
             Spacer()
 
-            // Health score + uptime
+            // Health score — click for detail
             if let s = monitor.stats {
-                HStack(spacing: 16) {
-                    // Health score
+                Button {
+                    showHealthTip.toggle()
+                } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 10))
@@ -55,16 +60,14 @@ struct OverviewView: View {
                             .titleFont(16)
                             .foregroundColor(healthColor(s.healthScore))
                     }
-
-                    // Uptime
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 9))
-                            .foregroundColor(Brand.textDim)
-                        Text(Format.uptime(s.uptimeSeconds))
-                            .monoFont(10)
-                            .foregroundColor(Brand.textDim)
-                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(Material.ultraThin)
+                    .cornerRadius(4)
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: $showHealthTip, arrowEdge: .bottom) {
+                    healthScoreTip(s)
                 }
             }
         }
@@ -73,6 +76,96 @@ struct OverviewView: View {
 
     private func healthColor(_ score: Int) -> Color {
         score > 90 ? Brand.accentGold : score > 70 ? Brand.accentOrange : Brand.accentRed
+    }
+
+    // MARK: - Header Tips (Instrument Panel Style)
+
+    private func boxLabel(_ label: String, _ value: String, _ color: Color) -> some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .titleFont(10).kerning(4)
+                .foregroundColor(color)
+            Spacer()
+            Text(value)
+                .titleFont(20)
+                .foregroundColor(color)
+        }
+    }
+
+    private func line(_ label: String, _ value: String, _ color: Color) -> some View {
+        HStack(spacing: 0) {
+            Text("> \(label):")
+                .monoFont(8)
+                .foregroundColor(Brand.textDim)
+            Spacer()
+            Text(value)
+                .monoFont(10)
+                .foregroundColor(color)
+        }
+    }
+
+    private func bar(_ label: String, _ value: String, _ pct: Double, _ color: Color) -> some View {
+        VStack(spacing: 3) {
+            line(label, value, color)
+            ProgressGlow(progress: pct)
+                .frame(height: 2)
+        }
+    }
+
+    // MARK: - Health Score Popover
+
+    private func healthScoreTip(_ s: SystemStats) -> some View {
+        let band = healthScoreBand(s.healthScore)
+        let edge = Brand.lineColor.opacity(0.3)
+
+        return VStack(spacing: 0) {
+            // Left accent bar + content
+            HStack(spacing: 0) {
+                Rectangle()
+                    .fill(band.color)
+                    .frame(width: 3)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    boxLabel("HEALTH", "\(s.healthScore)", band.color)
+                        .padding(.horizontal, 14)
+                        .padding(.top, 12)
+                        .padding(.bottom, 6)
+
+                    if !s.healthScoreMsg.isEmpty {
+                        HStack(spacing: 0) {
+                            Text("> \(s.healthScoreMsg)")
+                                .monoFont(9)
+                                .foregroundColor(band.color.opacity(0.85))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.bottom, 8)
+                    }
+
+                    edge.frame(height: 1)
+
+                    VStack(spacing: 8) {
+                        bar("CPU",  "\(Int(s.cpu.usage))%",   s.cpu.usage / 100,             Brand.accentOrange)
+                        if let disk = s.disks.first {
+                            bar("DISK", "\(Int(disk.usedPercent))%", disk.usedPercent / 100,  Brand.accentGold)
+                        }
+                        bar("MEM",  "\(Int(s.memory.usedPercent))%", s.memory.usedPercent / 100, Brand.accentBlue)
+                    }
+                    .padding(14)
+                }
+            }
+            .frame(width: 210)
+            .background(Brand.bgElevated)
+        }
+    }
+
+    private func healthScoreBand(_ score: Int) -> (color: Color, label: String) {
+        let label: String
+        if score > 90       { label = "Excellent" }
+        else if score > 70  { label = "Good" }
+        else if score > 45  { label = "Fair" }
+        else                { label = "Needs Attention" }
+        return (healthColor(score), label)
     }
 
     // MARK: - Tool Stats Grid
@@ -195,12 +288,7 @@ struct OverviewView: View {
     }
 
     private func loadChip(_ label: String, _ value: Double) -> some View {
-        HStack(spacing: 2) {
-            Text(label).monoFont(8).foregroundColor(Brand.textDim)
-            Text(String(format: "%.1f", value)).monoFont(9).foregroundColor(Brand.accentGold)
-        }
-        .padding(.horizontal, 6).padding(.vertical, 2)
-        .background(Brand.bgCard.opacity(0.5)).cornerRadius(3)
+        InfoChip(label: label, value: String(format: "%.1f", value))
     }
 
     private func cpuColor(_ usage: Double) -> Color {
@@ -245,6 +333,74 @@ struct OverviewView: View {
 
     private func memColor(_ pct: Double) -> Color {
         pct > 85 ? Brand.accentRed : pct > 65 ? Brand.accentGold : Brand.accentBlue
+    }
+
+    // MARK: - Battery Section
+
+    @ViewBuilder private var batterySection: some View {
+        if let s = monitor.stats, let b = s.batteries.first {
+            let temp = s.thermal?.batteryTemp ?? 0
+            InstrumentPanel(title: L10n.overviewPanelBattery, badge: nil) {
+                VStack(alignment: .leading, spacing: 8) {
+                    // Charge percentage + status
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        if b.isCharging {
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 16))
+                                .foregroundColor(Brand.accentGold)
+                        }
+                        Text("\(b.percent)")
+                            .titleFont(36)
+                            .foregroundColor(batteryColor(b.percent))
+                        Text("%")
+                            .monoFont(12)
+                            .foregroundColor(Brand.textDim)
+                        Spacer()
+                        Text(b.status.uppercased())
+                            .monoFont(9)
+                            .foregroundColor(batteryStatusColor(b))
+                    }
+
+                    // Stats row: cycles, health, temp
+                    HStack(spacing: 12) {
+                        InfoChip(label: L10n.overviewBatteryCycle, value: "\(b.cycleCount)")
+                        if b.capacity > 0 {
+                            InfoChip(label: L10n.overviewBatteryHealth, value: "\(b.capacity)%")
+                        }
+                        if temp > 0 {
+                            InfoChip(label: L10n.overviewBatteryTemp, value: "\(Int(temp))°C")
+                        }
+                    }
+
+                    // Time remaining
+                    HStack(spacing: 4) {
+                        Text("> \(L10n.overviewBatteryTime):")
+                            .monoFont(8)
+                            .foregroundColor(Brand.textDim)
+                        Text(timeDisplay(b))
+                            .monoFont(9)
+                            .foregroundColor(Brand.accentGold)
+                        Spacer()
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 8)
+            }
+        }
+    }
+
+    private func batteryColor(_ pct: Int) -> Color {
+        pct > 60 ? Brand.accentBlue : pct > 20 ? Brand.accentGold : Brand.accentRed
+    }
+
+    private func batteryStatusColor(_ b: BatteryStats) -> Color {
+        b.isCharging ? Brand.accentGold : b.isCharged ? Brand.accentBlue : Brand.accentOrange
+    }
+
+    private func timeDisplay(_ b: BatteryStats) -> String {
+        if b.isCharged { return L10n.overviewBatteryCharged }
+        if b.isCharging { return "\(b.timeLeft) to full" }
+        return "\(b.timeLeft) remaining"
     }
 
     // MARK: - Network Section (full width)

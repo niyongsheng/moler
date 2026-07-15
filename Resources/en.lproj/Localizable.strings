@@ -125,6 +125,12 @@
 "overview.panel_cpu" = "CPU";
 "overview.panel_memory" = "MEMORY";
 "overview.panel_network" = "NETWORK";
+"overview.panel_battery" = "BATTERY";
+"overview.battery_cycle" = "CYCLE";
+"overview.battery_health" = "HEALTH";
+"overview.battery_temp" = "TEMP";
+"overview.battery_time" = "TIME";
+"overview.battery_charged" = "Charged";
 
 /* === Purge: Idle === */
 "purge.title" = "PURGE_PROJECTS";

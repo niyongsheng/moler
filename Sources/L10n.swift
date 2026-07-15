@@ -149,7 +149,13 @@ enum L10n {
 
     static let overviewPanelCpu     = String(localized: "overview.panel_cpu")
     static let overviewPanelMemory  = String(localized: "overview.panel_memory")
-    static let overviewPanelNetwork = String(localized: "overview.panel_network")
+    static let overviewPanelNetwork  = String(localized: "overview.panel_network")
+    static let overviewPanelBattery   = String(localized: "overview.panel_battery")
+    static let overviewBatteryCycle   = String(localized: "overview.battery_cycle")
+    static let overviewBatteryHealth  = String(localized: "overview.battery_health")
+    static let overviewBatteryTemp    = String(localized: "overview.battery_temp")
+    static let overviewBatteryTime    = String(localized: "overview.battery_time")
+    static let overviewBatteryCharged = String(localized: "overview.battery_charged")
 
     // MARK: - Settings
 
