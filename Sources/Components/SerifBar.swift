@@ -106,18 +106,48 @@ struct SerifDivider: View {
         let stripeLength: CGFloat
         let thickness: CGFloat
         let direction: Direction
+
+        private static let frameInterval: TimeInterval = 1.0 / 60
         @State private var pos: Double = 0
-        private let timer = Timer.publish(every: 1.0/30, on: .main, in: .common).autoconnect()
+        private let timer = Timer.publish(every: Self.frameInterval, on: .main, in: .common).autoconnect()
 
         private let colors: [Color] = [Brand.accentRed, Brand.accentOrange, Brand.accentGold, Brand.accentBlue]
-        private let tailLength: CGFloat = 280
+        private let tailLength: CGFloat = 360
+
+        /// Pre-built shape + gradient — created once, not per frame.
+        private let tailShape: TaperedTailShape
+        private let tailGradient: LinearGradient
+
+        init(totalLength: CGFloat, stripeLength: CGFloat, thickness: CGFloat, direction: Direction) {
+            self.totalLength = totalLength
+            self.stripeLength = stripeLength
+            self.thickness = thickness
+            self.direction = direction
+            let c = Brand.accentOrange
+            self.tailShape = TaperedTailShape(length: 360, headWidth: thickness * 1.5, tipWidth: 1)
+            self.tailGradient = LinearGradient(
+                gradient: Gradient(stops: [
+                    .init(color: c.opacity(0.55), location: 0),
+                    .init(color: c.opacity(0.35), location: 0.2),
+                    .init(color: c.opacity(0.18), location: 0.4),
+                    .init(color: c.opacity(0.08), location: 0.6),
+                    .init(color: c.opacity(0.03), location: 0.8),
+                    .init(color: c.opacity(0), location: 1),
+                ]),
+                startPoint: .trailing,
+                endPoint: .leading
+            )
+        }
 
         enum Direction { case vertical, horizontal }
 
         var body: some View {
             let cycle = pos.truncatingRemainder(dividingBy: 10) / 10
-            if direction == .vertical { verticalBody(cycle: cycle) }
-            else { horizontalBody(cycle: cycle) }
+            Group {
+                if direction == .vertical { verticalBody(cycle: cycle) }
+                else { horizontalBody(cycle: cycle) }
+            }
+            .onReceive(timer) { _ in pos += Self.frameInterval }
         }
 
         // MARK: - Vertical (bottom → top)
@@ -138,7 +168,6 @@ struct SerifDivider: View {
                 whiteCore(color: color, offset: flarePos + 2, axis: true)
                 sparkleDots(color: color, baseOffset: lightPos, axis: true)
             }
-            .onReceive(timer) { _ in pos += 1.0/30 }
         }
 
         // MARK: - Horizontal (left → right)
@@ -151,18 +180,8 @@ struct SerifDivider: View {
             let glowColor = Brand.accentOrange
 
             return ZStack(alignment: .leading) {
-                // Layer 1 — Outer dust tail (widest, most blurry, farthest-reaching)
-                taperedTail(color: tailColor, opacity: 0.12, lengthRatio: 1.0, heightMul: 3.5, blur: 10)
-                    .offset(x: lightPos - tailLength)
-                // Layer 2 — Mid dust tail
-                taperedTail(color: tailColor, opacity: 0.20, lengthRatio: 0.75, heightMul: 2.5, blur: 7)
-                    .offset(x: lightPos - tailLength * 0.75)
-                // Layer 3 — Inner ion tail (narrower, sharper)
-                taperedTail(color: tailColor, opacity: 0.35, lengthRatio: 0.55, heightMul: 1.5, blur: 4)
-                    .offset(x: lightPos - tailLength * 0.55)
-                // Layer 4 — Bright core tail
-                taperedTail(color: tailColor, opacity: 0.60, lengthRatio: 0.30, heightMul: 1.0, blur: 1.5)
-                    .offset(x: lightPos - tailLength * 0.30)
+                // Continuous gradient tail — smooth trapezoid fade, no banding
+                continuousTail(lightPos: lightPos)
 
                 // Scattered particles along the tail
                 particleTrail(color: tailColor, lightPos: lightPos)
@@ -170,20 +189,20 @@ struct SerifDivider: View {
                 // Head glow — outer aura (horizontal capsule sweeps wider than circle)
                 Capsule()
                     .fill(glowColor.opacity(0.15))
-                    .frame(width: 60, height: thickness * 5)
-                    .blur(radius: 12)
-                    .offset(x: lightPos - 30)
+                    .frame(width: 48, height: thickness * 3)
+                    .blur(radius: 10)
+                    .offset(x: lightPos - 24)
                 // Head glow — medium
                 Circle()
                     .fill(glowColor.opacity(0.35))
-                    .frame(width: 28, height: 28)
-                    .blur(radius: 8)
+                    .frame(width: 22, height: 22)
+                    .blur(radius: 7)
                     .offset(x: lightPos, y: 0)
                 // Head glow — inner
                 Circle()
                     .fill(glowColor)
-                    .frame(width: 12, height: 12)
-                    .blur(radius: 4)
+                    .frame(width: 10, height: 10)
+                    .blur(radius: 3)
                     .offset(x: lightPos, y: 0)
                 // White core — teardrop shape (bulb forward, point trailing)
                 CometHead()
@@ -193,15 +212,44 @@ struct SerifDivider: View {
                     .shadow(color: .white, radius: 6)
                     .offset(x: lightPos - 4, y: 0)
             }
-            .onReceive(timer) { _ in pos += 1.0/30 }
         }
 
-        /// A single tapered tail segment — Capsule with blur creates a soft conical glow.
-        private func taperedTail(color: Color, opacity: Double, lengthRatio: CGFloat, heightMul: CGFloat, blur: CGFloat) -> some View {
-            Capsule()
-                .fill(color.opacity(opacity))
-                .frame(width: tailLength * lengthRatio, height: thickness * heightMul)
-                .blur(radius: blur)
+        /// Continuous gradient tail — uses pre-built shape + gradient, only offset changes per frame.
+        private func continuousTail(lightPos: CGFloat) -> some View {
+            tailShape
+                .fill(tailGradient)
+                .frame(width: tailLength, height: thickness * 1.5)
+                .offset(x: lightPos - tailLength + 22)
+        }
+
+        /// Bullet-shaped tail: rounded right cap, tapering to a thin point on the left.
+        private struct TaperedTailShape: Shape {
+            let length: CGFloat
+            let headWidth: CGFloat
+            let tipWidth: CGFloat
+
+            func path(in rect: CGRect) -> Path {
+                Path { path in
+                    let m = rect.midY
+                    let r = headWidth / 2
+                    let tw = tipWidth / 2
+                    let rx = rect.maxX
+                    let lx = rect.minX
+
+                    // Right side: semicircular cap (bulge to the right)
+                    path.addArc(center: CGPoint(x: rx - r, y: m),
+                               radius: r,
+                               startAngle: Angle(radians: -.pi / 2),
+                               endAngle: Angle(radians: .pi / 2),
+                               clockwise: false)
+                    // Bottom edge tapering to left tip
+                    path.addLine(to: CGPoint(x: lx, y: m + tw))
+                    // Left edge
+                    path.addLine(to: CGPoint(x: lx, y: m - tw))
+                    // Close back to arc start
+                    path.closeSubpath()
+                }
+            }
         }
 
         /// Small scattered particles trailing the comet head, mimicking a dust trail.
@@ -222,28 +270,11 @@ struct SerifDivider: View {
             }
         }
 
-        /// Teardrop-shaped comet head — bulb faces forward (right), point trails left.
+        /// Teardrop-shaped comet head — delegates to TaperedTailShape with zero-width tip.
         private struct CometHead: Shape {
             func path(in rect: CGRect) -> Path {
-                Path { path in
-                    let midY = rect.midY
-                    let r = rect.height / 2
-                    let rightX = rect.maxX
-                    let leftX = rect.minX
-
-                    // Bulb: semicircle on the right (direction of travel)
-                    path.addArc(
-                        center: CGPoint(x: rightX - r, y: midY),
-                        radius: r,
-                        startAngle: Angle(radians: -.pi / 2),
-                        endAngle: Angle(radians: .pi / 2),
-                        clockwise: false
-                    )
-
-                    // Taper to a point on the left (trailing side)
-                    path.addLine(to: CGPoint(x: leftX, y: midY))
-                    path.closeSubpath()
-                }
+                TaperedTailShape(length: rect.width, headWidth: rect.height, tipWidth: 0)
+                    .path(in: rect)
             }
         }
 
@@ -350,12 +381,24 @@ private struct AnimatedStripes: View {
     let skew: Double
 
     @State private var time: Double = 0
-    private let timer = Timer.publish(every: 1.0/30, on: .main, in: .common).autoconnect()
+    private static let frameInterval: TimeInterval = 1.0 / 60
+    private let timer = Timer.publish(every: Self.frameInterval, on: .main, in: .common).autoconnect()
 
     private let colors: [Color] = [Brand.accentRed, Brand.accentOrange, Brand.accentGold, Brand.accentBlue]
+    private let skewTan: CGFloat
+
+    init(phaseOffsets: [Double], totalHeight: CGFloat, stripeWidth: CGFloat, aligned: Alignment, vertical: Bool, skew: Double) {
+        self.phaseOffsets = phaseOffsets
+        self.totalHeight = totalHeight
+        self.stripeWidth = stripeWidth
+        self.aligned = aligned
+        self.vertical = vertical
+        self.skew = skew
+        self.skewTan = CGFloat(tan(skew * Double.pi / 180))
+    }
 
     var body: some View {
-        let s = CGFloat(tan(skew * Double.pi / 180))
+        let s = skewTan
         Group {
             if vertical {
                 VStack(spacing: 0) {
@@ -374,7 +417,7 @@ private struct AnimatedStripes: View {
             }
         }
         .allowsHitTesting(false)
-        .onReceive(timer) { _ in time += 1.0/30 }
+        .onReceive(timer) { _ in time += Self.frameInterval }
     }
 
     private func stripe(at index: Int) -> some View {

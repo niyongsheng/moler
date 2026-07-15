@@ -50,6 +50,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 .icon-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:none;border-radius:var(--r-sm);background:transparent;color:var(--text-dim);transition:background .15s,color .15s}
 .icon-btn:hover{background:var(--bg-card);color:var(--accent-orange)}
 .icon-btn svg{width:20px;height:20px;fill:currentColor}
+.icon-btn.lang-btn{font-size:13px;font-weight:700;font-family:var(--font-display);letter-spacing:.04em;gap:2px}
 .hamburger{display:none}
 .mobile-nav{position:fixed;inset:0;z-index:90;background:var(--bg-navy);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;opacity:0;pointer-events:none;transition:opacity .3s}
 .mobile-nav.open{opacity:1;pointer-events:auto}
@@ -89,8 +90,9 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 .hero-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;color:var(--accent-gold);background:rgba(215,171,97,.08);border:1px solid rgba(215,171,97,.15);padding:4px 12px;border-radius:var(--r-pill);margin-bottom:20px}
 .hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-gold);animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
-.hero-title{font-size:52px;font-weight:700;line-height:1.1;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;text-shadow:0 0 40px rgba(224,98,54,.15)}
-.hero-title .orange{color:var(--accent-orange)}
+.hero-title{font-size:52px;font-weight:700;line-height:1.1;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+.hero-title .orange{color:var(--accent-orange);animation:glowPulse 4s ease-in-out infinite}
+@keyframes glowPulse{0%,100%{text-shadow:0 0 30px rgba(224,98,54,.12)}50%{text-shadow:0 0 50px rgba(224,98,54,.28),0 0 80px rgba(224,98,54,.08)}}
 .hero-tagline{font-size:18px;color:var(--text-dim);line-height:1.5;margin-bottom:12px;font-weight:400;letter-spacing:.02em}
 .hero-desc{font-size:14px;color:var(--text-dim);line-height:1.7;margin-bottom:28px;max-width:480px}
 .hero-features{display:flex;gap:20px;margin-top:24px;font-size:13px;color:var(--text-dim);flex-wrap:wrap}
@@ -99,7 +101,8 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 
 /* ═══ Hero Mockup ═══ */
 .hero-media{position:relative;display:flex;align-items:center;justify-content:center}
-.mockup-frame{width:100%;max-width:520px;background:var(--bg-card);border:1px solid var(--line-color);border-radius:var(--r-lg);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.6),0 0 0 1px rgba(224,98,54,.06)}
+.mockup-frame{width:100%;max-width:520px;background:var(--bg-card);border:1px solid var(--line-color);border-radius:var(--r-lg);overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.6),0 0 0 1px rgba(224,98,54,.06);animation:float 7s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 .mockup-titlebar{display:flex;align-items:center;gap:6px;height:28px;background:var(--bg-elevated);border-bottom:1px solid var(--line-color);padding:0 10px}
 .mockup-dot-label{margin-left:6px;font-size:8px;color:var(--text-dim);font-family:var(--font-mono);letter-spacing:.06em;opacity:.6}
 .mockup-body{display:flex;height:320px}
@@ -224,6 +227,12 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 .stagger-children.revealed>*:nth-child(5){animation-delay:.32s}
 .stagger-children.revealed>*:nth-child(6){animation-delay:.40s}
 
+/* ═══ Starfield ═══ */
+.starfield{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+.star{position:absolute;border-radius:50%;background:#fff;animation:twinkle var(--dur) ease-in-out var(--delay) infinite}
+@keyframes twinkle{0%,100%{opacity:var(--min-o)}50%{opacity:var(--max-o)}}
+@keyframes scanPulse{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
 /* ═══ Responsive ═══ */
 @media(max-width:1024px){
   .hero-title{font-size:40px}
@@ -280,12 +289,13 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
     </a>
 
     <div class="nav-links" id="navLinks">
-      <a href="#features">Features</a>
-      <a href="#preview">Preview</a>
-      <a href="#download">Download</a>
+      <a href="#features" data-i18n="nF">Features</a>
+      <a href="#preview" data-i18n="nP">Preview</a>
+      <a href="#download" data-i18n="nD">Download</a>
     </div>
 
     <div class="nav-actions">
+      <button class="icon-btn lang-btn" id="langBtn" onclick="toggleLang()" title="Switch Language / 切换语言" data-i18n-title="lT">中</button>
       <a href="https://github.com/niyongsheng/moler" class="icon-btn" target="_blank" rel="noopener" title="GitHub">
         <svg viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
@@ -302,10 +312,10 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 
 <!-- ═══════════════ Mobile Nav Overlay ═══════════════ -->
 <div class="mobile-nav" id="mobileNav">
-  <a href="#features" onclick="closeMobileMenu()">Features</a>
-  <a href="#preview" onclick="closeMobileMenu()">Preview</a>
-  <a href="#download" onclick="closeMobileMenu()">Download</a>
-  <a href="https://github.com/niyongsheng/moler" target="_blank" onclick="closeMobileMenu()">GitHub</a>
+  <a href="#features" onclick="closeMobileMenu()" data-i18n="nF">Features</a>
+  <a href="#preview" onclick="closeMobileMenu()" data-i18n="nP">Preview</a>
+  <a href="#download" onclick="closeMobileMenu()" data-i18n="nD">Download</a>
+  <a href="https://github.com/niyongsheng/moler" target="_blank" onclick="closeMobileMenu()" data-i18n="nG">GitHub</a>
 </div>
 
 <!-- ═══════════════ Hero ═══════════════ -->
@@ -314,36 +324,36 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
     <div class="hero-content animate-on-scroll from-left">
       <div class="hero-badge">
         <span class="hero-badge-dot"></span>
-        <span>ARM · macOS 14+</span>
+        <span data-i18n="hB">ARM · macOS 14+</span>
       </div>
       <h1 class="hero-title"><span class="orange">Moler</span></h1>
-      <p class="hero-tagline">NASA-Punk themed macOS disk cleaner — SwiftUI GUI for Mole CLI</p>
-      <p class="hero-desc">A stylish disk cleanup tool that wraps the <code style="color:var(--accent-gold);font-family:var(--font-mono);font-size:13px;">mo</code> CLI in a NASA-Punk themed dashboard. Scan, review, and clean your Mac with orbital radar animations and real-time system monitoring.</p>
+      <p class="hero-tagline" data-i18n="hTg">NASA-Punk themed macOS disk cleaner — SwiftUI GUI for Mole CLI</p>
+      <p class="hero-desc" data-i18n="hDs">A stylish disk cleanup tool that wraps the <code style="color:var(--accent-gold);font-family:var(--font-mono);font-size:13px;">mo</code> CLI in a NASA-Punk themed dashboard. Scan, review, and clean your Mac with orbital radar animations and real-time system monitoring.</p>
 
       <div class="download-buttons">
-        <a href="https://github.com/niyongsheng/moler" class="btn-download btn-download-primary" target="_blank" rel="noopener">
+        <button class="btn-download btn-download-primary" onclick="installBrew()">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
           <span class="btn-label">
-            <span class="btn-main">Install via Homebrew</span>
-            <span class="btn-sub">macOS 14+ · Apple Silicon & Intel</span>
+            <span class="btn-main" data-i18n="cB1">Install via Homebrew</span>
+            <span class="btn-sub" data-i18n="cB1s">macOS 14+ · Apple Silicon & Intel</span>
           </span>
-        </a>
+        </button>
         <a href="https://github.com/niyongsheng/moler/releases" class="btn-download btn-download-secondary" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
           <span class="btn-label">
-            <span class="btn-main">Download from Releases</span>
-            <span class="btn-sub">.app zip · No code signing</span>
+            <span class="btn-main" data-i18n="cB2">Download from Releases</span>
+            <span class="btn-sub" data-i18n="cB2s">.app zip · No code signing</span>
           </span>
         </a>
       </div>
 
       <div class="hero-features">
-        <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Local CLI</span>
-        <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Real-time Monitor</span>
-        <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Privacy First</span>
-        <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Open Source</span>
+        <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="hF1">Local CLI</span></span>
+        <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="hF2">Real-time Monitor</span></span>
+        <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="hF3">Privacy First</span></span>
+        <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="hF4">Open Source</span></span>
       </div>
     </div>
 
@@ -353,7 +363,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
           <span class="dot"></span>
           <span class="dot"></span>
           <span class="dot"></span>
-          <span class="mockup-dot-label">moler — Mission Control</span>
+          <span class="mockup-dot-label" data-i18n="mT">moler — Mission Control</span>
         </div>
         <div class="mockup-body">
           <!-- Sidebar -->
@@ -372,7 +382,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
             <!-- Top stats row -->
             <div class="mockup-stats">
               <div class="mockup-stat-card">
-                <div class="mockup-stat-label">Freed</div>
+                <div class="mockup-stat-label" data-i18n="mF">Freed</div>
                 <div class="mockup-stat-value">2.4 GB</div>
               </div>
               <div class="mockup-stat-card">
@@ -380,11 +390,11 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
                 <div class="mockup-stat-value">23%</div>
               </div>
               <div class="mockup-stat-card">
-                <div class="mockup-stat-label">Memory</div>
+                <div class="mockup-stat-label" data-i18n="mM">Memory</div>
                 <div class="mockup-stat-value">8.2G</div>
               </div>
               <div class="mockup-stat-card">
-                <div class="mockup-stat-label">Disk</div>
+                <div class="mockup-stat-label" data-i18n="mDk">Disk</div>
                 <div class="mockup-stat-value">128G</div>
               </div>
             </div>
@@ -402,7 +412,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
                   <div class="mockup-radar-dot" style="top:60%;left:25%;width:5px;height:5px;"></div>
                   <div class="mockup-radar-dot" style="top:40%;left:75%;width:4px;height:4px;"></div>
                 </div>
-                <div class="mockup-radar-label">SYSTEM SCAN · 847 items</div>
+                <div class="mockup-radar-label" data-i18n="mSL">SYSTEM SCAN · 847 items</div>
                 <div class="mockup-progress">
                   <div class="fill" style="width:62%"></div>
                 </div>
@@ -410,12 +420,12 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
               <div class="mockup-panel-right">
                 <!-- File list -->
                 <div class="mockup-list">
-                  <div class="mockup-list-header">Found Files</div>
-                  <div class="mockup-list-item"><span class="mockup-reticle checked"></span> Library/Caches <span class="mockup-size">1.2 GB</span></div>
-                  <div class="mockup-list-item"><span class="mockup-reticle checked"></span> .Trash <span class="mockup-size">340 MB</span></div>
-                  <div class="mockup-list-item"><span class="mockup-reticle"></span> Xcode Derived <span class="mockup-size">2.1 GB</span></div>
-                  <div class="mockup-list-item"><span class="mockup-reticle"></span> Logs <span class="mockup-size">180 MB</span></div>
-                  <div class="mockup-list-item"><span class="mockup-reticle"></span> Downloads <span class="mockup-size">890 MB</span></div>
+                  <div class="mockup-list-header" data-i18n="mFH">Found Files</div>
+                  <div class="mockup-list-item"><span class="mockup-reticle checked"></span> <span data-i18n="mF1">Library/Caches</span> <span class="mockup-size">1.2 GB</span></div>
+                  <div class="mockup-list-item"><span class="mockup-reticle checked"></span> <span data-i18n="mF2">.Trash</span> <span class="mockup-size">340 MB</span></div>
+                  <div class="mockup-list-item"><span class="mockup-reticle"></span> <span data-i18n="mF3">Xcode Derived</span> <span class="mockup-size">2.1 GB</span></div>
+                  <div class="mockup-list-item"><span class="mockup-reticle"></span> <span data-i18n="mF4">Logs</span> <span class="mockup-size">180 MB</span></div>
+                  <div class="mockup-list-item"><span class="mockup-reticle"></span> <span data-i18n="mF5">Downloads</span> <span class="mockup-size">890 MB</span></div>
                 </div>
                 <!-- Sparkline -->
                 <div class="mockup-sparkline">
@@ -459,13 +469,13 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 <section class="section" id="features">
   <div class="container">
     <div class="section-header animate-on-scroll">
-      <div class="section-label">Core Features</div>
-      <h2 class="section-title">Explore Your Galaxy</h2>
-      <p class="section-desc">Moler turns disk cleanup into a mission control experience. Every tool is a celestial instrument.</p>
+      <div class="section-label" data-i18n="sFL">Core Features</div>
+      <h2 class="section-title" data-i18n="sFT">Mission Modules</h2>
+      <p class="section-desc" data-i18n="sFD">Five instrument panels plus a command dashboard. Each tool wraps a <code style="font-family:var(--font-mono);font-size:13px;color:var(--accent-gold);">mo</code> CLI command with a unique 3D scene and real-time streaming feedback.</p>
     </div>
 
     <div class="features-grid stagger-children" id="featuresGrid">
-      <!-- 1. Scan & Clean -->
+      <!-- 1. System Clean -->
       <div class="feature-card card-hover">
         <div class="feature-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -474,12 +484,12 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
             <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
           </svg>
         </div>
-        <div class="feature-title">Scan &amp; Clean</div>
-        <div class="feature-sub">mo analyze / mo clean</div>
-        <div class="feature-desc">Initiate a deep scan using <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent-gold);">mo analyze --json</code> to find deletable files, then clean with real-time terminal streaming output and orbital radar animations.</div>
+        <div class="feature-title" data-i18n="f1T">System Scan</div>
+        <div class="feature-sub" data-i18n="f1S">mo analyze / mo clean</div>
+        <div class="feature-desc" data-i18n="f1D">Initiate a deep system scan with <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent-gold);">mo analyze --json</code> to find deletable files, review them with category breakdown, then execute cleanup with real-time terminal streaming. Tracks total freed space and cleanup history.</div>
       </div>
 
-      <!-- 2. Purge Projects -->
+      <!-- 2. Project Purge -->
       <div class="feature-card card-hover">
         <div class="feature-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -487,22 +497,21 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
             <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
           </svg>
         </div>
-        <div class="feature-title">Purge Projects</div>
-        <div class="feature-sub">mo purge</div>
-        <div class="feature-desc">Blast away project artifacts like <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent-gold);">node_modules</code>, build caches, and derived data. PTY-driven terminal output with cancel support.</div>
+        <div class="feature-title" data-i18n="f2T">Project Purge</div>
+        <div class="feature-sub" data-i18n="f2S">mo purge</div>
+        <div class="feature-desc" data-i18n="f2D">Selectively blast away project build artifacts — Xcode DerivedData, <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent-gold);">node_modules</code>, Gradle caches, SwiftPM, CocoaPods, and more. Multi-select target directories with PTY-driven terminal streaming and cancel support.</div>
       </div>
 
-      <!-- 3. System Monitor -->
+      <!-- 3. System Optimize -->
       <div class="feature-card card-hover">
         <div class="feature-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
-            <polyline points="6 10 9 7 12 10 15 7 18 10"/>
+            <circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="12" rx="4" ry="10"/><ellipse cx="12" cy="12" rx="10" ry="4"/>
           </svg>
         </div>
-        <div class="feature-title">System Monitor</div>
-        <div class="feature-sub">mo status --json</div>
-        <div class="feature-desc">Live CPU, memory, network and disk stats polled every 3s. Rolling 30-sample sparkline charts and solar system orbit visualizations.</div>
+        <div class="feature-title" data-i18n="f3T">System Optimize</div>
+        <div class="feature-sub" data-i18n="f3S">mo optimize</div>
+        <div class="feature-desc" data-i18n="f3D">Run performance diagnosis and system optimizations — DNS cache flush, Spotlight index verify, Finder and QuickLook cache refresh, icon services rebuild, and more. Dry-run preview before applying, with a real-time streaming task list and interactive 3D Jupiter scene.</div>
       </div>
 
       <!-- 4. Disk Analysis -->
@@ -512,34 +521,36 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
             <path d="M21.21 15.89A10 10 0 118 2.83M22 12A10 10 0 0012 2v10z"/>
           </svg>
         </div>
-        <div class="feature-title">Disk Analysis</div>
-        <div class="feature-sub">Treemap</div>
-        <div class="feature-desc">Interactive treemap visualization of disk usage. See exactly what's consuming space at a glance — large files, cache directories, and more.</div>
+        <div class="feature-title" data-i18n="f4T">Disk Analysis</div>
+        <div class="feature-sub" data-i18n="f4S">Treemap</div>
+        <div class="feature-desc" data-i18n="f4D">Interactive treemap visualization of disk usage with breadcrumb navigation. Scan any directory with <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent-gold);">mo analyze --json</code> and drill down through nested blocks to see exactly what is consuming space, all against a 3D Earth backdrop.</div>
       </div>
 
-      <!-- 5. 3D Optimize -->
+      <!-- 5. App Uninstall -->
       <div class="feature-card card-hover">
         <div class="feature-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"/><ellipse cx="12" cy="12" rx="4" ry="10"/><ellipse cx="12" cy="12" rx="10" ry="4"/>
+            <path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/>
+            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
           </svg>
         </div>
-        <div class="feature-title">3D Jupiter</div>
-        <div class="feature-sub">SceneKit</div>
-        <div class="feature-desc">A fully interactive 3D Jupiter scene with 200-particle point cloud, Great Red Spot animation, 4 Galilean moons, and dark rings. Drag to rotate, scroll to zoom.</div>
+        <div class="feature-title" data-i18n="f5T">App Uninstall</div>
+        <div class="feature-sub" data-i18n="f5S">mo uninstall</div>
+        <div class="feature-desc" data-i18n="f5D">List all installed macOS apps with sizes and bundle info, search and sort by name or size, then select any app to preview its trace files — App Bundle, Preferences, Caches, Containers, and more. Dry-run before you commit, then uninstall cleanly with a detailed completion summary, all set against an interactive 3D Mars scene.</div>
       </div>
 
-      <!-- 6. Dashboard -->
+      <!-- 6. Dashboard Overview -->
       <div class="feature-card card-hover">
         <div class="feature-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-            <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+            <polyline points="6 10 9 7 12 10 15 7 18 10"/>
           </svg>
         </div>
-        <div class="feature-title">Dashboard Overview</div>
-        <div class="feature-sub">At-a-glance</div>
-        <div class="feature-desc">Mission control dashboard with stats cards, live CPU/memory gauges, disk capacity bar, network sparklines, and quick-action navigation to any module.</div>
+        <div class="feature-title" data-i18n="f6T">Dashboard Overview</div>
+        <div class="feature-sub" data-i18n="f6S">System Monitor</div>
+        <div class="feature-desc" data-i18n="f6D">Live CPU usage, memory pressure, network throughput, and disk capacity at a glance. Health score, uptime tracker, rolling sparkline charts, and a tool stats grid showing Freed, Count, and Last Run for every module.</div>
       </div>
     </div>
   </div>
@@ -549,25 +560,25 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 <section class="section" id="preview" style="background:var(--bg-card);">
   <div class="container">
     <div class="section-header animate-on-scroll">
-      <div class="section-label">App Preview</div>
-      <h2 class="section-title">Mission Control Interface</h2>
-      <p class="section-desc">Six instrument panels, one unified mission. Navigate between modules without losing context.</p>
+      <div class="section-label" data-i18n="sPL">App Preview</div>
+      <h2 class="section-title" data-i18n="sPT">Mission Control Interface</h2>
+      <p class="section-desc" data-i18n="sPD">Six instrument panels, one unified mission. Navigate between modules without losing context.</p>
     </div>
 
     <div class="preview-scroll stagger-children" id="previewScroll">
-      <!-- Card: Dashboard -->
+      <!-- Card: Overview -->
       <div class="preview-card card-hover">
         <div class="win-dots">
           <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          <span class="preview-card-label">Overview</span>
+          <span class="preview-card-label" data-i18n="p1L">Overview</span>
         </div>
         <div class="preview-card-body">
           <div class="preview-stats">
-            <div class="preview-stat-row"><span>Freed</span><span class="val">2.4 GB</span></div>
-            <div class="preview-stat-row"><span>Cleans</span><span class="val">12</span></div>
-            <div class="preview-stat-row"><span>Last Clean</span><span class="val">3h ago</span></div>
+            <div class="preview-stat-row"><span data-i18n="mF">Freed</span><span class="val">2.4 GB</span></div>
+            <div class="preview-stat-row"><span data-i18n="p1C">Cleans</span><span class="val">12</span></div>
+            <div class="preview-stat-row"><span data-i18n="p1Lc">Last Clean</span><span class="val">3h ago</span></div>
             <div style="margin-top:8px;">
-              <div class="preview-stat-row" style="margin-bottom:4px;"><span>Disk</span><span class="val">128 GB / 256 GB</span></div>
+              <div class="preview-stat-row" style="margin-bottom:4px;"><span data-i18n="mDk">Disk</span><span class="val">128 GB / 256 GB</span></div>
               <div class="preview-stat-bar"><div class="fill" style="width:50%;"></div></div>
             </div>
           </div>
@@ -578,15 +589,15 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
       <div class="preview-card card-hover">
         <div class="win-dots">
           <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          <span class="preview-card-label">Clean</span>
+          <span class="preview-card-label" data-i18n="p2L">Clean</span>
         </div>
         <div class="preview-card-body">
           <div class="preview-files">
-            <div class="preview-file"><span class="reticle checked"></span> Library/Caches <span class="size">1.2 GB</span></div>
-            <div class="preview-file"><span class="reticle checked"></span> .Trash <span class="size">340 MB</span></div>
-            <div class="preview-file"><span class="reticle"></span> Xcode Derived <span class="size">2.1 GB</span></div>
-            <div class="preview-file"><span class="reticle"></span> Logs <span class="size">180 MB</span></div>
-            <div class="preview-file"><span class="reticle"></span> Downloads <span class="size">890 MB</span></div>
+            <div class="preview-file"><span class="reticle checked"></span> <span data-i18n="mF1">Library/Caches</span> <span class="size">1.2 GB</span></div>
+            <div class="preview-file"><span class="reticle checked"></span> <span data-i18n="mF2">.Trash</span> <span class="size">340 MB</span></div>
+            <div class="preview-file"><span class="reticle"></span> <span data-i18n="mF3">Xcode Derived</span> <span class="size">2.1 GB</span></div>
+            <div class="preview-file"><span class="reticle"></span> <span data-i18n="mF4">Logs</span> <span class="size">180 MB</span></div>
+            <div class="preview-file"><span class="reticle"></span> <span data-i18n="mF5">Downloads</span> <span class="size">890 MB</span></div>
           </div>
         </div>
       </div>
@@ -595,7 +606,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
       <div class="preview-card card-hover">
         <div class="win-dots">
           <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          <span class="preview-card-label">Scan</span>
+          <span class="preview-card-label" data-i18n="p3L">Scan</span>
         </div>
         <div class="preview-card-body">
           <div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:8px;">
@@ -603,7 +614,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
               <div style="width:6px;height:6px;border-radius:50%;background:var(--accent-gold);box-shadow:0 0 10px var(--sun-glow);"></div>
               <div style="position:absolute;top:50%;left:50%;width:50%;height:1px;background:linear-gradient(90deg,transparent,var(--accent-blue));transform-origin:left center;animation:scanPulse 3s linear infinite;"></div>
             </div>
-            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">Scanning · 847 items</div>
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);" data-i18n="p3Lb">Scanning · 847 items</div>
             <div class="preview-stat-bar" style="width:100%;"><div class="fill" style="width:62%;background:linear-gradient(90deg,var(--accent-orange),var(--accent-gold));"></div></div>
           </div>
         </div>
@@ -613,17 +624,15 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
       <div class="preview-card card-hover">
         <div class="win-dots">
           <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          <span class="preview-card-label">Purge</span>
+          <span class="preview-card-label" data-i18n="p4L">Purge</span>
         </div>
-        <div class="preview-card-body">
-          <div style="width:100%;font-family:var(--font-mono);font-size:11px;color:var(--text-dim);line-height:1.8;">
-            <div>$ mo purge</div>
-            <div style="color:var(--accent-gold);">&gt; Scanning node_modules...</div>
-            <div style="color:var(--accent-gold);">&gt; Found 12 projects</div>
-            <div style="color:var(--accent-orange);">&gt; Cleaning...</div>
-            <div style="color:var(--accent-gold);">&gt; ✓ 340 MB freed</div>
-            <div style="color:var(--accent-orange);">▌</div>
-          </div>
+        <div class="preview-card-body" style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);line-height:1.8;">
+          <div style="width:100%;" data-i18n="p4L1">$ mo purge</div>
+          <div style="width:100%;color:var(--accent-gold);" data-i18n="p4L2">&gt; Scanning node_modules...</div>
+          <div style="width:100%;color:var(--accent-gold);" data-i18n="p4L3">&gt; Found 12 projects</div>
+          <div style="width:100%;color:var(--accent-orange);" data-i18n="p4L4">&gt; Cleaning...</div>
+          <div style="width:100%;color:var(--accent-gold);" data-i18n="p4L5">&gt; ✓ 340 MB freed</div>
+          <div style="width:100%;color:var(--accent-orange);">▌</div>
         </div>
       </div>
 
@@ -631,34 +640,35 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
       <div class="preview-card card-hover">
         <div class="win-dots">
           <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          <span class="preview-card-label">Analyze</span>
+          <span class="preview-card-label" data-i18n="p5L">Analyze</span>
         </div>
         <div class="preview-card-body">
           <div class="preview-treemap">
-            <div class="block lg">Applications</div>
-            <div class="block md">Library</div>
-            <div class="block sm">System</div>
-            <div class="block md" style="width:55%;background:var(--accent-gold);">Documents</div>
-            <div class="block sm" style="width:40%;background:var(--accent-blue);">Other</div>
+            <div class="block lg" data-i18n="p5B1">Applications</div>
+            <div class="block md" data-i18n="p5B2">Library</div>
+            <div class="block sm" data-i18n="p5B3">System</div>
+            <div class="block md" style="width:55%;background:var(--accent-gold);" data-i18n="p5B4">Documents</div>
+            <div class="block sm" style="width:40%;background:var(--accent-blue);" data-i18n="p5B5">Other</div>
           </div>
         </div>
       </div>
 
-      <!-- Card: Jupiter 3D -->
+      <!-- Card: Uninstall -->
       <div class="preview-card card-hover">
         <div class="win-dots">
           <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          <span class="preview-card-label">Optimize</span>
+          <span class="preview-card-label" data-i18n="p6L">Uninstall</span>
         </div>
         <div class="preview-card-body">
-          <div class="preview-planets">
-            <div class="preview-planet">
-              <div class="moon m1"></div>
-              <div class="moon m2"></div>
+          <div class="preview-stats">
+            <div class="preview-stat-row"><span data-i18n="p6A">Apps Found</span><span class="val">24</span></div>
+            <div class="preview-stat-row"><span data-i18n="p6O">Files Tracked</span><span class="val">187</span></div>
+            <div class="preview-stat-row"><span data-i18n="p6S">Reclaimable</span><span class="val">1.8 GB</span></div>
+            <div style="margin-top:8px;">
+              <div class="preview-stat-row" style="margin-bottom:4px;"><span data-i18n="p6U">To Uninstall</span><span class="val">3 apps</span></div>
+              <div class="preview-stat-bar"><div class="fill" style="width:55%;background:linear-gradient(90deg,var(--accent-red),var(--accent-orange));"></div></div>
             </div>
           </div>
-          <div class="feature-title" style="font-size:14px;">Jupiter Scene</div>
-          <div class="feature-desc" style="text-align:center;">200 particles · 4 moons · Drag to rotate</div>
         </div>
       </div>
     </div>
@@ -669,30 +679,30 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 <section class="section cta" id="download" style="background:var(--bg-card);">
   <div class="container">
     <div class="animate-on-scroll">
-      <h2 class="cta-title">Ready for Launch</h2>
-      <p class="cta-desc">Install Moler via Homebrew and start exploring your disk galaxy. Requires macOS 14+ and the <code style="font-family:var(--font-mono);color:var(--accent-gold);">mo</code> CLI.</p>
+      <h2 class="cta-title" data-i18n="cT">Ready for Launch</h2>
+      <p class="cta-desc" data-i18n="cD">Install Moler via Homebrew and start exploring your disk galaxy. Requires macOS 14+ and the <code style="font-family:var(--font-mono);color:var(--accent-gold);">mo</code> CLI.</p>
       <div class="download-buttons">
-        <a href="https://github.com/niyongsheng/moler" class="btn-download btn-download-primary" target="_blank" rel="noopener">
+        <button class="btn-download btn-download-primary" onclick="installBrew()">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
-          Install via Homebrew
-        </a>
+          <span data-i18n="cB1">Install via Homebrew</span>
+        </button>
         <a href="https://github.com/niyongsheng/moler/releases" class="btn-download btn-download-secondary" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          GitHub Releases
+          <span data-i18n="cB2">GitHub Releases</span>
         </a>
       </div>
 
       <div class="brew-block">
         <div class="brew-command" onclick="copyBrew(this)" title="Click to copy">
           <span class="prompt">$</span>
-          <span class="cmd">brew install moler</span>
-          <span class="copy-hint">Click to copy</span>
+          <span class="cmd">brew install --cask niyongsheng/moler/moler</span>
+          <span class="copy-hint" data-i18n="bC" data-i18n-copied="bCd">Click to copy</span>
         </div>
         <p class="brew-note">
-          Or download the latest <code>.app</code> from <a href="https://github.com/niyongsheng/moler/releases" style="color:var(--accent-gold);">GitHub Releases</a>.<br>
-          Requires <code>brew install mole</code> for the underlying CLI. No code signing — see <a href="https://github.com/niyongsheng/moler#install" style="color:var(--accent-gold);">instructions</a>.
+          <span data-i18n="bN1">Or download the latest <code>.app</code> from <a href="https://github.com/niyongsheng/moler/releases" style="color:var(--accent-gold);">GitHub Releases</a>.</span><br>
+          <span data-i18n="bN2">Requires <code>brew install mole</code> for the underlying CLI. No code signing — see <a href="https://github.com/niyongsheng/moler#install" style="color:var(--accent-gold);">instructions</a>.</span>
         </p>
       </div>
     </div>
@@ -703,29 +713,148 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 <footer class="footer">
   <div class="footer-inner">
     <div>
-      <div class="footer-brand">Moler</div>
-      <p class="footer-tagline">NASA-Punk themed macOS disk cleaner</p>
-      <p class="footer-copyright">© 2026 <a href="https://github.com/niyongsheng" target="_blank" rel="noopener">Nico</a> · <a href="https://github.com/niyongsheng/moler/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a></p>
+      <div class="footer-brand" data-i18n="fB">Moler</div>
+      <p class="footer-tagline" data-i18n="fTg">NASA-Punk themed macOS disk cleaner</p>
+      <p class="footer-copyright" data-i18n="fCr">© 2026 <a href="https://github.com/niyongsheng" target="_blank" rel="noopener">Nico</a> · <a href="https://github.com/niyongsheng/moler/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a></p>
     </div>
     <div class="footer-links">
-      <a href="https://github.com/niyongsheng/moler" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://github.com/niyongsheng/moler/releases" target="_blank" rel="noopener">Releases</a>
-      <a href="https://github.com/niyongsheng/moler/issues" target="_blank" rel="noopener">Issues</a>
+      <a href="https://github.com/niyongsheng/moler" target="_blank" rel="noopener" data-i18n="fL1">GitHub</a>
+      <a href="https://github.com/niyongsheng/moler/releases" target="_blank" rel="noopener" data-i18n="fL2">Releases</a>
+      <a href="https://github.com/niyongsheng/moler/issues" target="_blank" rel="noopener" data-i18n="fL3">Issues</a>
     </div>
     <div class="footer-tech">
-      <span>Built with <span class="dot">✦</span> SwiftUI <span class="dot">·</span> SceneKit <span class="dot">·</span> Mole CLI <span class="dot">·</span> XcodeGen</span>
+      <span data-i18n="fT">Built with <span class="dot">✦</span> SwiftUI <span class="dot">·</span> SceneKit <span class="dot">·</span> Mole CLI <span class="dot">·</span> XcodeGen</span>
     </div>
   </div>
 </footer>
 
 <!-- ═══════════════ JavaScript ═══════════════ -->
 <script>
+/* ═══ Internationalization ═══ */
+const L = {
+  zh: {
+    lT:'切换语言',nF:'功能特性',nP:'界面预览',nD:'下载安装',nG:'GitHub',
+    hB:'ARM · macOS 14+',
+    hTg:'NASA-Punk 风格 macOS 磁盘清理工具 — 基于 SwiftUI 的 Mole CLI 图形界面',
+    hDs:'一款时尚的磁盘清理工具，将 mo 命令行封装在 NASA-Punk 主题仪表盘中。通过轨道雷达动画和实时系统监控，扫描、审查和清理你的 Mac。',
+    hF1:'本地命令行',hF2:'实时监控',hF3:'隐私优先',hF4:'开源免费',
+    mT:'moler — 任务控制中心',mF:'已释放',mM:'内存',mDk:'磁盘',
+    mSL:'系统扫描 · 847 项',mFH:'发现文件',
+    mF1:'Library/Caches',mF2:'.Trash',mF3:'Xcode Derived',mF4:'日志',mF5:'下载',
+    sFL:'核心功能',sFT:'任务模块',
+    sFD:'五大仪表面板加一个指挥仪表盘。每个工具封装一条 mo CLI 命令，搭配独特的 3D 场景和实时流式反馈。',
+    sPL:'应用预览',sPT:'任务控制界面',
+    sPD:'六大仪表面板，统一任务控制。在模块间无缝切换，不丢失上下文。',
+    f1T:'系统扫描',f1S:'mo analyze / mo clean',
+    f1D:'使用 mo analyze --json 发起深度系统扫描查找可删除文件，按分类审查后执行清理，实时终端流式输出。跟踪累计释放空间和清理历史。',
+    f2T:'项目清理',f2S:'mo purge',
+    f2D:'选择性清除项目构建工件 — Xcode DerivedData、node_modules、Gradle 缓存、SwiftPM、CocoaPods 等。多选目标目录，支持 PTY 终端流和取消操作。',
+    f3T:'系统优化',f3S:'mo optimize',
+    f3D:'运行性能诊断和系统优化项目 — DNS 缓存刷新、Spotlight 索引验证、Finder/QuickLook 缓存刷新、图标服务重建等。dry-run 预览后再执行，实时流式任务列表配交互式 3D 木星场景。',
+    f4T:'磁盘分析',f4S:'矩形树图',
+    f4D:'交互式矩形树图展示磁盘使用情况，支持面包屑导航。使用 mo analyze --json 扫描任意目录，逐层下钻查看空间占用，背景为交互式 3D 地球场景。',
+    f5T:'应用卸载',f5S:'mo uninstall',
+    f5D:'列出所有已安装的 macOS 应用及其大小和 Bundle ID，按名称或大小搜索排序。选择应用后预览残留文件：App Bundle、Preferences、Caches、Containers 等分类一目了然。确认 dry-run 结果后执行卸载，配以详细的完成摘要和交互式 3D 火星场景。',
+    f6T:'仪表盘概览',f6S:'系统监控',
+    f6D:'实时 CPU 使用率、内存压力、网络吞吐量和磁盘容量一览无余。健康评分、运行时长追踪、滚动迷你趋势图，以及各模块的释放空间、次数和最后运行时间统计。',
+    p1L:'概览',p1C:'清理次数',p1Lc:'上次清理',p2L:'清理',p3L:'扫描',p4L:'清除',p5L:'分析',p6L:'卸载',
+    p3Lb:'扫描中 · 847 项',
+    p4L1:'$ mo purge',p4L2:'> 正在扫描 node_modules...',p4L3:'> 找到 12 个项目',p4L4:'> 正在清理...',p4L5:'> ✓ 已释放 340 MB',
+    p5B1:'应用程序',p5B2:'资源库',p5B3:'系统',p5B4:'文档',p5B5:'其他',
+    p6A:'检测应用',p6O:'追踪文件',p6S:'可释放',p6U:'待卸载',
+    cT:'准备出发',
+    cD:'通过 Homebrew 安装 Moler，开始探索你的磁盘星系。需要 macOS 14+ 和 mo CLI。',
+    cB1:'通过 Homebrew 安装',cB1s:'macOS 14+ · Apple Silicon & Intel',
+    cB2:'GitHub 发布版',cB2s:'.app 压缩包 · 无代码签名',
+    bC:'点击复制',bCd:'已复制！',
+    bN1:'或从 <a href="https://github.com/niyongsheng/moler/releases" style="color:var(--accent-gold);">GitHub 发布版</a> 下载最新 .app。',
+    bN2:'需要 brew install mole 作为底层 CLI。无代码签名 — 查看<a href="https://github.com/niyongsheng/moler#install" style="color:var(--accent-gold);">安装说明</a>。',
+    fB:'Moler',fTg:'NASA-Punk 风格 macOS 磁盘清理工具',
+    fCr:'© 2026 <a href="https://github.com/niyongsheng" target="_blank" rel="noopener">Nico</a> · <a href="https://github.com/niyongsheng/moler/blob/main/LICENSE" target="_blank" rel="noopener">MIT 许可</a>',
+    fL1:'GitHub',fL2:'发布版',fL3:'问题反馈',
+    fT:'使用 <span class="dot">✦</span> SwiftUI <span class="dot">·</span> SceneKit <span class="dot">·</span> Mole CLI <span class="dot">·</span> XcodeGen 构建',
+  },
+  en: {
+    lT:'Switch Language',nF:'Features',nP:'Preview',nD:'Download',nG:'GitHub',
+    hB:'ARM · macOS 14+',
+    hTg:'NASA-Punk themed macOS disk cleaner — SwiftUI GUI for Mole CLI',
+    hDs:'A stylish disk cleanup tool that wraps the mo CLI in a NASA-Punk themed dashboard. Scan, review, and clean your Mac with orbital radar animations and real-time system monitoring.',
+    hF1:'Local CLI',hF2:'Real-time Monitor',hF3:'Privacy First',hF4:'Open Source',
+    mT:'moler — Mission Control',mF:'Freed',mM:'Memory',mDk:'Disk',
+    mSL:'SYSTEM SCAN · 847 items',mFH:'Found Files',
+    mF1:'Library/Caches',mF2:'.Trash',mF3:'Xcode Derived',mF4:'Logs',mF5:'Downloads',
+    sFL:'Core Features',sFT:'Mission Modules',
+    sFD:'Five instrument panels plus a command dashboard. Each tool wraps a mo CLI command with a unique 3D scene and real-time streaming feedback.',
+    sPL:'App Preview',sPT:'Mission Control Interface',
+    sPD:'Six instrument panels, one unified mission. Navigate between modules without losing context.',
+    f1T:'System Scan',f1S:'mo analyze / mo clean',
+    f1D:'Initiate a deep system scan with mo analyze --json to find deletable files, review by category, then execute cleanup with real-time terminal streaming. Tracks total freed space and cleanup history.',
+    f2T:'Project Purge',f2S:'mo purge',
+    f2D:'Selectively blast away project build artifacts — Xcode DerivedData, node_modules, Gradle caches, SwiftPM, CocoaPods, and more. Multi-select target directories with PTY-driven terminal streaming and cancel support.',
+    f3T:'System Optimize',f3S:'mo optimize',
+    f3D:'Run performance diagnosis and system optimizations — DNS cache flush, Spotlight index verify, Finder and QuickLook cache refresh, icon services rebuild, and more. Dry-run preview before applying, with real-time streaming task list and interactive 3D Jupiter scene.',
+    f4T:'Disk Analysis',f4S:'Treemap',
+    f4D:'Interactive treemap visualization of disk usage with breadcrumb navigation. Scan any directory with mo analyze --json and drill down through nested blocks to see exactly what\'s consuming space, all against a 3D Earth backdrop.',
+    f5T:'App Uninstall',f5S:'mo uninstall',
+    f5D:'List all installed macOS apps with sizes and bundle info, search and sort by name or size, then select any app to preview its trace files — App Bundle, Preferences, Caches, Containers, and more. Dry-run before you commit, then uninstall cleanly with a detailed completion summary, all set against an interactive 3D Mars scene.',
+    f6T:'Dashboard Overview',f6S:'System Monitor',
+    f6D:'Live CPU usage, memory pressure, network throughput, and disk capacity at a glance. Health score, uptime tracker, rolling sparkline charts, and a tool stats grid showing Freed, Count, and Last Run for every module.',
+    p1L:'Overview',p1C:'Cleans',p1Lc:'Last Clean',p2L:'Clean',p3L:'Scan',p4L:'Purge',p5L:'Analyze',p6L:'Uninstall',
+    p3Lb:'Scanning · 847 items',
+    p4L1:'$ mo purge',p4L2:'> Scanning node_modules...',p4L3:'> Found 12 projects',p4L4:'> Cleaning...',p4L5:'> ✓ 340 MB freed',
+    p5B1:'Applications',p5B2:'Library',p5B3:'System',p5B4:'Documents',p5B5:'Other',
+    p6A:'Apps Found',p6O:'Files Tracked',p6S:'Reclaimable',p6U:'To Uninstall',
+    cT:'Ready for Launch',
+    cD:'Install Moler via Homebrew and start exploring your disk galaxy. Requires macOS 14+ and the mo CLI.',
+    cB1:'Install via Homebrew',cB1s:'macOS 14+ · Apple Silicon & Intel',
+    cB2:'GitHub Releases',cB2s:'.app zip · No code signing',
+    bC:'Click to copy',bCd:'Copied!',
+    bN1:'Or download the latest <code>.app</code> from <a href="https://github.com/niyongsheng/moler/releases" style="color:var(--accent-gold);">GitHub Releases</a>.',
+    bN2:'Requires <code>brew install mole</code> for the underlying CLI. No code signing — see <a href="https://github.com/niyongsheng/moler#install" style="color:var(--accent-gold);">instructions</a>.',
+    fB:'Moler',fTg:'NASA-Punk themed macOS disk cleaner',
+    fCr:'© 2026 <a href="https://github.com/niyongsheng" target="_blank" rel="noopener">Nico</a> · <a href="https://github.com/niyongsheng/moler/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>',
+    fL1:'GitHub',fL2:'Releases',fL3:'Issues',
+    fT:'Built with <span class="dot">✦</span> SwiftUI <span class="dot">·</span> SceneKit <span class="dot">·</span> Mole CLI <span class="dot">·</span> XcodeGen',
+  }
+};
+
+let currentLang = localStorage.getItem('moler-lang') || '';
+if (!currentLang) currentLang = navigator.language.startsWith('zh') ? 'zh' : 'en';
+
+function applyLang(lang) {
+  currentLang = lang;
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.getElementById('langBtn').textContent = lang === 'zh' ? 'EN' : '中';
+  const t = L[lang];
+  if (!t) return;
+  // data-i18n: textContent (或 innerHTML 当含标签时)
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    const val = t[key];
+    if (val !== undefined) el[val.includes('<') ? 'innerHTML' : 'textContent'] = val;
+  });
+  // data-i18n-title: tooltip
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.dataset.i18nTitle;
+    if (t[key] !== undefined) el.title = t[key];
+  });
+  localStorage.setItem('moler-lang', lang);
+}
+function toggleLang() { applyLang(currentLang === 'zh' ? 'en' : 'zh'); }
+
+applyLang(currentLang);
+
 /* ═══ Navbar scroll effect ═══ */
 const navbar = document.getElementById('navbar');
+let ticking = false;
 window.addEventListener('scroll', () => {
-  const y = window.scrollY;
-  if (y > 40) { navbar.classList.add('scrolled'); }
-  else { navbar.classList.remove('scrolled'); }
+  if (!ticking) {
+    requestAnimationFrame(() => {
+      navbar.classList.toggle('scrolled', window.scrollY > 40);
+      ticking = false;
+    });
+    ticking = true;
+  }
 }, { passive: true });
 
 /* ═══ Mobile menu ═══ */
@@ -741,16 +870,34 @@ function closeMobileMenu() {
 
 /* ═══ Copy brew command ═══ */
 function copyBrew(el) {
-  const text = 'brew install moler';
+  const text = 'brew install --cask niyongsheng/moler/moler';
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).then(() => {
       const hint = el.querySelector('.copy-hint');
-      const orig = hint.textContent;
-      hint.textContent = 'Copied!';
+      const copiedKey = hint.dataset.i18nCopied;
+      const origKey = hint.dataset.i18n;
+      hint.textContent = L[currentLang][copiedKey] || 'Copied!';
       hint.style.color = '#4caf7d';
-      setTimeout(() => { hint.textContent = orig; hint.style.color = ''; }, 1500);
+      setTimeout(() => {
+        hint.textContent = L[currentLang][origKey] || 'Click to copy';
+        hint.style.color = '';
+      }, 1500);
     });
   }
+}
+
+/* ═══ Download .command file to auto-open Terminal ═══ */
+function installBrew() {
+  const script = '#!/bin/bash\nbrew install --cask niyongsheng/moler/moler\n';
+  const blob = new Blob([script], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'install-moler.command';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 /* ═══ Scroll-triggered animations (Intersection Observer) ═══ */
@@ -758,18 +905,33 @@ const observerOptions = { threshold: 0.08, rootMargin: '0px 0px -40px 0px' };
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
-      if (entry.target.classList.contains('animate-on-scroll')) {
-        entry.target.classList.add('revealed');
-      }
-      if (entry.target.classList.contains('stagger-children')) {
-        entry.target.classList.add('revealed');
-      }
+      if (entry.target.classList.contains('animate-on-scroll')) entry.target.classList.add('revealed');
+      if (entry.target.classList.contains('stagger-children')) entry.target.classList.add('revealed');
       observer.unobserve(entry.target);
     }
   });
 }, observerOptions);
-
 document.querySelectorAll('.animate-on-scroll, .stagger-children').forEach(el => observer.observe(el));
+
+/* ═══ Starfield ═══ */
+(function() {
+  const hero = document.getElementById('hero');
+  if (!hero) return;
+  const layer = document.createElement('div');
+  layer.className = 'starfield';
+  const n = 40;
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const size = 1 + Math.random() * 1.8;
+    const x = Math.random() * 100, y = Math.random() * 100;
+    const minO = 0.15 + Math.random() * 0.25, maxO = minO + 0.2 + Math.random() * 0.3;
+    const dur = 2 + Math.random() * 3, delay = Math.random() * 3;
+    s.style.cssText = `left:${x}%;top:${y}%;width:${size}px;height:${size}px;--min-o:${minO};--max-o:${maxO};--dur:${dur}s;--delay:${delay}s`;
+    layer.appendChild(s);
+  }
+  hero.insertBefore(layer, hero.firstChild);
+})();
 </script>
 
 </body>

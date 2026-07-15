@@ -122,21 +122,21 @@ struct SettingsView: View {
                 }
                 .padding(.vertical, 4)
 
-                // Check for Updates button
-                Button(action: { UpdateChecker.checkNow() }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.down.circle")
-                            .font(.system(size: 10))
-                        Text(L10n.updateCheck)
-                            .font(.custom("RobotoMono-Regular", size: 10))
-                    }
-                    .foregroundColor(Brand.accentOrange)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Brand.accentOrange.opacity(0.15))
-                    .cornerRadius(4)
+                // Check for Updates + Website buttons
+                HStack(spacing: 8) {
+                    settingsLinkButton(
+                        icon: "arrow.down.circle",
+                        label: L10n.updateCheck,
+                        color: Brand.accentOrange,
+                        action: { UpdateChecker.checkNow() }
+                    )
+                    settingsLinkButton(
+                        icon: "link",
+                        label: L10n.settingsWebsite,
+                        color: Brand.accentBlue,
+                        action: { NSWorkspace.shared.open(projectURL) }
+                    )
                 }
-                .buttonStyle(.plain)
             }
         }
     }
@@ -214,7 +214,28 @@ struct SettingsView: View {
             }
         }
     }
+
+    // MARK: - Helpers
+
+    private func settingsLinkButton(icon: String, label: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                Text(label)
+                    .monoFont(10)
+            }
+            .foregroundColor(color)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(color.opacity(0.15))
+            .cornerRadius(4)
+        }
+        .buttonStyle(.plain)
+    }
 }
+
+private let projectURL = URL(string: "https://niyongsheng.github.io/moler/")!
 
 #Preview {
     SettingsView()

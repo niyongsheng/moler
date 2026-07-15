@@ -4,9 +4,9 @@
 */
 
 /* === Navigation === */
-"nav.clean" = "CLEAN";
+"nav.clean" = "SYSTEM";
 "nav.clean.sub" = "DEEP_SCAN";
-"nav.purge" = "PURGE";
+"nav.purge" = "PROJECT";
 "nav.purge.sub" = "PROJECTS";
 "nav.optimize" = "OPTIMIZE";
 "nav.optimize.sub" = "SERVICES";
@@ -17,8 +17,8 @@
 "nav.offline" = "MODULE OFFLINE";
 
 /* === Clean: Idle === */
-"clean.title" = "DEEP_SYSTEM_SCAN";
-"clean.subtitle" = "CLEAN_MODULE_v1.0";
+"clean.title" = "SYSTEM_SCAN";
+"clean.subtitle" = "FREE UP DISK SPACE";
 "clean.last_scan" = "LAST_SCAN";
 "clean.last_clean" = "LAST_CLEAN";
 "clean.total_freed" = "TOTAL_FREED";
@@ -99,7 +99,7 @@
 "overview.disk_capacity" = "DISK_CAPACITY";
 "overview.disk_free" = "DISK_FREE";
 "overview.disk_usage" = "DISK_USAGE";
-"overview.quick_scan" = "INITIATE_SCAN";
+"overview.quick_scan" = "SYSTEM_CLEAN";
 "overview.quick_settings" = "SETTINGS";
 "overview.loading" = "LOADING_SYSTEM_DATA…";
 "overview.cpu_cores" = "%d CORES";
@@ -111,6 +111,20 @@
 "overview.disk" = "DISK";
 "overview.free_format" = "FREE %@";
 "overview.used_format" = "%d%% USED";
+
+/* === Overview: Stat labels === */
+"overview.stat_freed" = "FREED";
+"overview.stat_count" = "COUNT";
+"overview.stat_last" = "LAST";
+"overview.stat_ops" = "OPS";
+"overview.stat_date" = "DATE";
+"overview.stat_path" = "PATH";
+"overview.stat_removed" = "REMOVED";
+
+/* === Overview: Panel titles === */
+"overview.panel_cpu" = "CPU";
+"overview.panel_memory" = "MEMORY";
+"overview.panel_network" = "NETWORK";
 
 /* === Purge: Idle === */
 "purge.title" = "PURGE_PROJECTS";
@@ -159,13 +173,14 @@
 "optimize.dry_run" = "DRY RUN";
 
 /* === Analyze: Idle === */
-"analyze.title" = "DISK USAGE ANALYZER";
+"analyze.title" = "DISK_USAGE_ANALYZER";
 "analyze.subtitle" = "Treemap disk profiler";
 "analyze.last_scan" = "LAST_SCAN";
 "analyze.last_date" = "LAST_ANALYSIS";
 "analyze.total_count" = "TOTAL_ANALYZES";
 "analyze.never" = "NEVER";
-"analyze.scan_home" = "SCAN HOME";
+"analyze.scan_home" = "START_ANALYSIS";
+"analyze.new_analysis" = "RE-ANALYZE";
 
 /* === Analyze: Scanning === */
 "analyze.scanning" = "SCANNING_DIRECTORY";
@@ -225,6 +240,7 @@
 /* === Settings: About === */
 "settings.about" = "ABOUT";
 "settings.version" = "Version";
+"settings.website" = "WEBSITE";
 
 /* === Update === */
 "update.check" = "Check for Updates";

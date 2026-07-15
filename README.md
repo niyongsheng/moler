@@ -24,9 +24,7 @@
 ## Install
 
 ```bash
-brew tap niyongsheng/moler
-brew trust niyongsheng/tap-moler
-brew install --cask moler
+brew install --cask niyongsheng/moler/moler
 ```
 
 > [!IMPORTANT]

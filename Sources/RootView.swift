@@ -9,6 +9,19 @@ enum Pane: Equatable {
     case analyze
     case software
     case settings
+
+    /// SF Symbol name for this pane.
+    var iconName: String {
+        switch self {
+        case .overview: return "gauge.with.dots.needle.33percent"
+        case .clean:    return "xmark.bin"
+        case .purge:    return "trash"
+        case .optimize: return "speedometer"
+        case .analyze:  return "chart.pie"
+        case .software: return "gearshape.2"
+        case .settings: return "gearshape"
+        }
+    }
 }
 
 /// The root content view for the single-window app.
@@ -16,12 +29,12 @@ struct RootView: View {
     @State private var activePane: Pane = .overview
     @State private var sidebarVisible: Bool = true
 
-    private let sidebarTabs: [(pane: Pane, icon: String, title: String)] = [
-        (.clean,    "trash",                       L10n.navClean),
-        (.purge,    "xmark.bin",                   L10n.navPurge),
-        (.optimize, "arrow.triangle.2.circlepath", L10n.navOptimize),
-        (.analyze,  "chart.pie",                   L10n.navAnalyze),
-        (.software, "gearshape.2",                 L10n.navSoftware),
+    private let sidebarTabs: [(pane: Pane, title: String)] = [
+        (.clean,    L10n.navClean),
+        (.purge,    L10n.navPurge),
+        (.optimize, L10n.navOptimize),
+        (.analyze,  L10n.navAnalyze),
+        (.software, L10n.navSoftware),
     ]
 
     var body: some View {
@@ -69,15 +82,32 @@ struct RootView: View {
             Button {
                 withAnimation(.easeOut(duration: 0.16)) { activePane = .overview }
             } label: {
+                let isOverview = activePane == .overview
                 VStack(spacing: 6) {
-                    Image("Logo")
-                        .resizable()
-                        .renderingMode(.template)
-                        .foregroundColor(activePane == .overview ? Brand.accentOrange : Brand.accentOrange.opacity(0.7))
-                        .frame(width: 48, height: 48)
+                    // Logo with glow when overview is active
+                    ZStack {
+                        Circle()
+                            .fill(Brand.accentOrange.opacity(0.12))
+                            .frame(width: 68, height: 68)
+                            .blur(radius: 12)
+                            .opacity(isOverview ? 1 : 0)
+                        Circle()
+                            .fill(Brand.accentOrange.opacity(0.08))
+                            .frame(width: 56, height: 56)
+                            .blur(radius: 6)
+                            .opacity(isOverview ? 1 : 0)
+                        Image("Logo")
+                            .resizable()
+                            .renderingMode(.template)
+                            .foregroundColor(isOverview ? Brand.accentOrange : Brand.accentOrange.opacity(0.7))
+                            .frame(width: 48, height: 48)
+                            .shadow(color: isOverview ? Brand.accentOrange.opacity(0.5) : .clear, radius: 6)
+                    }
+
                     Text("Moler")
                         .font(.custom("Jura-Medium", size: 16))
-                        .foregroundColor(activePane == .overview ? Brand.textPrimary : Brand.textDim)
+                        .foregroundColor(isOverview ? Brand.textPrimary : Brand.textDim)
+                        .shadow(color: isOverview ? Brand.accentOrange.opacity(0.4) : .clear, radius: 4)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 12)
@@ -91,7 +121,7 @@ struct RootView: View {
             VStack(spacing: 2) {
                 ForEach(sidebarTabs, id: \.pane) { tab in
                     navItem(
-                        icon: tab.icon,
+                        icon: tab.pane.iconName,
                         title: tab.title,
                         isSelected: activePane == tab.pane,
                         action: { activePane = tab.pane }
@@ -153,10 +183,18 @@ struct RootView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
-                isSelected
-                    ? Brand.accentOrange.opacity(0.1)
-                    : Color.clear,
-                in: RoundedRectangle(cornerRadius: 6)
+                Group {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Brand.accentOrange.opacity(0.06))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(Brand.accentOrange.opacity(0.2), lineWidth: 0.5)
+                            )
+                            // Scan line overlay
+                            .overlay(alignment: .center) { ScanLineView() }
+                    }
+                }
             )
             .contentShape(Rectangle())
         }
@@ -229,6 +267,38 @@ struct RootView: View {
 
 #Preview {
     RootView()
+}
+
+// MARK: - Scan Line View
+
+private struct ScanLineView: View {
+    @State private var yOffset: CGFloat = -16
+
+    var body: some View {
+        Rectangle()
+            .fill(
+                LinearGradient(
+                    colors: [
+                        .clear,
+                        Brand.accentOrange.opacity(0.35),
+                        Brand.accentGold.opacity(0.15),
+                        Brand.accentOrange.opacity(0.35),
+                        .clear,
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .frame(height: 2)
+            .offset(y: yOffset)
+            .onAppear {
+                withAnimation(
+                    .easeInOut(duration: 2.5).repeatForever(autoreverses: true)
+                ) {
+                    yOffset = 16
+                }
+            }
+    }
 }
 
 // MARK: - View Extension

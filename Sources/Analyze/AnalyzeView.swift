@@ -270,7 +270,8 @@ struct AnalyzeView: View {
                     if entry.isDir { vm.drillInto(entry: entry) }
                 },
                 onNavigate: { crumb in vm.navigateToCrumb(crumb) },
-                onGoBack: { vm.goBack() }
+                onGoBack: { vm.goBack() },
+                onReset: { vm.reset() }
             )
 
             // Treemap canvas

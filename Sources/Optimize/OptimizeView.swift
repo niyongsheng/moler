@@ -93,7 +93,7 @@ struct OptimizeView: View {
                 Reticle(strokeColor: Brand.accentOrange.opacity(0.5), lineWidth: 0.5, armLength: 20)
                     .frame(width: 120, height: 120)
 
-                Image(systemName: "arrow.triangle.2.circlepath")
+                Image(systemName: "speedometer")
                     .font(.system(size: 42))
                     .foregroundColor(Brand.accentOrange)
             }

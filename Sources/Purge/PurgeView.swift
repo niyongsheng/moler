@@ -33,7 +33,7 @@ struct PurgeView: View {
             ZStack {
                 Reticle(strokeColor: Brand.accentOrange.opacity(0.5), lineWidth: 0.5, armLength: 20)
                     .frame(width: 120, height: 120)
-                Image(systemName: "xmark.bin").font(.system(size: 42)).foregroundColor(Brand.accentOrange)
+                Image(systemName: "trash").font(.system(size: 42)).foregroundColor(Brand.accentOrange)
             }
             VStack(spacing: 6) {
                 Text(L10n.purgeTitle).titleFont(28).kerning(8).foregroundColor(Brand.accentOrange)

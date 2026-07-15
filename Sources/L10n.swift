@@ -135,6 +135,22 @@ enum L10n {
     /// "%d%% USED" — String(format: L10n.overviewUsedFormat, percent)
     static let overviewUsedFormat  = String(localized: "overview.used_format")
 
+    // MARK: - Overview Stats (tool grid labels)
+
+    static let overviewStatFreed   = String(localized: "overview.stat_freed")
+    static let overviewStatCount   = String(localized: "overview.stat_count")
+    static let overviewStatLast    = String(localized: "overview.stat_last")
+    static let overviewStatOps     = String(localized: "overview.stat_ops")
+    static let overviewStatDate    = String(localized: "overview.stat_date")
+    static let overviewStatPath    = String(localized: "overview.stat_path")
+    static let overviewStatRemoved = String(localized: "overview.stat_removed")
+
+    // MARK: - Overview Panel Titles
+
+    static let overviewPanelCpu     = String(localized: "overview.panel_cpu")
+    static let overviewPanelMemory  = String(localized: "overview.panel_memory")
+    static let overviewPanelNetwork = String(localized: "overview.panel_network")
+
     // MARK: - Settings
 
     static let settingsWindowTitle = String(localized: "settings.title")
@@ -227,6 +243,11 @@ enum L10n {
     static let analyzeNever     = String(localized: "analyze.never")
     static let analyzeScanHome  = String(localized: "analyze.scan_home")
 
+    // MARK: - Analyze: Loaded
+
+    /// "RE-ANALYZE" — button to return from treemap result to idle page
+    static let analyzeNewAnalysis = String(localized: "analyze.new_analysis")
+
     // MARK: - Analyze Scanning
 
     static let analyzeScanning  = String(localized: "analyze.scanning")
@@ -287,4 +308,9 @@ enum L10n {
     static let updateErrorBody    = String(localized: "update.error_body")
     static let updateReleasePage  = String(localized: "update.release_page")
     static let updateClose        = String(localized: "update.close")
+
+    // MARK: - About
+
+    /// "WEBSITE" — button to open project homepage
+    static let settingsWebsite = String(localized: "settings.website")
 }

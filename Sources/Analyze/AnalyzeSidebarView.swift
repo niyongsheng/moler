@@ -7,6 +7,7 @@ struct AnalyzeSidebarView: View {
     let onSelect: (DiskScanEntry) -> Void
     let onNavigate: (BreadcrumbItem) -> Void
     let onGoBack: () -> Void
+    let onReset: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -50,6 +51,24 @@ struct AnalyzeSidebarView: View {
                 .padding(.horizontal, Brand.marginTight)
                 .padding(.vertical, 4)
             }
+
+            // New Scan button
+            Divider()
+                .overlay(Brand.lineColor.opacity(0.3))
+
+            Button(action: onReset) {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.left.circle")
+                        .font(.system(size: 10))
+                    Text(L10n.analyzeNewAnalysis)
+                        .monoFont(10)
+                }
+                .foregroundColor(Brand.textDim)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
         .frame(width: 232)
         .background(Brand.bgCard.opacity(0.4))

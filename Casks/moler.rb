@@ -7,7 +7,7 @@ cask "moler" do
   desc "NASA-Punk themed macOS disk cleaner"
   homepage "https://github.com/niyongsheng/moler"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "Moler.app"
 

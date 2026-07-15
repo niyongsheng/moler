@@ -79,30 +79,30 @@ struct OverviewView: View {
 
     private var toolGrid: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-            toolCard(icon: "trash",       label: "CLEAN",     color: Brand.accentOrange, stats: [
-                ("FREED", formatBytes(Store.shared.totalFreedBytes)),
-                ("COUNT", "\(Store.shared.totalCleanCount)"),
-                ("LAST",  Format.relativeDate(Store.shared.lastCleanDate)),
+            toolCard(icon: Pane.clean.iconName,    label: L10n.navClean,     color: Brand.accentOrange, stats: [
+                (L10n.overviewStatFreed, formatBytes(Store.shared.totalFreedBytes)),
+                (L10n.overviewStatCount, "\(Store.shared.totalCleanCount)"),
+                (L10n.overviewStatLast,  Format.relativeDate(Store.shared.lastCleanDate)),
             ])
-            toolCard(icon: "xmark.bin",   label: "PURGE",     color: Brand.accentOrange, stats: [
-                ("FREED", formatBytes(Store.shared.totalPurgeFreedBytes)),
-                ("COUNT", "\(Store.shared.totalPurgeCount)"),
-                ("LAST",  Format.relativeDate(Store.shared.lastPurgeDate)),
+            toolCard(icon: Pane.purge.iconName,    label: L10n.navPurge,     color: Brand.accentOrange, stats: [
+                (L10n.overviewStatFreed, formatBytes(Store.shared.totalPurgeFreedBytes)),
+                (L10n.overviewStatCount, "\(Store.shared.totalPurgeCount)"),
+                (L10n.overviewStatLast,  Format.relativeDate(Store.shared.lastPurgeDate)),
             ])
-            toolCard(icon: "arrow.triangle.2.circlepath", label: "OPTIMIZE", color: Brand.accentOrange, stats: [
-                ("OPS",   "\(Store.shared.totalOptimizeCount)"),
-                ("LAST",  "\(Store.shared.lastOptimizeOptimizations)"),
-                ("DATE",  Format.relativeDate(Store.shared.lastOptimizeDate)),
+            toolCard(icon: Pane.optimize.iconName, label: L10n.navOptimize, color: Brand.accentOrange, stats: [
+                (L10n.overviewStatOps,   "\(Store.shared.totalOptimizeCount)"),
+                (L10n.overviewStatLast,  "\(Store.shared.lastOptimizeOptimizations)"),
+                (L10n.overviewStatDate,  Format.relativeDate(Store.shared.lastOptimizeDate)),
             ])
-            toolCard(icon: "chart.pie",   label: "ANALYZE",   color: Brand.accentOrange, stats: [
-                ("COUNT", "\(Store.shared.totalAnalyzeCount)"),
-                ("LAST",  Format.relativeDate(Store.shared.lastAnalyzeDate)),
-                ("PATH",  Format.abbreviatePath(Store.shared.lastAnalyzePath, maxLen: 18)),
+            toolCard(icon: Pane.analyze.iconName,  label: L10n.navAnalyze,   color: Brand.accentOrange, stats: [
+                (L10n.overviewStatCount, "\(Store.shared.totalAnalyzeCount)"),
+                (L10n.overviewStatLast,  Format.relativeDate(Store.shared.lastAnalyzeDate)),
+                (L10n.overviewStatPath,  Format.abbreviatePath(Store.shared.lastAnalyzePath, maxLen: 18)),
             ])
-            toolCard(icon: "gearshape.2", label: "SOFTWARE",  color: Brand.accentOrange, stats: [
-                ("REMOVED", "\(Store.shared.totalSoftwareRemoved)"),
-                ("FREED",   formatBytes(Store.shared.totalSoftwareBytesFreed)),
-                ("LAST",    Format.relativeDate(Store.shared.lastSoftwareDate)),
+            toolCard(icon: Pane.software.iconName, label: L10n.navSoftware,  color: Brand.accentOrange, stats: [
+                (L10n.overviewStatRemoved, "\(Store.shared.totalSoftwareRemoved)"),
+                (L10n.overviewStatFreed,   formatBytes(Store.shared.totalSoftwareBytesFreed)),
+                (L10n.overviewStatLast,    Format.relativeDate(Store.shared.lastSoftwareDate)),
             ])
         }
     }
@@ -167,7 +167,7 @@ struct OverviewView: View {
     // MARK: - CPU Card
 
     private func cpuCard(_ s: SystemStats) -> some View {
-        InstrumentPanel(title: "CPU", badge: s.hardware.cpuModel) {
+        InstrumentPanel(title: L10n.overviewPanelCpu, badge: s.hardware.cpuModel) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(Int(s.cpu.usage))").titleFont(36).foregroundColor(cpuColor(s.cpu.usage))
@@ -210,7 +210,7 @@ struct OverviewView: View {
     // MARK: - Memory Card
 
     private func memoryCard(_ s: SystemStats) -> some View {
-        InstrumentPanel(title: "MEMORY", badge: Format.bytes(Int64(s.memory.total))) {
+        InstrumentPanel(title: L10n.overviewPanelMemory, badge: Format.bytes(Int64(s.memory.total))) {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
                     Text("\(Int(s.memory.usedPercent))").titleFont(36).foregroundColor(memColor(s.memory.usedPercent))
@@ -252,7 +252,7 @@ struct OverviewView: View {
     private var networkSection: some View {
         Group {
             if let s = monitor.stats, let net = s.network.first {
-                InstrumentPanel(title: "NETWORK", badge: net.name) {
+                InstrumentPanel(title: L10n.overviewPanelNetwork, badge: net.name) {
                     HStack(spacing: 16) {
                         // Rates
                         VStack(alignment: .leading, spacing: 8) {
@@ -348,11 +348,11 @@ struct OverviewView: View {
 
     private var quickBar: some View {
         HStack(spacing: 12) {
-            quickBtn(icon: "trash", label: L10n.overviewQuickScan, color: Brand.accentOrange) { onNavigate(.clean) }
-            quickBtn(icon: "xmark.bin", label: "PURGE", color: Brand.accentOrange) { onNavigate(.purge) }
-            quickBtn(icon: "arrow.triangle.2.circlepath", label: "OPTIMIZE", color: Brand.accentOrange) { onNavigate(.optimize) }
-            quickBtn(icon: "chart.pie", label: "ANALYZE", color: Brand.accentOrange) { onNavigate(.analyze) }
-            quickBtn(icon: "gearshape.2", label: "SOFTWARE", color: Brand.accentOrange) { onNavigate(.software) }
+            quickBtn(icon: Pane.clean.iconName, label: L10n.overviewQuickScan, color: Brand.accentOrange) { onNavigate(.clean) }
+            quickBtn(icon: Pane.purge.iconName, label: L10n.navPurge, color: Brand.accentOrange) { onNavigate(.purge) }
+            quickBtn(icon: Pane.optimize.iconName, label: L10n.navOptimize, color: Brand.accentOrange) { onNavigate(.optimize) }
+            quickBtn(icon: Pane.analyze.iconName, label: L10n.navAnalyze, color: Brand.accentOrange) { onNavigate(.analyze) }
+            quickBtn(icon: Pane.software.iconName, label: L10n.navSoftware, color: Brand.accentOrange) { onNavigate(.software) }
             Spacer()
             quickBtn(icon: "gearshape.fill", label: L10n.overviewQuickSettings, color: Brand.accentBlue) { onNavigate(.settings) }
         }
@@ -363,7 +363,7 @@ struct OverviewView: View {
         Button(action: action) {
             HStack(spacing: 4) {
                 Image(systemName: icon).font(.system(size: 10))
-                Text(label).monoFont(10)
+                Text(label).monoFont(10).lineLimit(1)
             }
             .foregroundColor(color)
             .padding(.horizontal, 10).padding(.vertical, 6)
