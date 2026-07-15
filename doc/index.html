@@ -31,7 +31,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 ::-webkit-scrollbar-thumb:hover{background:var(--bg-elevated)}
 
 /* ═══ Shared Patterns ═══ */
-.card-hover{border:1px solid var(--line-color);border-radius:var(--r-lg);transition:all .3s ease}
+.card-hover{border:1px solid var(--line-color);border-radius:var(--r-lg);transition:transform .3s,box-shadow .3s,border-color .3s,background .3s}
 .card-hover:hover{border-color:var(--accent-orange);background:var(--bg-elevated);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
 .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .dot:nth-child(1){background:#ff5f57}.dot:nth-child(2){background:#febc2e}.dot:nth-child(3){background:#2bc840}
@@ -73,7 +73,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 
 /* Download buttons */
 .download-buttons{display:flex;gap:12px;flex-wrap:wrap}
-.btn-download{display:inline-flex;align-items:center;gap:10px;padding:12px 24px;border-radius:var(--r-md);font-size:14px;font-weight:700;border:none;transition:all .25s;cursor:pointer;font-family:var(--font-display);letter-spacing:.04em}
+.btn-download{display:inline-flex;align-items:center;gap:10px;padding:12px 24px;border-radius:var(--r-md);font-size:14px;font-weight:700;border:none;transition:transform .25s,box-shadow .25s,background .25s,border-color .25s;cursor:pointer;font-family:var(--font-display);letter-spacing:.04em}
 .btn-download svg{width:20px;height:20px;flex-shrink:0}
 .btn-download .btn-label{display:flex;flex-direction:column;align-items:flex-start;gap:2px}
 .btn-download .btn-main{font-size:14px;line-height:1.3}
@@ -195,6 +195,8 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
 .brew-command:hover .copy-hint{color:var(--accent-orange)}
 .brew-note{margin-top:12px;font-size:12px;color:var(--text-dim);line-height:1.6}
 .brew-note code{font-family:var(--font-mono);font-size:11px;background:rgba(59,78,107,.3);padding:1px 6px;border-radius:var(--r-sm);color:var(--accent-gold)}
+code.accent{font-family:var(--font-mono);color:var(--accent-gold)}
+.section-desc code.accent{font-size:13px}
 
 /* ═══ Footer ═══ */
 .footer{border-top:1px solid var(--line-color);padding:48px 0 32px}
@@ -328,7 +330,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
       </div>
       <h1 class="hero-title"><span class="orange">Moler</span></h1>
       <p class="hero-tagline" data-i18n="hTg">NASA-Punk themed macOS disk cleaner — SwiftUI GUI for Mole CLI</p>
-      <p class="hero-desc" data-i18n="hDs">A stylish disk cleanup tool that wraps the <code style="color:var(--accent-gold);font-family:var(--font-mono);font-size:13px;">mo</code> CLI in a NASA-Punk themed dashboard. Scan, review, and clean your Mac with orbital radar animations and real-time system monitoring.</p>
+      <p class="hero-desc" data-i18n="hDs">A stylish disk cleanup tool that wraps the <code class="accent">mo</code> CLI in a NASA-Punk themed dashboard. Scan, review, and clean your Mac with orbital radar animations and real-time system monitoring.</p>
 
       <div class="download-buttons">
         <button class="btn-download btn-download-primary" onclick="installBrew()">
@@ -350,8 +352,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
       </div>
 
       <div class="hero-features">
-        <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="hF1">Local CLI</span></span>
-        <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="hF2">Real-time Monitor</span></span>
+        <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="hF1">Compact &amp; Light</span></span>
         <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="hF3">Privacy First</span></span>
         <span><svg class="check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> <span data-i18n="hF4">Open Source</span></span>
       </div>
@@ -471,7 +472,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
     <div class="section-header animate-on-scroll">
       <div class="section-label" data-i18n="sFL">Core Features</div>
       <h2 class="section-title" data-i18n="sFT">Mission Modules</h2>
-      <p class="section-desc" data-i18n="sFD">Five instrument panels plus a command dashboard. Each tool wraps a <code style="font-family:var(--font-mono);font-size:13px;color:var(--accent-gold);">mo</code> CLI command with a unique 3D scene and real-time streaming feedback.</p>
+      <p class="section-desc" data-i18n="sFD">Five instrument panels plus a command dashboard. Each tool wraps a <code class="accent">mo</code> CLI command with a unique 3D scene and real-time streaming feedback.</p>
     </div>
 
     <div class="features-grid stagger-children" id="featuresGrid">
@@ -486,7 +487,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
         </div>
         <div class="feature-title" data-i18n="f1T">System Scan</div>
         <div class="feature-sub" data-i18n="f1S">mo analyze / mo clean</div>
-        <div class="feature-desc" data-i18n="f1D">Initiate a deep system scan with <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent-gold);">mo analyze --json</code> to find deletable files, review them with category breakdown, then execute cleanup with real-time terminal streaming. Tracks total freed space and cleanup history.</div>
+        <div class="feature-desc" data-i18n="f1D">Deep scan with <code class="accent">mo analyze --json</code> to find deletable files, review by category, then clean with real-time terminal streaming.</div>
       </div>
 
       <!-- 2. Project Purge -->
@@ -499,7 +500,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
         </div>
         <div class="feature-title" data-i18n="f2T">Project Purge</div>
         <div class="feature-sub" data-i18n="f2S">mo purge</div>
-        <div class="feature-desc" data-i18n="f2D">Selectively blast away project build artifacts — Xcode DerivedData, <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent-gold);">node_modules</code>, Gradle caches, SwiftPM, CocoaPods, and more. Multi-select target directories with PTY-driven terminal streaming and cancel support.</div>
+        <div class="feature-desc" data-i18n="f2D">Selectively remove build artifacts — Xcode DerivedData, <code class="accent">node_modules</code>, Gradle caches, SwiftPM, and more. Multi-select targets with terminal streaming.</div>
       </div>
 
       <!-- 3. System Optimize -->
@@ -511,7 +512,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
         </div>
         <div class="feature-title" data-i18n="f3T">System Optimize</div>
         <div class="feature-sub" data-i18n="f3S">mo optimize</div>
-        <div class="feature-desc" data-i18n="f3D">Run performance diagnosis and system optimizations — DNS cache flush, Spotlight index verify, Finder and QuickLook cache refresh, icon services rebuild, and more. Dry-run preview before applying, with a real-time streaming task list and interactive 3D Jupiter scene.</div>
+        <div class="feature-desc" data-i18n="f3D">Performance diagnosis and optimizations — DNS flush, Spotlight verify, Finder / QuickLook cache refresh. Dry-run preview with streaming task list and 3D Jupiter scene.</div>
       </div>
 
       <!-- 4. Disk Analysis -->
@@ -523,7 +524,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
         </div>
         <div class="feature-title" data-i18n="f4T">Disk Analysis</div>
         <div class="feature-sub" data-i18n="f4S">Treemap</div>
-        <div class="feature-desc" data-i18n="f4D">Interactive treemap visualization of disk usage with breadcrumb navigation. Scan any directory with <code style="font-family:var(--font-mono);font-size:12px;color:var(--accent-gold);">mo analyze --json</code> and drill down through nested blocks to see exactly what is consuming space, all against a 3D Earth backdrop.</div>
+        <div class="feature-desc" data-i18n="f4D">Interactive treemap with breadcrumb navigation. Drill down nested blocks to find space hogs, backed by a 3D Earth scene.</div>
       </div>
 
       <!-- 5. App Uninstall -->
@@ -537,7 +538,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
         </div>
         <div class="feature-title" data-i18n="f5T">App Uninstall</div>
         <div class="feature-sub" data-i18n="f5S">mo uninstall</div>
-        <div class="feature-desc" data-i18n="f5D">List all installed macOS apps with sizes and bundle info, search and sort by name or size, then select any app to preview its trace files — App Bundle, Preferences, Caches, Containers, and more. Dry-run before you commit, then uninstall cleanly with a detailed completion summary, all set against an interactive 3D Mars scene.</div>
+        <div class="feature-desc" data-i18n="f5D">Browse installed macOS apps, search and sort by name or size, preview trace files — App Bundle, Preferences, Caches, and more. Dry-run before you commit, with a 3D Mars scene.</div>
       </div>
 
       <!-- 6. Dashboard Overview -->
@@ -550,7 +551,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
         </div>
         <div class="feature-title" data-i18n="f6T">Dashboard Overview</div>
         <div class="feature-sub" data-i18n="f6S">System Monitor</div>
-        <div class="feature-desc" data-i18n="f6D">Live CPU usage, memory pressure, network throughput, and disk capacity at a glance. Health score, uptime tracker, rolling sparkline charts, and a tool stats grid showing Freed, Count, and Last Run for every module.</div>
+        <div class="feature-desc" data-i18n="f6D">Live CPU, memory, network, and disk gauges. Health score, uptime, sparkline charts, and per-module stats at a glance.</div>
       </div>
     </div>
   </div>
@@ -660,14 +661,28 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
           <span class="preview-card-label" data-i18n="p6L">Uninstall</span>
         </div>
         <div class="preview-card-body">
-          <div class="preview-stats">
-            <div class="preview-stat-row"><span data-i18n="p6A">Apps Found</span><span class="val">24</span></div>
-            <div class="preview-stat-row"><span data-i18n="p6O">Files Tracked</span><span class="val">187</span></div>
-            <div class="preview-stat-row"><span data-i18n="p6S">Reclaimable</span><span class="val">1.8 GB</span></div>
-            <div style="margin-top:8px;">
-              <div class="preview-stat-row" style="margin-bottom:4px;"><span data-i18n="p6U">To Uninstall</span><span class="val">3 apps</span></div>
-              <div class="preview-stat-bar"><div class="fill" style="width:55%;background:linear-gradient(90deg,var(--accent-red),var(--accent-orange));"></div></div>
+          <div style="width:100%;display:flex;align-items:center;justify-content:center;height:120px;">
+            <div style="position:relative;width:100px;height:100px;display:flex;align-items:center;justify-content:center;">
+              <!-- Scanning orbit rings -->
+              <div style="position:absolute;width:100px;height:100px;border-radius:50%;border:1px solid rgba(224,98,54,.2);animation:scanPulse 4s linear infinite;"></div>
+              <div style="position:absolute;width:76px;height:76px;border-radius:50%;border:1px dashed rgba(215,171,97,.15);animation:scanPulse 3s linear infinite reverse;"></div>
+              <div style="position:absolute;width:52px;height:52px;border-radius:50%;border:1px solid rgba(47,76,121,.5);"></div>
+              <!-- Planet (Mars) -->
+              <div style="position:relative;width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#d8ca9d,#8b7340,#5c4a2e);overflow:hidden;">
+                <div style="position:absolute;top:15%;left:20%;width:5px;height:5px;border-radius:50%;background:rgba(60,40,20,.4);"></div>
+                <div style="position:absolute;top:55%;left:55%;width:3px;height:3px;border-radius:50%;background:rgba(60,40,20,.3);"></div>
+                <div style="position:absolute;top:30%;left:65%;width:4px;height:4px;border-radius:50%;background:rgba(60,40,20,.35);"></div>
+              </div>
+              <!-- Floating dots (detected objects) -->
+              <div style="position:absolute;top:16%;left:70%;width:4px;height:4px;border-radius:50%;background:var(--accent-gold);box-shadow:0 0 4px var(--accent-gold);animation:pulse 1.5s ease-in-out infinite;"></div>
+              <div style="position:absolute;top:65%;left:18%;width:3px;height:3px;border-radius:50%;background:var(--accent-orange);"></div>
+              <div style="position:absolute;top:45%;left:82%;width:3px;height:3px;border-radius:50%;background:var(--accent-blue);"></div>
             </div>
+          </div>
+          <div style="display:flex;gap:16px;font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">
+            <span>24 <span data-i18n="p6A">apps</span></span>
+            <span>187 <span data-i18n="p6O">files</span></span>
+            <span style="color:var(--accent-orange);">1.8 <span data-i18n="p6S">GB</span></span>
           </div>
         </div>
       </div>
@@ -680,7 +695,7 @@ body{font-family:var(--font-display);background:var(--bg-navy);color:var(--text-
   <div class="container">
     <div class="animate-on-scroll">
       <h2 class="cta-title" data-i18n="cT">Ready for Launch</h2>
-      <p class="cta-desc" data-i18n="cD">Install Moler via Homebrew and start exploring your disk galaxy. Requires macOS 14+ and the <code style="font-family:var(--font-mono);color:var(--accent-gold);">mo</code> CLI.</p>
+      <p class="cta-desc" data-i18n="cD">Install Moler via Homebrew and start exploring your disk galaxy. Requires macOS 14+ and the <code class="accent">mo</code> CLI.</p>
       <div class="download-buttons">
         <button class="btn-download btn-download-primary" onclick="installBrew()">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
@@ -737,7 +752,7 @@ const L = {
     hB:'ARM · macOS 14+',
     hTg:'NASA-Punk 风格 macOS 磁盘清理工具 — 基于 SwiftUI 的 Mole CLI 图形界面',
     hDs:'一款时尚的磁盘清理工具，将 mo 命令行封装在 NASA-Punk 主题仪表盘中。通过轨道雷达动画和实时系统监控，扫描、审查和清理你的 Mac。',
-    hF1:'本地命令行',hF2:'实时监控',hF3:'隐私优先',hF4:'开源免费',
+    hF1:'小巧灵活',hF3:'隐私优先',hF4:'开源免费',
     mT:'moler — 任务控制中心',mF:'已释放',mM:'内存',mDk:'磁盘',
     mSL:'系统扫描 · 847 项',mFH:'发现文件',
     mF1:'Library/Caches',mF2:'.Trash',mF3:'Xcode Derived',mF4:'日志',mF5:'下载',
@@ -746,22 +761,22 @@ const L = {
     sPL:'应用预览',sPT:'任务控制界面',
     sPD:'六大仪表面板，统一任务控制。在模块间无缝切换，不丢失上下文。',
     f1T:'系统扫描',f1S:'mo analyze / mo clean',
-    f1D:'使用 mo analyze --json 发起深度系统扫描查找可删除文件，按分类审查后执行清理，实时终端流式输出。跟踪累计释放空间和清理历史。',
+    f1D:'使用 mo analyze --json 深度扫描可删除文件，按分类审查后实时终端清理。',
     f2T:'项目清理',f2S:'mo purge',
-    f2D:'选择性清除项目构建工件 — Xcode DerivedData、node_modules、Gradle 缓存、SwiftPM、CocoaPods 等。多选目标目录，支持 PTY 终端流和取消操作。',
+    f2D:'选择性移除构建工件 — Xcode DerivedData、node_modules、Gradle 缓存等。多选目标，终端流式输出。',
     f3T:'系统优化',f3S:'mo optimize',
-    f3D:'运行性能诊断和系统优化项目 — DNS 缓存刷新、Spotlight 索引验证、Finder/QuickLook 缓存刷新、图标服务重建等。dry-run 预览后再执行，实时流式任务列表配交互式 3D 木星场景。',
+    f3D:'性能诊断与系统优化 — DNS 刷新、Spotlight 验证、Finder/QuickLook 缓存清理。dry-run 预览 + 3D 木星场景。',
     f4T:'磁盘分析',f4S:'矩形树图',
-    f4D:'交互式矩形树图展示磁盘使用情况，支持面包屑导航。使用 mo analyze --json 扫描任意目录，逐层下钻查看空间占用，背景为交互式 3D 地球场景。',
+    f4D:'交互式矩形树图 + 面包屑导航，逐层下钻查看空间占用。配合 3D 地球场景。',
     f5T:'应用卸载',f5S:'mo uninstall',
-    f5D:'列出所有已安装的 macOS 应用及其大小和 Bundle ID，按名称或大小搜索排序。选择应用后预览残留文件：App Bundle、Preferences、Caches、Containers 等分类一目了然。确认 dry-run 结果后执行卸载，配以详细的完成摘要和交互式 3D 火星场景。',
+    f5D:'浏览已安装应用，按名称或大小排序，预览残留文件分类 — App Bundle、Preferences、Caches 等。dry-run 确认后卸载 + 3D 火星场景。',
     f6T:'仪表盘概览',f6S:'系统监控',
-    f6D:'实时 CPU 使用率、内存压力、网络吞吐量和磁盘容量一览无余。健康评分、运行时长追踪、滚动迷你趋势图，以及各模块的释放空间、次数和最后运行时间统计。',
+    f6D:'实时 CPU、内存、网络、磁盘仪表盘。健康评分、运行时长、趋势图及模块统计。',
     p1L:'概览',p1C:'清理次数',p1Lc:'上次清理',p2L:'清理',p3L:'扫描',p4L:'清除',p5L:'分析',p6L:'卸载',
     p3Lb:'扫描中 · 847 项',
     p4L1:'$ mo purge',p4L2:'> 正在扫描 node_modules...',p4L3:'> 找到 12 个项目',p4L4:'> 正在清理...',p4L5:'> ✓ 已释放 340 MB',
     p5B1:'应用程序',p5B2:'资源库',p5B3:'系统',p5B4:'文档',p5B5:'其他',
-    p6A:'检测应用',p6O:'追踪文件',p6S:'可释放',p6U:'待卸载',
+    p6A:'个应用',p6O:'个文件',p6S:'GB 可释放',
     cT:'准备出发',
     cD:'通过 Homebrew 安装 Moler，开始探索你的磁盘星系。需要 macOS 14+ 和 mo CLI。',
     cB1:'通过 Homebrew 安装',cB1s:'macOS 14+ · Apple Silicon & Intel',
@@ -779,7 +794,7 @@ const L = {
     hB:'ARM · macOS 14+',
     hTg:'NASA-Punk themed macOS disk cleaner — SwiftUI GUI for Mole CLI',
     hDs:'A stylish disk cleanup tool that wraps the mo CLI in a NASA-Punk themed dashboard. Scan, review, and clean your Mac with orbital radar animations and real-time system monitoring.',
-    hF1:'Local CLI',hF2:'Real-time Monitor',hF3:'Privacy First',hF4:'Open Source',
+    hF1:'Compact &amp; Light',hF3:'Privacy First',hF4:'Open Source',
     mT:'moler — Mission Control',mF:'Freed',mM:'Memory',mDk:'Disk',
     mSL:'SYSTEM SCAN · 847 items',mFH:'Found Files',
     mF1:'Library/Caches',mF2:'.Trash',mF3:'Xcode Derived',mF4:'Logs',mF5:'Downloads',
@@ -788,22 +803,22 @@ const L = {
     sPL:'App Preview',sPT:'Mission Control Interface',
     sPD:'Six instrument panels, one unified mission. Navigate between modules without losing context.',
     f1T:'System Scan',f1S:'mo analyze / mo clean',
-    f1D:'Initiate a deep system scan with mo analyze --json to find deletable files, review by category, then execute cleanup with real-time terminal streaming. Tracks total freed space and cleanup history.',
+    f1D:'Deep scan with mo analyze --json to find deletable files, review by category, then clean with real-time terminal streaming.',
     f2T:'Project Purge',f2S:'mo purge',
-    f2D:'Selectively blast away project build artifacts — Xcode DerivedData, node_modules, Gradle caches, SwiftPM, CocoaPods, and more. Multi-select target directories with PTY-driven terminal streaming and cancel support.',
+    f2D:'Selectively remove build artifacts — Xcode DerivedData, node_modules, Gradle caches, SwiftPM, and more. Multi-select targets with terminal streaming.',
     f3T:'System Optimize',f3S:'mo optimize',
-    f3D:'Run performance diagnosis and system optimizations — DNS cache flush, Spotlight index verify, Finder and QuickLook cache refresh, icon services rebuild, and more. Dry-run preview before applying, with real-time streaming task list and interactive 3D Jupiter scene.',
+    f3D:'Performance diagnosis and optimizations — DNS flush, Spotlight verify, Finder/QuickLook cache refresh. Dry-run preview with streaming task list and 3D Jupiter scene.',
     f4T:'Disk Analysis',f4S:'Treemap',
-    f4D:'Interactive treemap visualization of disk usage with breadcrumb navigation. Scan any directory with mo analyze --json and drill down through nested blocks to see exactly what\'s consuming space, all against a 3D Earth backdrop.',
+    f4D:'Interactive treemap with breadcrumb navigation. Drill down nested blocks to find space hogs, backed by a 3D Earth scene.',
     f5T:'App Uninstall',f5S:'mo uninstall',
-    f5D:'List all installed macOS apps with sizes and bundle info, search and sort by name or size, then select any app to preview its trace files — App Bundle, Preferences, Caches, Containers, and more. Dry-run before you commit, then uninstall cleanly with a detailed completion summary, all set against an interactive 3D Mars scene.',
+    f5D:'Browse installed macOS apps, search and sort by name or size, preview trace files — App Bundle, Preferences, Caches, and more. Dry-run before you commit, with a 3D Mars scene.',
     f6T:'Dashboard Overview',f6S:'System Monitor',
-    f6D:'Live CPU usage, memory pressure, network throughput, and disk capacity at a glance. Health score, uptime tracker, rolling sparkline charts, and a tool stats grid showing Freed, Count, and Last Run for every module.',
+    f6D:'Live CPU, memory, network, and disk gauges. Health score, uptime, sparkline charts, and per-module stats at a glance.',
     p1L:'Overview',p1C:'Cleans',p1Lc:'Last Clean',p2L:'Clean',p3L:'Scan',p4L:'Purge',p5L:'Analyze',p6L:'Uninstall',
     p3Lb:'Scanning · 847 items',
     p4L1:'$ mo purge',p4L2:'> Scanning node_modules...',p4L3:'> Found 12 projects',p4L4:'> Cleaning...',p4L5:'> ✓ 340 MB freed',
     p5B1:'Applications',p5B2:'Library',p5B3:'System',p5B4:'Documents',p5B5:'Other',
-    p6A:'Apps Found',p6O:'Files Tracked',p6S:'Reclaimable',p6U:'To Uninstall',
+    p6A:'apps',p6O:'files',p6S:'GB',
     cT:'Ready for Launch',
     cD:'Install Moler via Homebrew and start exploring your disk galaxy. Requires macOS 14+ and the mo CLI.',
     cB1:'Install via Homebrew',cB1s:'macOS 14+ · Apple Silicon & Intel',
@@ -913,8 +928,8 @@ const observer = new IntersectionObserver((entries) => {
 }, observerOptions);
 document.querySelectorAll('.animate-on-scroll, .stagger-children').forEach(el => observer.observe(el));
 
-/* ═══ Starfield ═══ */
-(function() {
+/* ═══ Starfield (deferred) ═══ */
+requestAnimationFrame(() => {
   const hero = document.getElementById('hero');
   if (!hero) return;
   const layer = document.createElement('div');
@@ -931,7 +946,7 @@ document.querySelectorAll('.animate-on-scroll, .stagger-children').forEach(el =>
     layer.appendChild(s);
   }
   hero.insertBefore(layer, hero.firstChild);
-})();
+});
 </script>
 
 </body>
