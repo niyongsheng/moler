@@ -22,6 +22,3 @@ Moler.xcodeproj/
 
 # Profiling data
 *.profraw
-
-# Large media
-demo.gif
