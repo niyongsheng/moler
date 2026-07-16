@@ -32,6 +32,9 @@
 
 ```bash
 brew install --cask niyongsheng/moler/moler
+
+# Bypass Gatekeeper
+/Applications/Moler.app/Contents/MacOS/Moler
 ```
 
 > [!IMPORTANT]
