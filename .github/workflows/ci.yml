@@ -30,30 +30,43 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Create DMG
+      - name: Get version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Package DMG
         run: |
           APP=".build/Build/Products/Release/Moler.app"
-          DMG="Moler.dmg"
           TMP="dmg_tmp"
 
           mkdir -p "$TMP"
           cp -R "$APP" "$TMP/"
           ln -s /Applications "$TMP/Applications"
 
-          hdiutil create -volname Moler -srcfolder "$TMP" -ov -format UDZO "$DMG"
+          hdiutil create -volname Moler -srcfolder "$TMP" -ov -format UDZO "Moler.dmg"
           rm -rf "$TMP"
 
-      - name: Upload app
+      - name: Package ZIP
+        run: zip -ry "Moler.zip" ".build/Build/Products/Release/Moler.app"
+
+      - name: Upload app (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: Moler.app
           path: .build/Build/Products/Release/Moler.app
 
-      - name: Upload DMG
+      - name: Upload DMG (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: Moler.dmg
           path: Moler.dmg
+
+      - name: Upload ZIP (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Moler.zip
+          path: Moler.zip
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -66,9 +79,25 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: Moler.dmg
+          path: release-artifacts
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Moler.zip
+          path: release-artifacts
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Rename artifacts to versioned names
+        run: |
+          cd release-artifacts
+          mv Moler.dmg "Moler-${{ steps.version.outputs.VERSION }}.dmg"
+          mv Moler.zip "Moler-${{ steps.version.outputs.VERSION }}.zip"
 
       - name: GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: Moler.dmg
+          files: release-artifacts/*
           generate_release_notes: true
