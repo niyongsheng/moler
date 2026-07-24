@@ -31,7 +31,7 @@ See `moler-release` skill (`.claude/skills/moler-release/SKILL.md`) for the full
 
 Moler is a **macOS SwiftUI app** that wraps the `mo` CLI (from [tw93/Mole](https://github.com/tw93/Mole), install via `brew install mole`) in a NASA-Punk themed GUI for disk cleanup. Built with XcodeGen; the Xcode project is generated, not committed. Current version: **v0.1.0**. Version displayed in the sidebar and Settings is read dynamically from `Info.plist` via `UpdateChecker.currentVersion`.
 
-For NASA-Punk design tokens (colors, fonts, spacing, layout) see [`doc/design-token.html`](doc/design-token.html).
+For NASA-Punk design tokens (colors, fonts, spacing, layout) see [`docs/design-token.html`](docs/design-token.html).
 
 ### Entry Point & Window Lifecycle
 

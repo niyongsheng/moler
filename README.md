@@ -3,7 +3,7 @@
 </p>
 
 <h3 align="center">Moler</h3>
-<p align="center">A NASA-Punk themed macOS disk cleaner — SwiftUI GUI</p>
+<p align="center">NASA-Punk style macOS disk cleaner based on Mole • Native Swift GUI</p>
 
 <p align="center">
   <a href="https://github.com/niyongsheng/moler/releases"><img src="https://img.shields.io/github/v/release/niyongsheng/moler?style=for-the-badge&label=Release" alt="Release"></a>
@@ -31,14 +31,14 @@
 ## Install
 
 ```bash
+# Install via Homebrew
 brew install --cask niyongsheng/moler/moler
 
-# Bypass Gatekeeper
-/Applications/Moler.app/Contents/MacOS/Moler
+# Remove quarantine attribute
+sudo xattr -rd com.apple.quarantine /Applications/Moler.app
 ```
 
-> [!IMPORTANT]
-> 
+> [!IMPORTANT]  
 > The `mo` CLI from [Mole](https://github.com/tw93/Mole) must be installed separately: `brew install mole`
 
 ## License

@@ -715,12 +715,6 @@ code.accent{font-family:var(--font-mono);color:var(--accent-gold)}
           <span class="cmd">brew install --cask niyongsheng/moler/moler</span>
           <span class="copy-hint" data-i18n="bC" data-i18n-copied="bCd">Click to copy</span>
         </div>
-        <br>
-        <div class="brew-command" onclick="copyAppPath(this)" title="Click to copy">
-          <span class="prompt">$</span>
-          <span class="cmd">/Applications/Moler.app/Contents/MacOS/Moler</span>
-          <span class="copy-hint" data-i18n="bC" data-i18n-copied="bCd">Click to copy</span>
-        </div>
         <p class="brew-note" style="margin-top:6px;">
           <span data-i18n="bN1">Or download the latest <code>.app</code> from <a href="https://github.com/niyongsheng/moler/releases" style="color:var(--accent-gold);">GitHub Releases</a>.</span><br>
           <span data-i18n="bN2">Requires <code>brew install mole</code> for the underlying CLI. No code signing — see <a href="https://github.com/niyongsheng/moler#install" style="color:var(--accent-gold);">instructions</a>.</span>
@@ -907,27 +901,10 @@ function copyBrew(el) {
   }
 }
 
-/* ═══ Copy app path ═══ */
-function copyAppPath(el) {
-  const text = '/Applications/Moler.app/Contents/MacOS/Moler';
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).then(() => {
-      const hint = el.querySelector('.copy-hint');
-      const copiedKey = hint.dataset.i18nCopied;
-      const origKey = hint.dataset.i18n;
-      hint.textContent = L[currentLang][copiedKey] || 'Copied!';
-      hint.style.color = '#4caf7d';
-      setTimeout(() => {
-        hint.textContent = L[currentLang][origKey] || 'Click to copy';
-        hint.style.color = '';
-      }, 1500);
-    }).catch(() => {});
-  }
-}
 
 /* ═══ Download .command file to auto-open Terminal ═══ */
 function installBrew() {
-  const script = '#!/bin/bash\nbrew install --cask niyongsheng/moler/moler && /Applications/Moler.app/Contents/MacOS/Moler\n';
+  const script = '#!/bin/bash\nbrew install --cask niyongsheng/moler/moler\n';
   const blob = new Blob([script], { type: 'application/octet-stream' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
