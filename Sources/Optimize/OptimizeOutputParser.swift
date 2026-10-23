@@ -57,8 +57,8 @@ final class OptimizeOutputParser {
             return .unknown(trimmed)
         }
 
-        // PERFORMANCE DIAGNOSIS header
-        if trimmed == "PERFORMANCE DIAGNOSIS" {
+        // PERFORMANCE DIAGNOSIS header (Mole prints "Performance diagnosis")
+        if trimmed.caseInsensitiveCompare("PERFORMANCE DIAGNOSIS") == .orderedSame {
             phase = .diagnosis
             return .unknown(trimmed)
         }

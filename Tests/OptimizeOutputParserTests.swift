@@ -29,6 +29,18 @@ final class OptimizeOutputParserTests: XCTestCase {
         assertUnknown(event)
     }
 
+    /// Mole prints the heading in title case ("Performance diagnosis").
+    func testDiagnosisHeaderTitleCase() {
+        let event = parser.ingest(line: "Performance diagnosis")
+        assertUnknown(event)
+
+        let item = parser.ingest(line: "  ◎ Memory pressure: swap 15.23GB of 16.11GB used")
+        guard case .diagnosisItem(let desc) = item else {
+            XCTFail("Expected diagnosisItem, got \(item)"); return
+        }
+        XCTAssertEqual(desc, "Memory pressure: swap 15.23GB of 16.11GB used")
+    }
+
     func testDiagnosisBottleneck() {
         parser.ingest(line: "PERFORMANCE DIAGNOSIS")
         let event = parser.ingest(line: "  ◎ Likely bottleneck: disk I/O")

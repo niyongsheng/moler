@@ -56,7 +56,15 @@ enum SoftwareUninstallParser {
             guard inFileList else { continue }
             if trimmed.hasPrefix("◎") { continue }
             if trimmed.hasPrefix("✓") || trimmed.hasPrefix("✔") {
-                let path = String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces)
+                var path = String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces)
+                // Mole appends the bundle size to the .app row:
+                //   ✓ /Applications/X.app , 65.0MB
+                if let suffix = path.range(
+                    of: #"\s*,\s*[0-9.]+\s*[KMGT]?B\s*$"#,
+                    options: .regularExpression
+                ) {
+                    path.removeSubrange(suffix)
+                }
                 guard path.hasPrefix("/") || path.hasPrefix("~") else { continue }
                 entries.append(UninstallPreview.Entry(path: path, kind: classify(path)))
             }

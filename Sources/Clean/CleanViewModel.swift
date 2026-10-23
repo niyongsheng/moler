@@ -340,14 +340,24 @@ final class CleanViewModel: ObservableObject {
                 task.waitUntilExit()
                 outPipe.fileHandleForReading.readabilityHandler = nil
                 lock.lock()
-                let freed = estimateFreedBytes(from: allOutput)
-                let lines = logLines
+                let summary = CleanSummaryParser.parse(allOutput)
                 lock.unlock()
+
+                // Trust Mole's own summary: per-item lines also contain sizes,
+                // so summing them would over-count. No summary means the run
+                // was interrupted (or found nothing) — report zero, not noise.
+                let freed = summary?.freedBytes ?? 0
+                let filesRemoved = summary?.itemsCleaned ?? 0
+
                 await MainActor.run { [weak self] in
                     guard let self else { return }
                     cleanTimer?.invalidate(); cleanTimer = nil; cleanProcess = nil
-                    Store.shared.recordClean(freedBytes: freed, filesRemoved: lines.count)
-                    state = .done(freedBytes: freed, filesRemoved: lines.count)
+                    Store.shared.recordClean(freedBytes: freed, filesRemoved: filesRemoved)
+                    Analytics.track(.cleanCompleted, [
+                        "freed_bytes": Int(freed),
+                        "files_removed": filesRemoved,
+                    ])
+                    state = .done(freedBytes: freed, filesRemoved: filesRemoved)
                     errorMessage = nil
                 }
             }
@@ -384,26 +394,3 @@ final class CleanViewModel: ObservableObject {
 
 // MARK: - Helpers
 
-private func estimateFreedBytes(from text: String) -> Int64 {
-    var total: Int64 = 0
-    guard let pattern = try? NSRegularExpression(pattern: "(\\d+\\.?\\d*)\\s*(TB|GB|MB|KB|B)", options: .caseInsensitive) else {
-        return 0
-    }
-    let nsText = text as NSString
-    for match in pattern.matches(in: text, options: [], range: NSRange(location: 0, length: nsText.length)) {
-        guard match.numberOfRanges >= 3,
-              let value = Double(nsText.substring(with: match.range(at: 1))) else { continue }
-        let unit = nsText.substring(with: match.range(at: 2)).uppercased()
-        let multiplier: Double = {
-            switch unit {
-            case "TB": return 1_099_511_627_776
-            case "GB": return 1_073_741_824
-            case "MB": return 1_048_576
-            case "KB": return 1_024
-            default:   return 1
-            }
-        }()
-        total += Int64(value * multiplier)
-    }
-    return total
-}

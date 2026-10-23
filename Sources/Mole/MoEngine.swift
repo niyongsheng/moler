@@ -105,9 +105,18 @@ final class MoEngine {
     }
 
     /// Uninstall an app using `mo uninstall <name>`.
+    ///
+    /// Mole V1.62.0+ requires an interactive terminal for the confirmation
+    /// prompt, so this one command needs a PTY on stdin instead of a pipe.
     func uninstall(name: String) throws -> CapturedProcess {
-        try capture(MoCommand(args: ["uninstall", name],
-                              stdin: "y\n", timeout: 300))
+        guard let mo = MoleCLI.findExecutable() else { throw MoleError.notFound }
+        return try MolePTYProcess.run(
+            executable: mo,
+            args: ["uninstall", name],
+            confirmationMarker: "Enter confirm",
+            timeout: 300,
+            env: ["NO_COLOR": "1"]
+        )
     }
 }
 

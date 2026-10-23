@@ -101,6 +101,20 @@ final class SoftwareUninstallParserTests: XCTestCase {
         XCTAssertEqual(preview.entries[1].path, "~/Library/Containers/com.slack.Slack/")
     }
 
+    /// Mole 1.61+ appends the bundle size to the .app row.
+    func testParseDryRunStripsBundleSizeSuffix() {
+        let text = """
+        Files to be removed:
+        ◎ LocalSend , 65.0MB
+          ✓ /Applications/LocalSend.app , 65.0MB
+        """
+
+        let preview = SoftwareUninstallParser.parseDryRunOutput(text)
+        XCTAssertEqual(preview.entries.count, 1)
+        XCTAssertEqual(preview.entries[0].path, "/Applications/LocalSend.app")
+        XCTAssertEqual(preview.entries[0].kind, .application)
+    }
+
     func testParseDryRunIgnoresNoFileLines() {
         let text = """
         Some header text
