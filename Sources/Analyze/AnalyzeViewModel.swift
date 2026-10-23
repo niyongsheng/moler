@@ -175,6 +175,7 @@ final class AnalyzeViewModel: ObservableObject {
                     self.state = .loaded(result: result, breadcrumb: self.breadcrumb)
                     self.errorMessage = nil
                     Store.shared.recordAnalyze(path: result.path)
+                    Analytics.track(.analyzeCompleted)
                 }
             } catch is CancellationError {
                 // Silently handle cancellation

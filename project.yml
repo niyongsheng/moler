@@ -3,6 +3,10 @@ options:
   bundleIdPrefix: dev.niyongsheng.moler
   deploymentTarget:
     macOS: "14.0"
+packages:
+  Aptabase:
+    url: https://github.com/aptabase/aptabase-swift
+    from: 0.3.12
 settings:
   base:
     SWIFT_VERSION: "5.9"
@@ -38,6 +42,7 @@ targets:
         ENABLE_HARDENED_RUNTIME: NO
     dependencies:
       - sdk: SceneKit.framework
+      - package: Aptabase
     postCompileScripts:
       - script: |
           if [ "$CONFIGURATION" = "Release" ]; then

@@ -10,6 +10,19 @@ enum Pane: Equatable {
     case software
     case settings
 
+    /// Stable name used in analytics events.
+    var analyticsName: String {
+        switch self {
+        case .overview: return "overview"
+        case .clean:    return "clean"
+        case .purge:    return "purge"
+        case .optimize: return "optimize"
+        case .analyze:  return "analyze"
+        case .software: return "software"
+        case .settings: return "settings"
+        }
+    }
+
     /// SF Symbol name for this pane.
     var iconName: String {
         switch self {
@@ -71,6 +84,10 @@ struct RootView: View {
         .environment(\.colorScheme, .dark)
         .onReceive(NotificationCenter.default.publisher(for: .showSettingsPane)) { _ in
             activePane = .settings
+        }
+        .onAppear { Analytics.screen(activePane.analyticsName) }
+        .onChange(of: activePane) { _, pane in
+            Analytics.screen(pane.analyticsName)
         }
     }
 

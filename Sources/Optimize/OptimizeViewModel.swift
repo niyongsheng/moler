@@ -291,6 +291,11 @@ final class OptimizeViewModel: ObservableObject {
             Store.shared.recordOptimize(optimizationsApplied: p.totalOptimizations)
         }
 
+        Analytics.track(.optimizeCompleted, [
+            "optimizations": p.totalOptimizations,
+            "dry_run": isDryRun,
+        ])
+
         state = .done(result: result)
     }
 }

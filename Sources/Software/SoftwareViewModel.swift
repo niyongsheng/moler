@@ -238,6 +238,11 @@ final class SoftwareViewModel: ObservableObject {
                     timestamp: Date()
                 )
                 Store.shared.recordSoftwareUninstall(appsRemoved: totalRemoved, bytesFreed: totalBytes)
+                Analytics.track(.softwareUninstalled, [
+                    "apps_removed": totalRemoved,
+                    "apps_failed": failedNames.count,
+                    "bytes_freed": Int(totalBytes),
+                ])
                 self.state = .done(result: result)
                 // Refresh the list in background
                 self.allApps = self.allApps.filter { !self.selected.contains($0.id) }

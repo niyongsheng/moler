@@ -77,6 +77,7 @@ enum UpdateChecker {
             DispatchQueue.main.async {
                 self.isChecking = false
                 guard let data, error == nil, let release = parseLatestRelease(data) else {
+                    Analytics.track(.updateChecked, ["result": "error"])
                     presentResult(
                         title: L10n.updateError,
                         body: L10n.updateErrorBody,
@@ -86,12 +87,14 @@ enum UpdateChecker {
                 }
 
                 if isNewer(release.version, than: currentVersion) {
+                    Analytics.track(.updateChecked, ["result": "available"])
                     let body = String(
                         format: L10n.updateAvailable,
                         release.version, currentVersion
                     )
                     presentResult(title: L10n.updateCheckResult, body: body, link: release.url)
                 } else {
+                    Analytics.track(.updateChecked, ["result": "up_to_date"])
                     let body = String(
                         format: L10n.updateUpToDateBody, currentVersion
                     )

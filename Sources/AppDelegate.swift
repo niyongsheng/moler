@@ -21,6 +21,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var windowController: NSWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Start usage analytics before any window work so early events queue up.
+        Analytics.configure()
+        Analytics.track(.appStarted)
+
         // Set up the main menu (Cmd-, → Settings)
         setupMainMenu()
 
@@ -82,6 +86,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     /// Guided install window when `mo` is missing.
     private func showInstallWindow() {
+        Analytics.track(.moleMissing)
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 460, height: 340),
             styleMask: [.titled, .closable, .fullSizeContentView],
