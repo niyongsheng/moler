@@ -33,6 +33,17 @@ Moler is a **macOS SwiftUI app** that wraps the `mo` CLI (from [tw93/Mole](https
 
 For NASA-Punk design tokens (colors, fonts, spacing, layout) see [`docs/design-token.html`](docs/design-token.html).
 
+### Mole CLI Compatibility Notes
+
+- Since Mole **V1.62.0**, `mo uninstall <name>` requires a real terminal for its confirmation prompt. `MolePTYProcess` gives the child a PTY on stdin only (no controlling terminal) and answers the `Enter confirm` prompt; keep this path for uninstall commands.
+- Parse `mo clean` totals from its `Tracked cleanup:` summary line (`CleanSummaryParser`). Summing every size token in the log over-counts badly.
+- `mo uninstall --dry-run <name>` still prints its preview without a TTY (it exits after printing the plan), so previews use a normal pipe.
+- `mo purge` requires `--yes` for unattended runs — the app currently deletes Purge entries itself and does not call it.
+
+### Analytics
+
+- **`Sources/Analytics.swift`**: Thin wrapper around the Aptabase Swift SDK (SPM dependency declared in `project.yml`). `AppDelegate` calls `Analytics.configure()` on launch; view models track feature-completion events. Event props must stay non-identifying — counts and byte sizes only, never paths or app names.
+
 ### Entry Point & Window Lifecycle
 
 - **`App.swift`**: `@main enum MolerMain` — creates `NSApplication`, sets `AppDelegate`, starts run loop. Checks for `--mcp` flag (MCP server mode, not implemented).
