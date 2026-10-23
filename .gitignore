@@ -6,6 +6,7 @@ DerivedData/
 *.xcbkptlist
 
 # Build outputs
+.build/
 build/
 *.app
 *.dSYM.zip
