@@ -237,6 +237,12 @@ final class PurgeViewModel: ObservableObject {
                 await MainActor.run { self?.state = .running(log: log) }
             }
             await MainActor.run {
+                Store.shared.recordPurge(freedBytes: freed, itemsRemoved: removedCount)
+                Analytics.track(.purgeCompleted, [
+                    "freed_bytes": Int(freed),
+                    "items_removed": removedCount,
+                    "items_failed": failedCount,
+                ])
                 self?.state = .done(freedBytes: freed, itemsRemoved: removedCount, itemsFailed: failedCount)
             }
         }
