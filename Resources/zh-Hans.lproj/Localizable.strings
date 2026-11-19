@@ -246,6 +246,9 @@
 /* === 设置：关于 === */
 "settings.about" = "关于";
 "settings.version" = "版本";
+"settings.mole_version" = "Mole CLI";
+"settings.mole_not_installed" = "未安装";
+"settings.mole_too_old" = "需要 Mole %@ 或更高版本，请运行 brew upgrade mole。";
 "settings.website" = "网站";
 
 /* === 更新 === */

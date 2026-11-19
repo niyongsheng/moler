@@ -246,6 +246,9 @@
 /* === Settings: About === */
 "settings.about" = "ABOUT";
 "settings.version" = "Version";
+"settings.mole_version" = "Mole CLI";
+"settings.mole_not_installed" = "Not installed";
+"settings.mole_too_old" = "Mole %@ or newer is required. Run brew upgrade mole.";
 "settings.website" = "WEBSITE";
 
 /* === Update === */

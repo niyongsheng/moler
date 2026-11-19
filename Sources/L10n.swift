@@ -299,6 +299,10 @@ enum L10n {
 
     static let settingsAbout         = String(localized: "settings.about")
     static let settingsVersion       = String(localized: "settings.version")
+    static let settingsMoleVersion   = String(localized: "settings.mole_version")
+    static let settingsMoleNotInstalled = String(localized: "settings.mole_not_installed")
+    /// "Mole %@ or newer is required. Run brew upgrade mole."
+    static let settingsMoleTooOld    = String(localized: "settings.mole_too_old")
 
     // MARK: - Update
 

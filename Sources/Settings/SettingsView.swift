@@ -4,6 +4,8 @@ import SwiftUI
 struct SettingsView: View {
     @StateObject private var store = Store.shared
     @State private var hasFDA: Bool = false
+    @State private var moleVersion: String?
+    @State private var moleVersionLoaded = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,6 +34,7 @@ struct SettingsView: View {
         .environment(\.colorScheme, .dark)
         .onAppear {
             hasFDA = Privacy.hasFullDiskAccess()
+            loadMoleVersion()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             hasFDA = Privacy.hasFullDiskAccess()
@@ -121,6 +124,30 @@ struct SettingsView: View {
                         .foregroundColor(Brand.textDim)
                 }
                 .padding(.vertical, 4)
+
+                HStack {
+                    Text(L10n.settingsMoleVersion)
+                        .font(.custom("RobotoMono-Regular", size: 12))
+                        .foregroundColor(Brand.textPrimary)
+                    Spacer()
+                    Text(moleVersionDisplay)
+                        .font(.custom("RobotoMono-Light", size: 12))
+                        .foregroundColor(moleVersionColor)
+                }
+                .padding(.vertical, 4)
+
+                if let version = moleVersion, !MoleCLI.isSupported(version: version) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(Brand.accentGold)
+                        Text(String(format: L10n.settingsMoleTooOld, MoleCLI.minimumVersion))
+                            .font(.custom("RobotoMono-Light", size: 10))
+                            .foregroundColor(Brand.accentGold)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding(.top, 2)
+                }
 
                 // Check for Updates + Website buttons
                 HStack(spacing: 8) {
@@ -212,6 +239,30 @@ struct SettingsView: View {
                 }
                 .padding(.vertical, 4)
             }
+        }
+    }
+
+    // MARK: - Mole CLI Version
+
+    private var moleVersionDisplay: String {
+        if let version = moleVersion { return version }
+        return moleVersionLoaded ? L10n.settingsMoleNotInstalled : "…"
+    }
+
+    private var moleVersionColor: Color {
+        guard let version = moleVersion else {
+            return moleVersionLoaded ? Brand.accentRed : Brand.textDim
+        }
+        return MoleCLI.isSupported(version: version) ? Brand.textDim : Brand.accentGold
+    }
+
+    private func loadMoleVersion() {
+        Task { @MainActor in
+            let version = await Task.detached(priority: .utility) {
+                MoleCLI.version()
+            }.value
+            moleVersion = version
+            moleVersionLoaded = true
         }
     }
 

@@ -60,6 +60,31 @@ enum MoleCLI {
         return nil
     }
 
+    /// Oldest Mole release whose CLI behaviour Moler supports.
+    ///
+    /// 1.62 introduced the interactive uninstall confirmation that
+    /// `MolePTYProcess` drives. Older releases are not blocked — the parsers
+    /// still accept their output — but users see an upgrade hint in Settings.
+    static let minimumVersion = "1.62.0"
+
+    /// Whether `version` (for example "1.73.0") is at least `minimumVersion`.
+    static func isSupported(version: String) -> Bool {
+        compareVersions(version, minimumVersion) != .orderedAscending
+    }
+
+    /// Numeric component-wise semver comparison. Non-numeric components
+    /// (nightly suffixes, for instance) count as zero.
+    static func compareVersions(_ lhs: String, _ rhs: String) -> ComparisonResult {
+        let left = lhs.split(separator: ".").map { Int($0) ?? 0 }
+        let right = rhs.split(separator: ".").map { Int($0) ?? 0 }
+        for index in 0..<max(left.count, right.count) {
+            let l = index < left.count ? left[index] : 0
+            let r = index < right.count ? right[index] : 0
+            if l != r { return l < r ? .orderedAscending : .orderedDescending }
+        }
+        return .orderedSame
+    }
+
     /// Canonical install command shown to users when `mo` is missing.
     static let installCommand = "brew install mole"
     static let repoURL = URL(string: "https://github.com/tw93/Mole")!

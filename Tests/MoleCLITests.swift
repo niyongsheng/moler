@@ -98,4 +98,25 @@ final class MoleCLITests: XCTestCase {
     func testRepoURL() {
         XCTAssertEqual(MoleCLI.repoURL, URL(string: "https://github.com/tw93/Mole")!)
     }
+
+    // MARK: - Version compatibility
+
+    func testSupportedVersions() {
+        XCTAssertTrue(MoleCLI.isSupported(version: "1.62.0"))
+        XCTAssertTrue(MoleCLI.isSupported(version: "1.62"))
+        XCTAssertTrue(MoleCLI.isSupported(version: "1.73.0"))
+        XCTAssertTrue(MoleCLI.isSupported(version: "2.0.0"))
+    }
+
+    func testUnsupportedVersions() {
+        XCTAssertFalse(MoleCLI.isSupported(version: "1.61.9"))
+        XCTAssertFalse(MoleCLI.isSupported(version: "1.5"))
+        XCTAssertFalse(MoleCLI.isSupported(version: "0.9.9"))
+    }
+
+    func testVersionComparisonIsNumeric() {
+        XCTAssertEqual(MoleCLI.compareVersions("1.9.0", "1.10.0"), .orderedAscending)
+        XCTAssertEqual(MoleCLI.compareVersions("1.10.0", "1.9.0"), .orderedDescending)
+        XCTAssertEqual(MoleCLI.compareVersions("1.73", "1.73.0"), .orderedSame)
+    }
 }
