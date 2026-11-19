@@ -73,6 +73,68 @@ enum SoftwareUninstallParser {
         return UninstallPreview(entries: entries)
     }
 
+    // MARK: - Text: mo uninstall failure reason
+
+    /// Extract a concise, user-facing reason from a failed `mo uninstall` run.
+    ///
+    /// Mole writes warnings on stdout (`requires the official … uninstaller`)
+    /// and hard errors on stderr. Prefer a line that names the app and carries
+    /// a failure keyword; fall back to the last keyword line, then the exit code.
+    static func failureReason(from result: CapturedProcess, appName: String) -> String? {
+        let text = result.stdout + "\n" + result.stderr
+        let lines = text.components(separatedBy: .newlines)
+            .map { stripAnsi($0).trimmingCharacters(in: .whitespaces) }
+            // Skip preview rows (files to be removed) — a path such as
+            // `/Applications/FailedApp.app` must not be mistaken for a reason.
+            .filter { line in
+                !line.isEmpty
+                    && !line.hasPrefix("✓") && !line.hasPrefix("✔")
+                    && !line.hasPrefix("◎")
+            }
+
+        let keywords = [
+            "requires the official", "cannot be removed", "could not",
+            "failed", "error", "not permitted", "still running",
+        ]
+        let appLower = appName.lowercased()
+
+        func matchesKeyword(_ line: String) -> Bool {
+            let lower = line.lowercased()
+            return keywords.contains { lower.contains($0) }
+        }
+
+        if let line = lines.last(where: {
+            $0.lowercased().contains(appLower) && matchesKeyword($0)
+        }) {
+            return clipped(line)
+        }
+        if let line = lines.last(where: matchesKeyword) {
+            return clipped(line)
+        }
+        if result.exitCode != 0 {
+            return "mo exited with code \(result.exitCode)"
+        }
+        return nil
+    }
+
+    private static func clipped(_ line: String) -> String {
+        String(line.prefix(180))
+    }
+
+    /// Remove ANSI CSI sequences so reasons render cleanly in SwiftUI.
+    static func stripAnsi(_ text: String) -> String {
+        let ns = text as NSString
+        return ansiPattern.stringByReplacingMatches(
+            in: text,
+            range: NSRange(location: 0, length: ns.length),
+            withTemplate: ""
+        )
+    }
+
+    private static let ansiPattern = try! NSRegularExpression(
+        pattern: "\u{001B}\\[[0-9;?]*[ -/]*[@-~]"
+    )
+
     // MARK: - Classification
 
     /// Classify a file path into an `UninstallPreview.Kind`.

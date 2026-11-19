@@ -24,19 +24,48 @@ struct SoftwareDoneView: View {
                     .kerning(8)
                     .foregroundColor(Brand.accentGold)
 
-                Text(L10n.softwareDoneSubtitle)
+                Text(result.failures.isEmpty
+                     ? L10n.softwareDoneSubtitle
+                     : L10n.softwareDoneFailedSubtitle)
                     .monoFont(10)
-                    .foregroundColor(Brand.textDim)
+                    .foregroundColor(result.failures.isEmpty ? Brand.textDim : Brand.accentGold)
             }
 
             GlassCard {
                 VStack(spacing: Brand.unit * 2) {
-                    DataRow(label: L10n.softwareDoneAppsRemoved, value: "\(result.appNames.count)")
+                    DataRow(label: L10n.softwareDoneAppsRemoved, value: "\(result.filesRemoved)")
                     DataRow(label: L10n.softwareDoneBytesFreed, value: formatBytes(result.bytesFreed))
                     DataRow(label: L10n.softwareDoneDuration, value: formattedDuration(result.durationSeconds))
                 }
             }
             .frame(maxWidth: 360)
+
+            if !result.failures.isEmpty {
+                GlassCard {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("\(L10n.softwareDoneFailedTitle) · \(result.failures.count)")
+                            .monoFont(10)
+                            .kerning(2)
+                            .foregroundColor(Brand.accentRed)
+
+                        Divider()
+                            .overlay(Brand.lineColor.opacity(0.2))
+
+                        ForEach(result.failures, id: \.appName) { failure in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(failure.appName)
+                                    .monoFont(11)
+                                    .foregroundColor(Brand.textPrimary)
+                                Text(failure.reason ?? L10n.softwareDoneFailedGeneric)
+                                    .monoFont(9)
+                                    .foregroundColor(failure.reason == nil ? Brand.textDim : Brand.accentGold)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                }
+                .frame(maxWidth: 360)
+            }
 
             Spacer()
 

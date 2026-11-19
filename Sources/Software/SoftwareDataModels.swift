@@ -76,11 +76,24 @@ struct UninstallPreview: Equatable {
 
 // MARK: - Uninstall Result
 
+/// A selected app that `mo uninstall` did not remove.
+///
+/// Mole can exit 0 while skipping an app (for example when a vendor
+/// uninstaller is required), so callers also verify the bundle is gone.
+struct UninstallFailure: Equatable {
+    let appName: String
+    let reason: String?
+}
+
 struct UninstallResult: Equatable {
     let appNames: [String]
+    /// Number of apps successfully removed.
     let filesRemoved: Int
     let bytesFreed: Int64
-    let failedAppNames: [String]
+    let failures: [UninstallFailure]
     let durationSeconds: Int
     let timestamp: Date
+
+    /// Names of the apps that were not removed.
+    var failedAppNames: [String] { failures.map(\.appName) }
 }

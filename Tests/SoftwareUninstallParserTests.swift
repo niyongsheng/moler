@@ -142,6 +142,72 @@ final class SoftwareUninstallParserTests: XCTestCase {
         XCTAssertTrue(preview.isEmpty)
     }
 
+    // MARK: - failureReason
+
+    func testFailureReasonVendorUninstaller() {
+        let result = CapturedProcess(
+            stdout: """
+            Files to be removed:
+            ◎ TeamViewer , 100MB
+            TeamViewer requires the official TeamViewer uninstaller
+            """,
+            stderr: "",
+            exitCode: 0
+        )
+        XCTAssertEqual(
+            SoftwareUninstallParser.failureReason(from: result, appName: "TeamViewer"),
+            "TeamViewer requires the official TeamViewer uninstaller"
+        )
+    }
+
+    func testFailureReasonPrefersLineNamingApp() {
+        let result = CapturedProcess(
+            stdout: """
+            Failed to remove some helper
+            Slack requires the official Slack uninstaller
+            """,
+            stderr: "Could not read the uninstall confirmation",
+            exitCode: 1
+        )
+        XCTAssertEqual(
+            SoftwareUninstallParser.failureReason(from: result, appName: "Slack"),
+            "Slack requires the official Slack uninstaller"
+        )
+    }
+
+    func testFailureReasonFallsBackToKeywordLine() {
+        let result = CapturedProcess(
+            stdout: "Nothing matched the app name here\nFailed to remove leftover files\n",
+            stderr: "",
+            exitCode: 1
+        )
+        XCTAssertEqual(
+            SoftwareUninstallParser.failureReason(from: result, appName: "Slack"),
+            "Failed to remove leftover files"
+        )
+    }
+
+    func testFailureReasonFallsBackToExitCode() {
+        let result = CapturedProcess(stdout: "", stderr: "", exitCode: 1)
+        XCTAssertEqual(
+            SoftwareUninstallParser.failureReason(from: result, appName: "Slack"),
+            "mo exited with code 1"
+        )
+    }
+
+    func testFailureReasonNilWhenStillInstalledWithoutDetail() {
+        let result = CapturedProcess(stdout: "", stderr: "", exitCode: 0)
+        XCTAssertNil(SoftwareUninstallParser.failureReason(from: result, appName: "Slack"))
+    }
+
+    func testStripAnsi() {
+        let text = "\u{001B}[1mSlack\u{001B}[0m requires the official uninstaller"
+        XCTAssertEqual(
+            SoftwareUninstallParser.stripAnsi(text),
+            "Slack requires the official uninstaller"
+        )
+    }
+
     // MARK: - classify
 
     func testClassifyApplication() {

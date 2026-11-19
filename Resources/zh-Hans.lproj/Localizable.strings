@@ -218,6 +218,9 @@
 "software.done.bytes_freed" = "释放空间";
 "software.done.duration" = "耗时";
 "software.done.back" = "重新扫描";
+"software.done.failed_title" = "未能卸载";
+"software.done.failed_subtitle" = "部分应用未能移除";
+"software.done.failed_generic" = "应用仍然存在";
 
 /* === 优化：完成 === */
 "optimize.done.title" = "优化完成";

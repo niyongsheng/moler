@@ -294,6 +294,9 @@ enum L10n {
     static let softwareDoneBytesFreed  = String(localized: "software.done.bytes_freed")
     static let softwareDoneDuration    = String(localized: "software.done.duration")
     static let softwareDoneBack        = String(localized: "software.done.back")
+    static let softwareDoneFailedTitle = String(localized: "software.done.failed_title")
+    static let softwareDoneFailedSubtitle = String(localized: "software.done.failed_subtitle")
+    static let softwareDoneFailedGeneric = String(localized: "software.done.failed_generic")
 
     // MARK: - Settings: About
 

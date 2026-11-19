@@ -218,6 +218,9 @@
 "software.done.bytes_freed" = "BYTES_FREED";
 "software.done.duration" = "DURATION";
 "software.done.back" = "NEW_SCAN";
+"software.done.failed_title" = "NOT REMOVED";
+"software.done.failed_subtitle" = "SOME_APPS_COULD_NOT_BE_REMOVED";
+"software.done.failed_generic" = "Still installed";
 
 /* === Optimize: Done === */
 "optimize.done.title" = "OPTIMIZE_COMPLETE";

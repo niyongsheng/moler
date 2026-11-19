@@ -128,13 +128,31 @@ final class DataModelsTests: XCTestCase {
             appNames: ["App1"],
             filesRemoved: 1,
             bytesFreed: 1024,
-            failedAppNames: [],
+            failures: [],
             durationSeconds: 10,
             timestamp: Date()
         )
         XCTAssertEqual(r.filesRemoved, 1)
         XCTAssertEqual(r.bytesFreed, 1024)
         XCTAssertTrue(r.failedAppNames.isEmpty)
+    }
+
+    func testUninstallResultFailures() {
+        let r = UninstallResult(
+            appNames: ["App1", "App2"],
+            filesRemoved: 1,
+            bytesFreed: 1024,
+            failures: [
+                UninstallFailure(
+                    appName: "App2",
+                    reason: "App2 requires the official vendor uninstaller"
+                )
+            ],
+            durationSeconds: 10,
+            timestamp: Date()
+        )
+        XCTAssertEqual(r.failedAppNames, ["App2"])
+        XCTAssertEqual(r.failures.first?.reason, "App2 requires the official vendor uninstaller")
     }
 
     // MARK: - CleanState

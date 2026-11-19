@@ -200,20 +200,30 @@ final class SoftwareViewModel: ObservableObject {
         Task.detached(priority: .userInitiated) { [weak self] in
             var totalRemoved = 0
             var totalBytes: Int64 = 0
-            var failedNames: [String] = []
+            var failures: [UninstallFailure] = []
+            var removedIDs: Set<String> = []
             let start = Date()
 
             for app in apps {
                 do {
                     let result = try MoEngine.shared.uninstall(name: app.uninstallName)
-                    if result.exitCode == 0 {
+                    // Mole can exit 0 while skipping an app (for example when
+                    // a vendor uninstaller is required). The bundle still
+                    // being on disk is the reliable success signal.
+                    if FileManager.default.fileExists(atPath: app.path) {
+                        failures.append(UninstallFailure(
+                            appName: app.name,
+                            reason: SoftwareUninstallParser.failureReason(
+                                from: result, appName: app.name
+                            )
+                        ))
+                    } else {
                         totalRemoved += 1
                         totalBytes += app.sizeBytes
-                    } else {
-                        failedNames.append(app.name)
+                        removedIDs.insert(app.id)
                     }
                     // Update progress text for next app
-                    let done = totalRemoved + failedNames.count
+                    let done = totalRemoved + failures.count
                     if apps.count > 1, done < apps.count {
                         let next = apps[done]
                         await MainActor.run { [weak self] in
@@ -221,7 +231,10 @@ final class SoftwareViewModel: ObservableObject {
                         }
                     }
                 } catch {
-                    failedNames.append(app.name)
+                    failures.append(UninstallFailure(
+                        appName: app.name,
+                        reason: error.localizedDescription
+                    ))
                 }
             }
 
@@ -233,19 +246,19 @@ final class SoftwareViewModel: ObservableObject {
                     appNames: apps.map(\.name),
                     filesRemoved: totalRemoved,
                     bytesFreed: totalBytes,
-                    failedAppNames: failedNames,
+                    failures: failures,
                     durationSeconds: duration,
                     timestamp: Date()
                 )
                 Store.shared.recordSoftwareUninstall(appsRemoved: totalRemoved, bytesFreed: totalBytes)
                 Analytics.track(.softwareUninstalled, [
                     "apps_removed": totalRemoved,
-                    "apps_failed": failedNames.count,
+                    "apps_failed": failures.count,
                     "bytes_freed": Int(totalBytes),
                 ])
                 self.state = .done(result: result)
-                // Refresh the list in background
-                self.allApps = self.allApps.filter { !self.selected.contains($0.id) }
+                // Keep failed apps in the list so a retry doesn't require a rescan.
+                self.allApps = self.allApps.filter { !removedIDs.contains($0.id) }
                 self.selected = []
                 self.previews = [:]
                 self.expandedAppID = nil
