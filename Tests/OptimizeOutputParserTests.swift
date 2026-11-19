@@ -59,6 +59,16 @@ final class OptimizeOutputParserTests: XCTestCase {
         XCTAssertEqual(desc, "Desktop composition is busy")
     }
 
+    /// Mole's review marker (`⊙`) appears on diagnosis notes in newer releases.
+    func testDiagnosisReviewNote() {
+        parser.ingest(line: "Performance diagnosis")
+        let event = parser.ingest(line: "  ⊙ Desktop composition is busy")
+        guard case .diagnosisItem(let desc) = event else {
+            XCTFail("Expected diagnosisItem, got \(event)"); return
+        }
+        XCTAssertEqual(desc, "Desktop composition is busy")
+    }
+
     func testDiagnosisItemsAccumulated() {
         parser.ingest(line: "PERFORMANCE DIAGNOSIS")
         parser.ingest(line: "  ◎ Bottleneck A")
@@ -94,6 +104,18 @@ final class OptimizeOutputParserTests: XCTestCase {
         }
         XCTAssertEqual(desc, "Icon services cache rebuilt")
         XCTAssertTrue(completed)
+    }
+
+    /// Mole ≥ 1.67 prints `○` for every task during a dry run.
+    func testCategoryTaskDryRunCircle() {
+        parser.ingest(line: "➤ Finder Cache Refresh")
+        let event = parser.ingest(line: "  ○ QuickLook thumbnails refreshed")
+        guard case .taskItem(let desc, let completed) = event else {
+            XCTFail("Expected taskItem, got \(event)"); return
+        }
+        XCTAssertEqual(desc, "QuickLook thumbnails refreshed")
+        XCTAssertFalse(completed)
+        XCTAssertEqual(parser.categories[0].tasks.count, 1)
     }
 
     func testMultipleCategories() {

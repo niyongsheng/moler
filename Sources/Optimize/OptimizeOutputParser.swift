@@ -20,7 +20,7 @@ import Foundation
 ///   → Spotlight index verified
 ///
 /// ➤ Finder Cache Refresh
-///   → QuickLook thumbnails refreshed
+///   ○ QuickLook thumbnails refreshed
 ///   ✓ Icon services cache rebuilt
 ///   ...
 ///
@@ -29,6 +29,11 @@ import Foundation
 /// Would apply 22 optimizations
 /// ======================================================================
 /// ```
+///
+/// Task status symbols:
+/// - `○` pending / would-apply (dry run in Mole ≥ 1.67)
+/// - `→` in progress (older Mole releases)
+/// - `✓` completed
 final class OptimizeOutputParser {
     enum Phase {
         case header      // first few lines before PERFORMANCE DIAGNOSIS
@@ -74,8 +79,9 @@ final class OptimizeOutputParser {
         }
 
         // Diagnosis items within PERFORMANCE DIAGNOSIS
+        // `⊙` is Mole's review/note marker (newer releases).
         if phase == .diagnosis {
-            if trimmed.hasPrefix("◎") || trimmed.hasPrefix("☞") {
+            if trimmed.hasPrefix("◎") || trimmed.hasPrefix("☞") || trimmed.hasPrefix("⊙") {
                 let desc = String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces)
                 let task = OptimizeTask(
                     description: desc,
@@ -87,9 +93,10 @@ final class OptimizeOutputParser {
             }
         }
 
-        // Task items within categories
+        // Task items within categories. Mole 1.67+ prints `○` for every task
+        // during a dry run and only `✓` once a real run applies it.
         if phase == .categories, let cat = currentCategory {
-            if trimmed.hasPrefix("→") || trimmed.hasPrefix("✓") {
+            if trimmed.hasPrefix("→") || trimmed.hasPrefix("✓") || trimmed.hasPrefix("○") {
                 let completed = trimmed.hasPrefix("✓")
                 let desc = String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces)
                 let task = OptimizeTask(

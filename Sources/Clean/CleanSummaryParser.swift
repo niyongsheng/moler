@@ -2,9 +2,12 @@ import Foundation
 
 /// Extracts the authoritative totals from `mo clean` output.
 ///
-/// Every run ends with a summary line:
-/// - real run: `Tracked cleanup: 6.74GB | Items cleaned: 768`
-/// - dry run:  `Potential space: 6.74GB | Items: 768 | Categories: 7`
+/// Mole has used two summary formats:
+///
+/// - ≤ 1.66, real run: `Tracked cleanup: 6.74GB | Items cleaned: 768`
+/// - ≤ 1.66, dry run:  `Potential space: 6.74GB | Items: 768 | Categories: 7`
+/// - ≥ 1.67, real run: `Removed: 6.74GB · 768 items`
+/// - ≥ 1.67, dry run:  `Potential space: 6.74GB · 768 items`
 ///
 /// The per-item lines above the summary also contain sizes, so summing every
 /// size in the log over-counts by a large factor. Trust only the summary.
@@ -15,16 +18,18 @@ enum CleanSummaryParser {
         let itemsCleaned: Int?
     }
 
-    private static let labels = ["Tracked cleanup:", "Potential space:"]
+    /// Summary labels, newest first. `Removed:` replaced `Tracked cleanup:`
+    /// in Mole 1.67; keep both so an older CLI still parses.
+    private static let labels = ["Removed:", "Tracked cleanup:", "Potential space:"]
 
     /// Parse the last summary line in the output, if one was printed.
     static func parse(_ text: String) -> Summary? {
         let lines = text.components(separatedBy: .newlines)
-        for label in labels {
-            for line in lines.reversed() where line.contains(label) {
-                guard let bytes = firstSize(in: line) else { continue }
-                return Summary(freedBytes: bytes, itemsCleaned: firstItemCount(in: line))
-            }
+        for line in lines.reversed() {
+            guard labels.contains(where: { line.contains($0) }) else { continue }
+            // "Removed: Partially measured" carries no size; keep looking.
+            guard let bytes = firstSize(in: line) else { continue }
+            return Summary(freedBytes: bytes, itemsCleaned: firstItemCount(in: line))
         }
         return nil
     }
@@ -36,8 +41,9 @@ enum CleanSummaryParser {
         options: .caseInsensitive
     )
 
+    /// Matches both `Items cleaned: 42` / `Items: 7` and `42 items` / `1 item`.
     private static let itemsPattern = try! NSRegularExpression(
-        pattern: #"Items(?: cleaned)?:\s*([0-9]+)"#,
+        pattern: #"(?:Items(?: cleaned)?:\s*([0-9]+)|([0-9]+)\s+items?\b)"#,
         options: .caseInsensitive
     )
 
@@ -66,6 +72,13 @@ enum CleanSummaryParser {
         guard let match = itemsPattern.firstMatch(
             in: line, range: NSRange(location: 0, length: ns.length)
         ) else { return nil }
-        return Int(ns.substring(with: match.range(at: 1)))
+
+        for group in 1...2 {
+            let range = match.range(at: group)
+            if range.location != NSNotFound {
+                return Int(ns.substring(with: range))
+            }
+        }
+        return nil
     }
 }

@@ -30,6 +30,47 @@ final class CleanSummaryParserTests: XCTestCase {
         XCTAssertEqual(summary?.itemsCleaned, 7)
     }
 
+    // MARK: - Mole ≥ 1.67 summary formats
+
+    /// Mole 1.67 replaced `Tracked cleanup: … | Items cleaned: …` with
+    /// `Removed: … · … items`.
+    func testRemovedSummary() {
+        let output = """
+        → Xcode cache · 4 items, 706KB
+        ======================================================================
+        Cleanup complete
+        Removed: 1.5GB · 42 items
+        Free space: 200.0GB (1.5GB)
+        ======================================================================
+        """
+        let summary = CleanSummaryParser.parse(output)
+        XCTAssertEqual(summary?.freedBytes, 1_610_612_736)
+        XCTAssertEqual(summary?.itemsCleaned, 42)
+    }
+
+    func testRemovedSingularItem() {
+        let summary = CleanSummaryParser.parse("Removed: 512MB · 1 item")
+        XCTAssertEqual(summary?.freedBytes, 536_870_912)
+        XCTAssertEqual(summary?.itemsCleaned, 1)
+    }
+
+    /// A lower-bound total ("1.5GB+") still parses its numeric part.
+    func testRemovedPartialSize() {
+        let summary = CleanSummaryParser.parse("Removed: 1.5GB+ · 3 items")
+        XCTAssertEqual(summary?.freedBytes, 1_610_612_736)
+        XCTAssertEqual(summary?.itemsCleaned, 3)
+    }
+
+    func testDryRunPotentialSpaceNewFormat() {
+        let summary = CleanSummaryParser.parse("Potential space: 2MB · 7 items")
+        XCTAssertEqual(summary?.freedBytes, 2_097_152)
+        XCTAssertEqual(summary?.itemsCleaned, 7)
+    }
+
+    func testUnmeasuredNewSummaryIsNil() {
+        XCTAssertNil(CleanSummaryParser.parse("Removed: Partially measured · 0 items"))
+    }
+
     func testIgnoresPerItemSizes() {
         let output = """
         → A · 100MB
