@@ -36,8 +36,11 @@ For NASA-Punk design tokens (colors, fonts, spacing, layout) see [`docs/design-t
 ### Mole CLI Compatibility Notes
 
 - Since Mole **V1.62.0**, `mo uninstall <name>` requires a real terminal for its confirmation prompt. `MolePTYProcess` gives the child a PTY on stdin only (no controlling terminal) and answers the `Enter confirm` prompt; keep this path for uninstall commands.
-- Parse `mo clean` totals from its `Tracked cleanup:` summary line (`CleanSummaryParser`). Summing every size token in the log over-counts badly.
+- Parse `mo clean` totals from its summary line (`CleanSummaryParser`). Mole **1.67+** prints `Removed: 6.74GB · 768 items` for real runs and `Potential space: 6.74GB · 768 items` for dry runs; older releases used `Tracked cleanup: … | Items cleaned: …`. The parser accepts both. Summing every size token in the log over-counts badly.
+- Since Mole **1.67**, `mo optimize` dry-run task rows use `○`; real runs use `✓` (older releases used `→` for in-progress). `OptimizeOutputParser` accepts all three, plus the `⊙` diagnosis note marker.
 - `mo uninstall --dry-run <name>` still prints its preview without a TTY (it exits after printing the plan), so previews use a normal pipe.
+- Since Mole **1.68/1.71**, `mo uninstall` can exit 0 while silently skipping an app (vendor uninstaller required, protected container). `SoftwareViewModel` also checks the bundle is gone and surfaces the warning text as the failure reason.
+- `MoleCLI.minimumVersion` is **1.62.0**; Settings shows the installed `mo` version and warns below that.
 - `mo purge` requires `--yes` for unattended runs — the app currently deletes Purge entries itself and does not call it.
 
 ### Analytics
