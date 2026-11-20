@@ -33,9 +33,17 @@ git push origin main && git push origin "${TAG}"
 
 # ════════════════════════════════════════════════════
 # CI (.github/workflows/ci.yml) handles packaging:
-#   - Builds on macos-15
-#   - Creates DMG (with /Applications symlink) and ZIP
-#   - Uploads to GitHub Release as Moler-${VERSION}.{dmg,zip}
+#   - Builds a universal Release (arm64 + x86_64) on macos-15
+#   - Ad-hoc signs the app, then creates PKG, DMG and ZIP
+#   - PKG installs to /Applications and its postinstall clears quarantine
+#   - Uploads to GitHub Release as:
+#       Moler-${VERSION}-mac-universal.pkg
+#       Moler-${VERSION}.dmg
+#       Moler-${VERSION}.zip
+#       Moler.pkg   ← stable alias used by docs/index.html:
+#                     https://github.com/niyongsheng/moler/releases/latest/download/Moler.pkg
+#     Keep the Moler.pkg asset name stable — the landing page's download
+#     button hardcodes it.
 # ════════════════════════════════════════════════════
 
 # ── 4. Wait for CI to finish, then sync cask ───

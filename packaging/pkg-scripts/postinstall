@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# Runs after the installer copies Moler into /Applications.
+#
+# The build is ad-hoc signed (no Developer ID / notarization). Files installed
+# from a downloaded .pkg can inherit the com.apple.quarantine attribute, which
+# makes Gatekeeper refuse to launch the app. Clearing the flag here means users
+# can open Moler right after installing, without a Terminal workaround.
+#
+# pkgbuild passes: $1 = package path, $2 = install destination, $3 = target volume.
+
+APP_NAME="Moler.app"
+
+for DIR in "${2:-}" "${3%/}/Applications" "/Applications"; do
+  [ -n "$DIR" ] || continue
+  APP_PATH="${DIR%/}/${APP_NAME}"
+
+  if [ -d "$APP_PATH" ]; then
+    # Skip the recursive walk when the bundle was never quarantined.
+    if /usr/bin/xattr -p com.apple.quarantine "$APP_PATH" >/dev/null 2>&1; then
+      /usr/bin/xattr -dr com.apple.quarantine "$APP_PATH" 2>/dev/null || true
+    fi
+    break
+  fi
+done
+
+exit 0

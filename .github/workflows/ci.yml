@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,21 +20,52 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate --spec project.yml
 
-      - name: Build Release
+      - name: Build Release (universal)
         run: |
           xcodebuild -project Moler.xcodeproj \
             -scheme Moler \
             -configuration Release \
             -derivedDataPath .build \
+            -destination 'generic/platform=macOS' \
+            ARCHS="arm64 x86_64" \
+            ONLY_ACTIVE_ARCH=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Get version from tag
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Ad-hoc sign app
+        run: |
+          APP=".build/Build/Products/Release/Moler.app"
+          # No Developer ID available, but a valid ad-hoc bundle signature keeps
+          # Gatekeeper from reporting a downloaded copy as "damaged".
+          codesign --force --sign - --timestamp=none "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          lipo -archs "$APP/Contents/MacOS/Moler"
+
+      - name: Get version
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)
+          fi
+          echo "VERSION=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Package PKG
+        run: |
+          APP=".build/Build/Products/Release/Moler.app"
+
+          pkgbuild \
+            --component "$APP" \
+            --install-location /Applications \
+            --identifier dev.niyongsheng.moler \
+            --version "${{ steps.version.outputs.VERSION }}" \
+            --scripts packaging/pkg-scripts \
+            "Moler.pkg"
+
+          pkgutil --payload-files "Moler.pkg"
 
       - name: Package DMG
         run: |
@@ -48,13 +80,19 @@ jobs:
           rm -rf "$TMP"
 
       - name: Package ZIP
-        run: zip -ry "Moler.zip" ".build/Build/Products/Release/Moler.app"
+        run: ditto -c -k --sequesterRsrc --keepParent ".build/Build/Products/Release/Moler.app" "Moler.zip"
 
       - name: Upload app (artifact)
         uses: actions/upload-artifact@v4
         with:
           name: Moler.app
           path: .build/Build/Products/Release/Moler.app
+
+      - name: Upload PKG (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Moler.pkg
+          path: Moler.pkg
 
       - name: Upload DMG (artifact)
         uses: actions/upload-artifact@v4
@@ -76,6 +114,15 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Moler.pkg
+          path: release-artifacts
+
       - uses: actions/download-artifact@v4
         with:
           name: Moler.dmg
@@ -88,16 +135,56 @@ jobs:
 
       - name: Get version from tag
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
 
-      - name: Rename artifacts to versioned names
+      - name: Prepare release assets
         run: |
           cd release-artifacts
-          mv Moler.dmg "Moler-${{ steps.version.outputs.VERSION }}.dmg"
-          mv Moler.zip "Moler-${{ steps.version.outputs.VERSION }}.zip"
+          VERSION="${{ steps.version.outputs.VERSION }}"
+
+          mv Moler.dmg "Moler-${VERSION}.dmg"
+          mv Moler.zip "Moler-${VERSION}.zip"
+          mv Moler.pkg "Moler-${VERSION}-mac-universal.pkg"
+          # Stable name so the landing page can always link to the newest
+          # installer: /releases/latest/download/Moler.pkg
+          cp "Moler-${VERSION}-mac-universal.pkg" Moler.pkg
+
+          ls -lh
+
+      - name: Compose release body
+        env:
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          VERSION="${TAG#v}"
+          BASE="https://github.com/${REPO}/releases/download/${TAG}"
+          PREV_TAG=$(git describe --tags --abbrev=0 --exclude "$TAG" HEAD 2>/dev/null || true)
+          {
+            echo "## Download"
+            echo
+            echo "| Platform | Installer |"
+            echo "| --- | --- |"
+            echo "| macOS 14+ (Apple Silicon & Intel) | [Moler-${VERSION}-mac-universal.pkg](${BASE}/Moler-${VERSION}-mac-universal.pkg) |"
+            echo
+            echo "The \`.pkg\` installs Moler into \`/Applications\`. Always-latest link: [Moler.pkg](https://github.com/${REPO}/releases/latest/download/Moler.pkg)."
+            echo
+            echo "Other formats: [DMG](${BASE}/Moler-${VERSION}.dmg) · [ZIP](${BASE}/Moler-${VERSION}.zip)"
+            if [ -n "$PREV_TAG" ]; then
+              CHANGES=$(git log --no-merges --reverse --format='- %s (%h)' "${PREV_TAG}..HEAD" | grep -E '^- (feat|fix|perf)(\(|:)' || true)
+              echo
+              echo "## What's Changed"
+              echo
+              if [ -n "$CHANGES" ]; then
+                echo "$CHANGES"
+                echo
+              fi
+              echo "**Full Changelog**: https://github.com/${REPO}/compare/${PREV_TAG}...${TAG}"
+            fi
+          } > release-body.md
+          cat release-body.md
 
       - name: GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: release-body.md
           files: release-artifacts/*
-          generate_release_notes: true

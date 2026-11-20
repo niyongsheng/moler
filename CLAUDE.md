@@ -25,7 +25,9 @@ xcodebuild -project Moler.xcodeproj -scheme MolerTests -configuration Debug test
 
 See `moler-release` skill (`.claude/skills/moler-release/SKILL.md`) for the full release checklist — build, tag, zip, and upload to GitHub.
 
-> **Note**: No code signing — `CODE_SIGNING_ALLOWED: NO`. Un-signed .app triggers macOS Gatekeeper. Users must allow it in System Settings → Privacy & Security.
+CI (`.github/workflows/ci.yml`) builds a **universal** Release (arm64 + x86_64), ad-hoc signs the app, and ships three formats: `.pkg` (installs to `/Applications`; `packaging/pkg-scripts/postinstall` clears quarantine), `.dmg`, and `.zip`. Every release must include the stable asset name **`Moler.pkg`** — `docs/index.html` links directly to `https://github.com/niyongsheng/moler/releases/latest/download/Moler.pkg` for the always-latest download button.
+
+> **Note**: No Developer ID — the app is ad-hoc signed only, and the `.pkg` itself is unsigned. Gatekeeper still asks users to confirm/allow the download on first install.
 
 ## Architecture
 
