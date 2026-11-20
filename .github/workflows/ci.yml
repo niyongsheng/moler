@@ -165,10 +165,6 @@ jobs:
             echo "| Platform | Installer |"
             echo "| --- | --- |"
             echo "| macOS 14+ (Apple Silicon & Intel) | [Moler-${VERSION}-mac-universal.pkg](${BASE}/Moler-${VERSION}-mac-universal.pkg) |"
-            echo
-            echo "The \`.pkg\` installs Moler into \`/Applications\`. Always-latest link: [Moler.pkg](https://github.com/${REPO}/releases/latest/download/Moler.pkg)."
-            echo
-            echo "Other formats: [DMG](${BASE}/Moler-${VERSION}.dmg) · [ZIP](${BASE}/Moler-${VERSION}.zip)"
             if [ -n "$PREV_TAG" ]; then
               CHANGES=$(git log --no-merges --reverse --format='- %s (%h)' "${PREV_TAG}..HEAD" | grep -E '^- (feat|fix|perf)(\(|:)' || true)
               echo
