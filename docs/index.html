@@ -326,7 +326,7 @@ code.accent{font-family:var(--font-mono);color:var(--accent-gold)}
     <div class="hero-content animate-on-scroll from-left">
       <div class="hero-badge">
         <span class="hero-badge-dot"></span>
-        <span data-i18n="hB">ARM · macOS 14+</span>
+        <span data-i18n="hB">UNIVERSAL · macOS 14+</span>
       </div>
       <h1 class="hero-title"><span class="orange">Moler</span></h1>
       <p class="hero-tagline" data-i18n="hTg">NASA-Punk themed macOS disk cleaner — SwiftUI GUI for Mole CLI</p>
@@ -340,13 +340,13 @@ code.accent{font-family:var(--font-mono);color:var(--accent-gold)}
             <span class="btn-sub" data-i18n="cB1s">macOS 14+ · Apple Silicon & Intel</span>
           </span>
         </button>
-        <a href="https://github.com/niyongsheng/moler/releases" class="btn-download btn-download-secondary" target="_blank" rel="noopener">
+        <a href="https://github.com/niyongsheng/moler/releases/latest/download/Moler.pkg" class="btn-download btn-download-secondary" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
           <span class="btn-label">
-            <span class="btn-main" data-i18n="cB2">Download from Releases</span>
-            <span class="btn-sub" data-i18n="cB2s">.app zip · No code signing</span>
+            <span class="btn-main" data-i18n="cB2">Download .pkg</span>
+            <span class="btn-sub" data-i18n="cB2s">.pkg installer · No code signing</span>
           </span>
         </a>
       </div>
@@ -701,11 +701,11 @@ code.accent{font-family:var(--font-mono);color:var(--accent-gold)}
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
           <span data-i18n="cB1">Install via Homebrew</span>
         </button>
-        <a href="https://github.com/niyongsheng/moler/releases" class="btn-download btn-download-secondary" target="_blank" rel="noopener">
+        <a href="https://github.com/niyongsheng/moler/releases/latest/download/Moler.pkg" class="btn-download btn-download-secondary" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          <span data-i18n="cB2">GitHub Releases</span>
+          <span data-i18n="cB2">Download .pkg</span>
         </a>
       </div>
 
@@ -716,7 +716,7 @@ code.accent{font-family:var(--font-mono);color:var(--accent-gold)}
           <span class="copy-hint" data-i18n="bC" data-i18n-copied="bCd">Click to copy</span>
         </div>
         <p class="brew-note" style="margin-top:6px;">
-          <span data-i18n="bN1">Or download the latest <code>.app</code> from <a href="https://github.com/niyongsheng/moler/releases" style="color:var(--accent-gold);">GitHub Releases</a>.</span><br>
+          <span data-i18n="bN1">Or grab the latest <a href="https://github.com/niyongsheng/moler/releases/latest/download/Moler.pkg" style="color:var(--accent-gold);">.pkg installer</a> — it installs Moler straight into Applications.</span><br>
           <span data-i18n="bN2">Requires <code>brew install mole</code> for the underlying CLI. No code signing — see <a href="https://github.com/niyongsheng/moler#install" style="color:var(--accent-gold);">instructions</a>.</span>
         </p>
       </div>
@@ -749,7 +749,7 @@ code.accent{font-family:var(--font-mono);color:var(--accent-gold)}
 const L = {
   zh: {
     lT:'切换语言',nF:'功能特性',nP:'界面预览',nD:'下载安装',nG:'GitHub',
-    hB:'ARM · macOS 14+',
+    hB:'UNIVERSAL · macOS 14+',
     hTg:'NASA-Punk 风格 macOS 磁盘清理工具 — 基于 SwiftUI 的 Mole CLI 图形界面',
     hDs:'一款漂亮的磁盘清理工具，通过轨道雷达和粒子效果动效，扫描、分析和清理你的 Mac。',
     hF1:'原生轻巧',hF3:'隐私优先',hF4:'开源免费',
@@ -780,9 +780,9 @@ const L = {
     cT:'准备出发',
     cD:'通过 Homebrew 安装 Moler，开始探索你的磁盘星系。需要 macOS 14+ 和 mo CLI。',
     cB1:'通过 Homebrew 安装',cB1s:'macOS 14+ · Apple Silicon & Intel',
-    cB2:'GitHub 发布版',cB2s:'.app 压缩包 · 无代码签名',
+    cB2:'下载 .pkg',cB2s:'.pkg 安装包 · 无代码签名',
     bC:'点击复制',bCd:'已复制！',
-    bN1:'或从 <a href="https://github.com/niyongsheng/moler/releases" style="color:var(--accent-gold);">GitHub 发布版</a> 下载最新 .app。',
+    bN1:'或直接下载最新 <a href="https://github.com/niyongsheng/moler/releases/latest/download/Moler.pkg" style="color:var(--accent-gold);">.pkg 安装包</a> — 自动安装到「应用程序」。',
     bN2:'需要 brew install mole 作为底层 CLI。无代码签名 — 查看<a href="https://github.com/niyongsheng/moler#install" style="color:var(--accent-gold);">安装说明</a>。',
     fB:'Moler',fTg:'NASA-Punk 风格 macOS 磁盘清理工具',
     fCr:'© 2026 <a href="https://github.com/niyongsheng" target="_blank" rel="noopener">Nico</a> · <a href="https://github.com/niyongsheng/moler/blob/main/LICENSE" target="_blank" rel="noopener">MIT 许可</a>',
@@ -791,7 +791,7 @@ const L = {
   },
   en: {
     lT:'Switch Language',nF:'Features',nP:'Preview',nD:'Download',nG:'GitHub',
-    hB:'ARM · macOS 14+',
+    hB:'UNIVERSAL · macOS 14+',
     hTg:'NASA-Punk themed macOS disk cleaner — SwiftUI GUI for Mole CLI',
     hDs:'A fancy disk cleanup tool with orbital radar and particle effects. Scan, analyze, and keep your Mac clean.',
     hF1:'Native &amp; Light',hF3:'Privacy First',hF4:'Open Source',
@@ -822,9 +822,9 @@ const L = {
     cT:'Ready for Launch',
     cD:'Install Moler via Homebrew and start exploring your disk galaxy. Requires macOS 14+ and the mo CLI.',
     cB1:'Install via Homebrew',cB1s:'macOS 14+ · Apple Silicon & Intel',
-    cB2:'GitHub Releases',cB2s:'.app zip · No code signing',
+    cB2:'Download .pkg',cB2s:'.pkg installer · No code signing',
     bC:'Click to copy',bCd:'Copied!',
-    bN1:'Or download the latest <code>.app</code> from <a href="https://github.com/niyongsheng/moler/releases" style="color:var(--accent-gold);">GitHub Releases</a>.',
+    bN1:'Or grab the latest <a href="https://github.com/niyongsheng/moler/releases/latest/download/Moler.pkg" style="color:var(--accent-gold);">.pkg installer</a> — it installs Moler straight into Applications.',
     bN2:'Requires <code>brew install mole</code> for the underlying CLI. No code signing — see <a href="https://github.com/niyongsheng/moler#install" style="color:var(--accent-gold);">instructions</a>.',
     fB:'Moler',fTg:'NASA-Punk themed macOS disk cleaner',
     fCr:'© 2026 <a href="https://github.com/niyongsheng" target="_blank" rel="noopener">Nico</a> · <a href="https://github.com/niyongsheng/moler/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>',
