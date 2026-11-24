@@ -37,6 +37,54 @@ private final class SimpleNoise {
 
 // MARK: -
 
+/// Real-world coastline lookup backed by an equirectangular raster mask
+/// (Natural Earth 1:50m land, public domain). Row 0 is +90° latitude,
+/// column 0 is −180° longitude; white pixels are land.
+private final class LandMask {
+    private let width: Int
+    private let height: Int
+    private let pixels: [UInt8]
+
+    init?() {
+        guard let url = Bundle.main.url(forResource: "EarthLandMask", withExtension: "png"),
+              let image = NSImage(contentsOf: url),
+              let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        else { return nil }
+
+        let w = cgImage.width
+        let h = cgImage.height
+        guard w > 0, h > 0 else { return nil }
+
+        var data = [UInt8](repeating: 0, count: w * h)
+        let decoded = data.withUnsafeMutableBytes { buf -> Bool in
+            guard let ctx = CGContext(data: buf.baseAddress,
+                                      width: w, height: h,
+                                      bitsPerComponent: 8, bytesPerRow: w,
+                                      space: CGColorSpaceCreateDeviceGray(),
+                                      bitmapInfo: CGImageAlphaInfo.none.rawValue)
+            else { return false }
+            ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: w, height: h))
+            return true
+        }
+        guard decoded else { return nil }
+
+        width = w
+        height = h
+        pixels = data
+    }
+
+    func contains(latitude: Double, longitude: Double) -> Bool {
+        var u = (longitude + 180.0) / 360.0
+        u -= floor(u)
+        let v = min(max((90.0 - latitude) / 180.0, 0.0), 0.999999)
+        let x = min(width - 1, Int(u * Double(width)))
+        let y = min(height - 1, Int(v * Double(height)))
+        return pixels[y * width + x] > 127
+    }
+}
+
+// MARK: -
+
 final class EarthScene: SCNScene {
     let interactionNode = SCNNode()
     let spinNode = SCNNode()
@@ -99,40 +147,52 @@ final class EarthScene: SCNScene {
 
     private func buildEarth() {
         let noise = SimpleNoise(seed: "terra-firma")
-        let count = 12_000
+        let landMask = LandMask()
+        let count = 24_000
         var p = [Float](repeating: 0, count: count*3)
         var c = [Float](repeating: 0, count: count*3)
-        let colBase = SIMD3<Float>(0.24, 0.42, 0.28)
-        let colHigh = SIMD3<Float>(0.60, 0.75, 0.54)
-        let colPeak = SIMD3<Float>(1.0, 1.0, 1.0)
+        let colBase = SIMD3<Float>(0.30, 0.55, 0.36)
+        let colHigh = SIMD3<Float>(0.62, 0.80, 0.55)
+        let colPeak = SIMD3<Float>(0.88, 0.97, 0.82)
+        let colIce = SIMD3<Float>(0.55, 0.66, 0.78)
+        let colOcean = SIMD3<Float>(0.08, 0.13, 0.22)
         var idx = 0
-        let colOcean = SIMD3<Float>(0.10, 0.17, 0.29)
         while idx < count {
             let theta = Double.random(in: 0...(2 * .pi))
             let phi = acos(2 * Double.random(in: 0...1) - 1)
             let x = 5.0 * sin(phi) * cos(theta)
             let y = 5.0 * cos(phi)
             let z = 5.0 * sin(phi) * sin(theta)
+
+            // Noise now only drives terrain shading; the real coastline mask
+            // decides what is land.
             var n = noise.noise3D(x*0.15, y*0.15, z*0.15) * 1.2
             n += noise.noise3D(x*0.6, y*0.6, z*0.6) * 0.25
-            let isLand = n > 0.1
+
+            let lat = 90.0 - phi * 180.0 / .pi
+            let lon = atan2(z, x) * 180.0 / .pi
+            let isLand = landMask?.contains(latitude: lat, longitude: lon) ?? (n > 0.1)
+
             let r: Double
-            let cc: SIMD3<Float>
+            var cc: SIMD3<Float>
             let v = Float.random(in: 0.88...1.12)
             if isLand {
-                let h = (n - 0.1) * 1.2
-                let relief = min(h, 0.5) / 0.5
-                r = 5.0 + max(0, h) * 0.06
-                if relief < 0.5 {
-                    let t = Float(relief / 0.5)
+                let relief = Float(min(max((n + 0.05) / 0.75, 0), 1))
+                r = 5.0 + Double(relief) * 0.05
+                if relief < 0.55 {
+                    let t = relief / 0.55
                     cc = colBase * (1 - t) + colHigh * t
                 } else {
-                    let t = Float((relief - 0.5) / 0.5)
+                    let t = (relief - 0.55) / 0.45
                     cc = colHigh * (1 - t) + colPeak * t
                 }
+                // Pale ice over the polar caps (Greenland, Antarctica, Arctic islands).
+                let iceRaw = min(max((abs(lat) - 64.0) / 14.0, 0), 1)
+                let ice = Float(iceRaw * iceRaw * (3 - 2 * iceRaw)) * 0.75
+                cc = cc * (1 - ice) + colIce * ice
             } else {
-                // Keep only ~15% of ocean particles for sparse sea
-                if Double.random(in: 0...1) < 0.85 { continue }
+                // Keep only ~10% of ocean particles for sparse sea
+                if Double.random(in: 0...1) < 0.90 { continue }
                 r = 5.0
                 cc = colOcean
             }
