@@ -115,6 +115,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             controller.showWindow(nil)
             controller.window?.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
+            DispatchQueue.main.async {
+                AppActivityMonitor.shared.refresh()
+            }
             return
         }
 
@@ -137,10 +140,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         window.isReleasedWhenClosed = false
         window.delegate = self
 
+        // Let the energy manager know when this window is actually on screen
+        // so continuous animations and polling can pause when it isn't.
+        AppActivityMonitor.shared.attach(to: window)
+
         windowController = NSWindowController(window: window)
         windowController?.showWindow(nil)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+
+        // Occlusion state can lag the first order-front by a run loop pass.
+        DispatchQueue.main.async {
+            AppActivityMonitor.shared.refresh()
+        }
     }
 
     // MARK: - Settings

@@ -3,18 +3,23 @@ import SwiftUI
 // MARK: - Solar System Monitor Overlay
 
 struct SystemMonitorOverlay: View {
-    @State private var scanAngle: Double = 0
+    let isVisible: Bool
 
-    init() {}
+    @ObservedObject private var activity = AppActivityMonitor.shared
+
+    init(isVisible: Bool = true) {
+        self.isVisible = isVisible
+    }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 0.016)) { context in
-            SystemMonitorContent(date: context.date, scanAngle: scanAngle)
-        }
-        .onAppear {
-            withAnimation(.linear(duration: 12).repeatForever(autoreverses: false)) {
-                scanAngle = 360
+        // The orbital animation only runs while the scan pane is actually on
+        // screen. Slow orbits read the same at 30 fps as at 60.
+        if isVisible && activity.isWindowVisible {
+            TimelineView(.periodic(from: .now, by: 1.0 / 30)) { context in
+                SystemMonitorContent(date: context.date)
             }
+        } else {
+            SystemMonitorContent(date: .now)
         }
     }
 }
@@ -43,10 +48,11 @@ private let allPlanets: [PlanetDatum] = [
 
 struct SystemMonitorContent: View {
     let date: Date
-    let scanAngle: Double
 
     var body: some View {
         let elapsed = date.timeIntervalSinceReferenceDate
+        // One full sweep every 12 seconds, driven by the timeline itself.
+        let scanAngle = elapsed.truncatingRemainder(dividingBy: 12) / 12 * 360
 
         GeometryReader { geo in
             let size = min(geo.size.width, geo.size.height) * 0.75

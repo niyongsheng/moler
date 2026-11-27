@@ -1,103 +1,259 @@
 import SwiftUI
+import AppKit
 
 /// NASA-Punk topographic contour background — ported from the Observatory's
-/// `topoRenderer.js`. Draws animated contour lines, a subtle grid, and stars
-/// using SwiftUI Canvas with a simplified noise field.
-struct TopoBackground: View {
+/// `topoRenderer.js`. Draws contour lines, a subtle grid, and stars using
+/// SwiftUI Canvas with a simplified noise field.
+///
+/// Energy notes: the contour field only drifts — it is a pure translation.
+/// Instead of re-rendering the Canvas every frame, one oversized frame is
+/// rendered at a time and Core Animation translates it on the GPU. The image is
+/// refreshed once per drift cycle; the static grid/star layer is drawn once.
+/// When the window is closed, minimized, or occluded, all animated layers are
+/// removed so menu-bar mode costs nothing.
+struct TopoBackground: NSViewRepresentable {
     var bgColor: Color = Brand.bgNavy
     var lineOpacity: Double = 0.4
     var lineColor: Color = Color(hex: "#3b4e6b")
 
+    func makeNSView(context: Context) -> PassthroughHostingView<TopoAnimatedView> {
+        let view = PassthroughHostingView(rootView: TopoAnimatedView(
+            bgColor: bgColor,
+            lineColor: lineColor
+        ))
+        view.layer?.backgroundColor = NSColor.clear.cgColor
+        return view
+    }
+
+    func updateNSView(_ nsView: PassthroughHostingView<TopoAnimatedView>, context: Context) {
+        nsView.rootView = TopoAnimatedView(bgColor: bgColor, lineColor: lineColor)
+    }
+}
+
+/// Background host that never intercepts mouse events, so clicks reach the
+/// SwiftUI content layered above it.
+final class PassthroughHostingView<Content: View>: NSHostingView<Content> {
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
+/// The animated background itself.
+struct TopoAnimatedView: View {
+    let bgColor: Color
+    let lineColor: Color
+
+    @ObservedObject private var activity = AppActivityMonitor.shared
+
+    // Separate renderers: each Canvas has a different size and must not share
+    // mutable caches.
+    @State private var staticRenderer = TopoRenderer()
+    @State private var contourRenderer = TopoRenderer()
+    @State private var twinkleRenderer = TopoRenderer()
+
+    @State private var phase: Double = 0
+    @State private var offset: CGFloat = 0
+
+    /// Screen-space drift of the contour pattern: 0.03 noise units/s ÷ 0.002
+    /// units/px = 15 px/s, diagonally. A 240 pt overscan gives a 16 s cycle.
+    private static let driftSpeed: CGFloat = 15
+    private static let margin: CGFloat = 240
+    private static let cycle: TimeInterval = TimeInterval(margin / driftSpeed)
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                // Static layer: background fill, grid, cross marks, and stars.
+                Canvas(rendersAsynchronously: true) { ctx, size in
+                    staticRenderer.drawStaticLayer(
+                        &ctx, size: size, bgColor: bgColor, lineColor: lineColor
+                    )
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+
+                if activity.isWindowVisible {
+                    // Contours: one oversized render per cycle, then a GPU
+                    // translation that costs no SwiftUI work per frame.
+                    Canvas(rendersAsynchronously: true) { ctx, size in
+                        contourRenderer.drawContourLayer(
+                            &ctx, size: size, time: phase, lineColor: lineColor
+                        )
+                    }
+                    .frame(
+                        width: geo.size.width + Self.margin,
+                        height: geo.size.height + Self.margin
+                    )
+                    .offset(x: offset, y: offset)
+
+                    // Extra star layer. Kept static: a second animated layer
+                    // costs more than it adds visually.
+                    Canvas(rendersAsynchronously: true) { ctx, size in
+                        twinkleRenderer.drawTwinkleLayer(&ctx, size: size)
+                    }
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .opacity(0.65)
+                }
+            }
+            .frame(width: geo.size.width, height: geo.size.height)
+            .clipped()
+            .task(id: activity.isWindowVisible) {
+                await driftLoop()
+            }
+        }
+        .allowsHitTesting(false)
+    }
+
+    /// Advance the noise phase and restart the GPU translation in lockstep.
+    /// At the swap point the new frame's content matches the old frame's
+    /// translated content, so the loop is seamless.
+    @MainActor
+    private func driftLoop() async {
+        guard activity.isWindowVisible else { return }
+        restartDrift()
+
+        while !Task.isCancelled {
+            try? await Task.sleep(nanoseconds: UInt64(Self.cycle * 1_000_000_000))
+            guard !Task.isCancelled, activity.isWindowVisible else { return }
+            phase += Self.cycle
+            restartDrift()
+        }
+    }
+
+    @MainActor
+    private func restartDrift() {
+        var reset = Transaction()
+        reset.disablesAnimations = true
+        withTransaction(reset) { offset = 0 }
+
+        // One finite sweep, not `repeatForever`: when the loop wraps, the
+        // pattern would flash back to its start until the next phase update
+        // arrives. Finite animations simply hold their end state.
+        withAnimation(.linear(duration: Self.cycle)) {
+            offset = -Self.margin
+        }
+    }
+}
+
+// MARK: - Renderer
+
+/// Caches the static paths and reuses a flat noise buffer so each frame
+/// allocates nothing.
+private final class TopoRenderer {
     private let gridSize: Double = 10
     private let levels: Int = 6
 
-    @State private var t: Double = 0
-    private let timer = Timer.publish(every: 1.0 / 30, on: .main, in: .common).autoconnect()
+    private var cachedSize: CGSize = .zero
+    private var gridPath = Path()
+    private var crossPath = Path()
+    private var baseStarBuckets: [Path] = []
+    private var twinkleBuckets: [Path] = []
 
-    var body: some View {
-        Canvas { ctx, size in
-            drawContent(ctx: &ctx, size: size, time: t)
-        }
-        .allowsHitTesting(false)
-        .onReceive(timer) { _ in
-            t += 1.0 / 30
-        }
-    }
+    private var cols = 0
+    private var rows = 0
+    private var field: [Double] = []
+    /// Pre-computed sin/cos per grid column/row (3 octaves × 8 values each).
+    /// Keeps the per-frame trig count to ~(cols + rows) instead of per cell.
+    private var xTrig: [[Double]] = Array(repeating: [], count: 3)
+    private var yTrig: [[Double]] = Array(repeating: [], count: 3)
 
-    private func drawContent(ctx: inout GraphicsContext, size: CGSize, time: Double) {
+    private let baseStarOpacities: [Double] = [0.18, 0.30, 0.42]
+
+    // MARK: Static
+
+    func drawStaticLayer(_ ctx: inout GraphicsContext, size: CGSize, bgColor: Color, lineColor: Color) {
+        if cachedSize != size { rebuild(size: size) }
+
         ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(bgColor))
-        drawGrid(ctx: &ctx, size: size)
-        drawStars(ctx: &ctx, size: size, time: time)
-        drawContours(ctx: &ctx, size: size, time: time)
+        ctx.stroke(gridPath, with: .color(lineColor.opacity(0.05)), lineWidth: 1)
+        ctx.stroke(crossPath, with: .color(lineColor.opacity(0.12)), lineWidth: 1)
+
+        for (i, path) in baseStarBuckets.enumerated() {
+            ctx.fill(path, with: .color(.white.opacity(baseStarOpacities[i])))
+        }
     }
 
-    // MARK: - Grid
+    private func rebuild(size: CGSize) {
+        cachedSize = size
 
-    private func drawGrid(ctx: inout GraphicsContext, size: CGSize) {
+        // --- Grid lines ---
         let step: Double = 120
-        let lineStyle = StrokeStyle(lineWidth: 1)
-
-        var path = Path()
+        var grid = Path()
         for x in stride(from: 0, through: size.width, by: step) {
-            path.move(to: CGPoint(x: x, y: 0))
-            path.addLine(to: CGPoint(x: x, y: size.height))
+            grid.move(to: CGPoint(x: x, y: 0))
+            grid.addLine(to: CGPoint(x: x, y: size.height))
         }
         for y in stride(from: 0, through: size.height, by: step) {
-            path.move(to: CGPoint(x: 0, y: y))
-            path.addLine(to: CGPoint(x: size.width, y: y))
+            grid.move(to: CGPoint(x: 0, y: y))
+            grid.addLine(to: CGPoint(x: size.width, y: y))
         }
-        ctx.opacity = 0.05
-        ctx.stroke(path, with: .color(lineColor), style: lineStyle)
+        gridPath = grid
 
-        // Cross marks
-        ctx.opacity = 0.12
+        // --- Cross marks ---
         let crossSize: Double = 3
-        var crossPath = Path()
+        var crosses = Path()
         for x in stride(from: 0, through: size.width, by: step) {
             for y in stride(from: 0, through: size.height, by: step) {
-                crossPath.move(to: CGPoint(x: x - crossSize, y: y))
-                crossPath.addLine(to: CGPoint(x: x + crossSize, y: y))
-                crossPath.move(to: CGPoint(x: x, y: y - crossSize))
-                crossPath.addLine(to: CGPoint(x: x, y: y + crossSize))
+                crosses.move(to: CGPoint(x: x - crossSize, y: y))
+                crosses.addLine(to: CGPoint(x: x + crossSize, y: y))
+                crosses.move(to: CGPoint(x: x, y: y - crossSize))
+                crosses.addLine(to: CGPoint(x: x, y: y + crossSize))
             }
         }
-        ctx.stroke(crossPath, with: .color(lineColor), style: lineStyle)
-    }
+        crossPath = crosses
 
-    // MARK: - Stars
-
-    private func drawStars(ctx: inout GraphicsContext, size: CGSize, time: Double) {
+        // --- Static stars, batched into three opacity buckets ---
         var rng = SeededRNG(seed: Int(size.width * 100 + size.height))
-
-        for _ in 0..<150 {
+        var buckets = [Path](repeating: Path(), count: 3)
+        for i in 0..<150 {
             let x = rng.next() * size.width
             let y = rng.next() * size.height
             let starSize = rng.next() * 1.5 + 0.3
-            let baseOpacity = rng.next() * 0.6 + 0.1
-            let flicker = 0.85 + 0.15 * sin(time * 0.5 + x * 0.01 + y * 0.01)
+            _ = rng.next() // keep the RNG sequence aligned with the original
+            buckets[i % 3].addEllipse(in: CGRect(x: x, y: y, width: starSize, height: starSize))
+        }
+        baseStarBuckets = buckets
 
-            ctx.opacity = baseOpacity * flicker
-            let star = Path(ellipseIn: CGRect(x: x, y: y, width: starSize, height: starSize))
-            ctx.fill(star, with: .color(.white))
+        // --- Twinkling stars, batched three ways with different phases ---
+        var twinkleRNG = SeededRNG(seed: Int(size.width * 100 + size.height) &+ 7)
+        var twinkles = [Path](repeating: Path(), count: 3)
+        for i in 0..<54 {
+            let x = twinkleRNG.next() * size.width
+            let y = twinkleRNG.next() * size.height
+            let starSize = twinkleRNG.next() * 1.2 + 0.4
+            twinkles[i % 3].addEllipse(in: CGRect(x: x, y: y, width: starSize, height: starSize))
+        }
+        twinkleBuckets = twinkles
+
+        cols = 0
+        rows = 0
+        field = []
+    }
+
+    // MARK: Animated
+
+    func drawContourLayer(_ ctx: inout GraphicsContext, size: CGSize, time: Double, lineColor: Color) {
+        if cachedSize != size { rebuild(size: size) }
+        drawContours(ctx: &ctx, size: size, time: time, lineColor: lineColor)
+    }
+
+    func drawTwinkleLayer(_ ctx: inout GraphicsContext, size: CGSize) {
+        if cachedSize != size { rebuild(size: size) }
+
+        for (i, path) in twinkleBuckets.enumerated() {
+            ctx.fill(path, with: .color(.white.opacity(0.55 + Double(i) * 0.1)))
         }
     }
 
-    // MARK: - Contour Lines
-
-    private func drawContours(ctx: inout GraphicsContext, size: CGSize, time: Double) {
-        let cols = Int(size.width / gridSize) + 1
-        let rows = Int(size.height / gridSize) + 1
-        let noiseOffset = 100.0 + time * 0.03 // very slow drift
-
-        // Build noise field
-        var field: [[Double]] = Array(repeating: Array(repeating: 0, count: rows), count: cols)
-        for i in 0..<cols {
-            for j in 0..<rows {
-                let x = Double(i) * gridSize * 0.002 + noiseOffset
-                let y = Double(j) * gridSize * 0.002 + noiseOffset
-                field[i][j] = (fbm(x: x, y: y, octaves: 3) + 1) / 2
-            }
+    private func drawContours(ctx: inout GraphicsContext, size: CGSize, time: Double, lineColor: Color) {
+        let neededCols = Int(size.width / gridSize) + 1
+        let neededRows = Int(size.height / gridSize) + 1
+        if neededCols != cols || neededRows != rows {
+            cols = neededCols
+            rows = neededRows
+            field = [Double](repeating: 0, count: cols * rows)
         }
+
+        let noiseOffset = 100.0 + time * 0.03 // very slow drift
+        rebuildTrigTables(noiseOffset: noiseOffset)
+        fillNoiseField()
 
         let style = StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round)
         let step = 1.0 / Double(levels)
@@ -105,13 +261,15 @@ struct TopoBackground: View {
         for level in stride(from: 0.2, to: 0.8, by: step) {
             var contour = Path()
             for i in 0..<(cols - 1) {
+                let base = i * rows
+                let nextBase = (i + 1) * rows
                 for j in 0..<(rows - 1) {
                     let x = Double(i) * gridSize
                     let y = Double(j) * gridSize
-                    let valTL = field[i][j]
-                    let valTR = field[i + 1][j]
-                    let valBR = field[i + 1][j + 1]
-                    let valBL = field[i][j + 1]
+                    let valTL = field[base + j]
+                    let valTR = field[nextBase + j]
+                    let valBR = field[nextBase + j + 1]
+                    let valBL = field[base + j + 1]
 
                     var state = 0
                     if valTL >= level { state |= 8 }
@@ -148,30 +306,106 @@ struct TopoBackground: View {
             ctx.opacity = 0.5
             ctx.stroke(contour, with: .color(lineColor), style: style)
         }
+        ctx.opacity = 1
     }
-}
 
-// MARK: - Helpers
+    // MARK: Noise field
 
-private func noise2D(x: Double, y: Double) -> Double {
-    let v = sin(x * 1.2 + y * 0.8) * cos(y * 1.3 + x * 0.7)
-           + sin(x * 0.5 - y * 2.1) * 0.5
-           + cos(x * 2.3 + y * 1.1) * 0.3
-    return v / 1.8
-}
+    /// Pre-compute the sin/cos terms for each grid column and row.
+    ///
+    /// `noise2D` is a sum of `sin(a·x + b·y)` / `cos(a·x + b·y)` terms, which
+    /// can be expanded into products of per-column and per-row trig values.
+    /// That turns ~100k trig calls per frame into ~4k — the difference between
+    /// a choppy 1 fps background and a smooth 15 fps one.
+    private func rebuildTrigTables(noiseOffset: Double) {
+        if xTrig[0].count != cols * 8 || yTrig[0].count != rows * 8 {
+            for k in 0..<3 {
+                xTrig[k] = [Double](repeating: 0, count: cols * 8)
+                yTrig[k] = [Double](repeating: 0, count: rows * 8)
+            }
+        }
 
-private func fbm(x: Double, y: Double, octaves: Int) -> Double {
-    var value = 0.0
-    var amplitude = 1.0
-    var frequency = 1.0
-    var maxVal = 0.0
-    for _ in 0..<octaves {
-        value += amplitude * noise2D(x: x * frequency, y: y * frequency)
-        maxVal += amplitude
-        amplitude *= 0.5
-        frequency *= 2.0
+        // Argument multipliers from the original noise2D:
+        // x: 1.2, 0.7, 0.5, 2.3   y: 0.8, 1.3, 2.1, 1.1
+        for k in 0..<3 {
+            let frequency = Double(1 << k) // 1, 2, 4
+            var xa = xTrig[k]
+            var ya = yTrig[k]
+
+            for i in 0..<cols {
+                let x = (Double(i) * gridSize * 0.002 + noiseOffset) * frequency
+                let base = i * 8
+                // sin/cos pairs for 1.2x, 0.7x, 0.5x, 2.3x
+                xa[base]     = sin(1.2 * x)
+                xa[base + 1] = cos(1.2 * x)
+                xa[base + 2] = sin(0.7 * x)
+                xa[base + 3] = cos(0.7 * x)
+                xa[base + 4] = sin(0.5 * x)
+                xa[base + 5] = cos(0.5 * x)
+                xa[base + 6] = sin(2.3 * x)
+                xa[base + 7] = cos(2.3 * x)
+            }
+
+            for j in 0..<rows {
+                let y = (Double(j) * gridSize * 0.002 + noiseOffset) * frequency
+                let base = j * 8
+                // cos/sin pairs for 0.8y, 1.3y, 2.1y, 1.1y
+                ya[base]     = cos(0.8 * y)
+                ya[base + 1] = sin(0.8 * y)
+                ya[base + 2] = cos(1.3 * y)
+                ya[base + 3] = sin(1.3 * y)
+                ya[base + 4] = cos(2.1 * y)
+                ya[base + 5] = sin(2.1 * y)
+                ya[base + 6] = cos(1.1 * y)
+                ya[base + 7] = sin(1.1 * y)
+            }
+
+            xTrig[k] = xa
+            yTrig[k] = ya
+        }
     }
-    return value / maxVal
+
+    private func fillNoiseField() {
+        for idx in field.indices { field[idx] = 0 }
+
+        var amplitude = 1.0
+        var maxVal = 0.0
+
+        for k in 0..<3 {
+            let amp = amplitude
+            let xa = xTrig[k]
+            let ya = yTrig[k]
+
+            for i in 0..<cols {
+                let xb = i * 8
+                let sx1 = xa[xb],     cx1 = xa[xb + 1]
+                let sx2 = xa[xb + 2], cx2 = xa[xb + 3]
+                let sx3 = xa[xb + 4], cx3 = xa[xb + 5]
+                let sx4 = xa[xb + 6], cx4 = xa[xb + 7]
+                let base = i * rows
+
+                for j in 0..<rows {
+                    let yb = j * 8
+                    let cy1 = ya[yb],     sy1 = ya[yb + 1]
+                    let cy2 = ya[yb + 2], sy2 = ya[yb + 3]
+                    let cy3 = ya[yb + 4], sy3 = ya[yb + 5]
+                    let cy4 = ya[yb + 6], sy4 = ya[yb + 7]
+
+                    let term1 = (sx1 * cy1 + cx1 * sy1) * (cy2 * cx2 - sy2 * sx2)
+                    let term2 = (sx3 * cy3 - cx3 * sy3) * 0.5
+                    let term3 = (cx4 * cy4 - sx4 * sy4) * 0.3
+                    field[base + j] += amp * ((term1 + term2 + term3) / 1.8)
+                }
+            }
+
+            maxVal += amp
+            amplitude *= 0.5
+        }
+
+        for idx in field.indices {
+            field[idx] = (field[idx] / maxVal + 1) / 2
+        }
+    }
 }
 
 private func iso(_ v1: Double, _ v2: Double, _ level: Double) -> Double {

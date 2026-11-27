@@ -4,6 +4,11 @@ import SwiftUI
 /// State-driven: renders different content for each `CleanState`.
 struct CleanView: View {
     @StateObject private var vm = CleanViewModel()
+    let isVisible: Bool
+
+    init(isVisible: Bool = true) {
+        self.isVisible = isVisible
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -116,7 +121,7 @@ struct CleanView: View {
             Spacer()
 
             // Solar system scanning animation
-            SystemMonitorOverlay()
+            SystemMonitorOverlay(isVisible: isVisible)
                 .frame(width: 300, height: 300)
 
             // Progress readout

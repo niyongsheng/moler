@@ -1,8 +1,8 @@
 import Foundation
 import SwiftUI
 
-/// Polls `mo status --json` every 3 seconds and publishes parsed system stats.
-/// Keeps a rolling buffer of network RX/TX history for the sparkline chart.
+/// Polls `mo status --json` (10 s while visible) and publishes parsed system
+/// stats. Keeps a rolling buffer of network RX/TX history for the sparkline.
 @MainActor
 final class SystemMonitor: ObservableObject {
     @Published var stats: SystemStats?
@@ -10,18 +10,38 @@ final class SystemMonitor: ObservableObject {
     @Published var error: String?
     @Published var lastFetchedAt: Date?
 
-    /// Rolling network history (last 30 samples ≈ 90s at 3s interval)
+    /// Rolling network history (last 30 samples ≈ 5 min at the 10 s interval)
     @Published var rxHistory: [Double] = []
     @Published var txHistory: [Double] = []
 
     private var timer: Timer?
     private var isFetching = false
+    private var interval: TimeInterval = 0
     private let maxHistory = 30
 
     func start() {
-        guard timer == nil else { return }
+        setPolling(enabled: true, appActive: true)
+    }
+
+    /// Start, slow down, or pause polling.
+    ///
+    /// Each fetch spawns the `mo` CLI, which costs roughly a full CPU-second.
+    /// Polling is therefore kept off unless the dashboard is actually visible,
+    /// and the interval is deliberately relaxed: 10 s while the app is
+    /// frontmost, 60 s when it is in the background, none when the window is
+    /// closed.
+    func setPolling(enabled: Bool, appActive: Bool) {
+        guard enabled else {
+            pause()
+            return
+        }
+        let desired: TimeInterval = appActive ? 10.0 : 60.0
+        if timer != nil && interval == desired { return }
+
+        interval = desired
+        timer?.invalidate()
         fetch()
-        timer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: desired, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.fetch()
             }
@@ -29,8 +49,7 @@ final class SystemMonitor: ObservableObject {
     }
 
     func stop() {
-        timer?.invalidate()
-        timer = nil
+        pause()
         stats = nil
         isLoading = false
         error = nil
@@ -39,9 +58,12 @@ final class SystemMonitor: ObservableObject {
         txHistory = []
     }
 
+    /// Stop polling but keep the last snapshot, so returning to the dashboard
+    /// shows data immediately while a fresh sample loads.
     func pause() {
         timer?.invalidate()
         timer = nil
+        interval = 0
     }
 
     private func fetch() {

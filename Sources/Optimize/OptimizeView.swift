@@ -19,11 +19,15 @@ final class JupiterSCNView: SCNView {
 
 struct OptimizeView: View {
     @StateObject private var vm = OptimizeViewModel()
+    @ObservedObject private var activity = AppActivityMonitor.shared
     let isVisible: Bool
 
     init(isVisible: Bool = true) {
         self.isVisible = isVisible
     }
+
+    /// Render only while the pane is active and the window is on screen.
+    private var sceneVisible: Bool { isVisible && activity.isWindowVisible }
 
     /// Current animation driving state derived from vm.state
     private var isAnimating: Bool {
@@ -45,7 +49,7 @@ struct OptimizeView: View {
     var body: some View {
         ZStack {
             // 3D background — phase + tab visibility
-            SceneKitJupiterView(scenePhase: scenePhase, isVisible: isVisible)
+            SceneKitJupiterView(scenePhase: scenePhase, isVisible: sceneVisible)
 
             // Foreground UI
             VStack(spacing: 0) {
@@ -196,6 +200,7 @@ struct SceneKitJupiterView: NSViewRepresentable {
         scnView.antialiasingMode = .multisampling4X
         scnView.delegate = scene
         scnView.loops = true
+        scnView.preferredFramesPerSecond = 30
         scnView.isPlaying = isVisible
         scnView.showsStatistics = false
 
@@ -216,7 +221,9 @@ struct SceneKitJupiterView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: JupiterSCNView, context: Context) {
-        nsView.isPlaying = isVisible || scenePhase == .active
+        // A hidden pane keeps its state but never renders — the scene simply
+        // resumes from where it left off when the tab becomes visible again.
+        nsView.isPlaying = isVisible
         guard let scene = nsView.scene as? JupiterScene else { return }
         apply(phase: scenePhase, to: scene)
     }

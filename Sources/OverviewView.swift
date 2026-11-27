@@ -3,8 +3,15 @@ import SwiftUI
 /// The Overview dashboard — landing page when clicking the Moler logo.
 struct OverviewView: View {
     let onNavigate: (Pane) -> Void
+    let isVisible: Bool
+
+    init(onNavigate: @escaping (Pane) -> Void, isVisible: Bool = true) {
+        self.onNavigate = onNavigate
+        self.isVisible = isVisible
+    }
 
     @StateObject private var monitor = SystemMonitor()
+    @ObservedObject private var activity = AppActivityMonitor.shared
     @State private var diskCapacity: Int64 = 0
     @State private var diskFree: Int64 = 0
 
@@ -27,8 +34,21 @@ struct OverviewView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task { loadDiskInfo() }
-        .onAppear { monitor.start() }
+        .onAppear { updatePolling() }
         .onDisappear { monitor.stop() }
+        .onChange(of: isVisible) { _, _ in updatePolling() }
+        .onChange(of: activity.isWindowVisible) { _, _ in updatePolling() }
+        .onChange(of: activity.isAppActive) { _, _ in updatePolling() }
+    }
+
+    /// Poll system stats only while this pane is on screen. The dashboard is
+    /// kept alive when other tabs are active, so `onDisappear` never fires —
+    /// visibility must be observed explicitly.
+    private func updatePolling() {
+        monitor.setPolling(
+            enabled: isVisible && activity.isWindowVisible,
+            appActive: activity.isAppActive
+        )
     }
 
     // MARK: - Header Bar

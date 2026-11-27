@@ -2,16 +2,19 @@ import SwiftUI
 
 struct PurgeView: View {
     @StateObject private var vm = PurgeViewModel()
+    @ObservedObject private var activity = AppActivityMonitor.shared
     let isVisible: Bool
 
     init(isVisible: Bool = true) {
         self.isVisible = isVisible
     }
 
+    private var sceneVisible: Bool { isVisible && activity.isWindowVisible }
+
     var body: some View {
         ZStack {
             // Mercury 3D background
-            SceneKitMercuryView(isScanning: vm.isScanning, isVisible: isVisible)
+            SceneKitMercuryView(isScanning: vm.isScanning, isVisible: sceneVisible)
 
             // Foreground UI
             VStack(spacing: 0) {

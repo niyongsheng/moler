@@ -8,6 +8,8 @@ struct TypewriterLabel: View {
 
     @State private var displayedCount: Int = 0
     @State private var cursorVisible: Bool = true
+    @State private var typingTimer: Timer?
+    @State private var blinkTimer: Timer?
 
     init(_ fullText: String, speed: TimeInterval = 0.03) {
         self.fullText = fullText
@@ -27,25 +29,37 @@ struct TypewriterLabel: View {
                 .opacity(cursorVisible ? 1 : 0)
         }
         .onAppear { startTyping() }
-        .onDisappear { displayedCount = 0 }
+        .onDisappear {
+            stopTimers()
+            displayedCount = 0
+        }
     }
 
     private func startTyping() {
+        stopTimers()
         displayedCount = 0
+
         // Blinking cursor timer
-        Timer.scheduledTimer(withTimeInterval: 0.53, repeats: true) { _ in
+        blinkTimer = Timer.scheduledTimer(withTimeInterval: 0.53, repeats: true) { _ in
             cursorVisible.toggle()
         }
 
         // Type each character
         if fullText.isEmpty { return }
-        Timer.scheduledTimer(withTimeInterval: speed, repeats: true) { timer in
+        typingTimer = Timer.scheduledTimer(withTimeInterval: speed, repeats: true) { timer in
             if displayedCount < fullText.count {
                 displayedCount += 1
             } else {
                 timer.invalidate()
             }
         }
+    }
+
+    private func stopTimers() {
+        typingTimer?.invalidate()
+        typingTimer = nil
+        blinkTimer?.invalidate()
+        blinkTimer = nil
     }
 }
 

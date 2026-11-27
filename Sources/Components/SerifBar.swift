@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 // MARK: - Edge Serif (Overlay)
 
@@ -107,7 +108,10 @@ struct SerifDivider: View {
         let thickness: CGFloat
         let direction: Direction
 
-        private static let frameInterval: TimeInterval = 1.0 / 60
+        // The comet drifts slowly; 30 fps is visually indistinguishable from 60
+        // and halves the redraw cost.
+        private static let frameInterval: TimeInterval = 1.0 / 30
+        @ObservedObject private var activity = AppActivityMonitor.shared
         @State private var pos: Double = 0
         private let timer = Timer.publish(every: Self.frameInterval, on: .main, in: .common).autoconnect()
 
@@ -147,7 +151,10 @@ struct SerifDivider: View {
                 if direction == .vertical { verticalBody(cycle: cycle) }
                 else { horizontalBody(cycle: cycle) }
             }
-            .onReceive(timer) { _ in pos += Self.frameInterval }
+            .onReceive(timer) { _ in
+                guard activity.isWindowVisible else { return }
+                pos += Self.frameInterval
+            }
         }
 
         // MARK: - Vertical (bottom → top)
@@ -381,7 +388,7 @@ private struct AnimatedStripes: View {
     let skew: Double
 
     @State private var time: Double = 0
-    private static let frameInterval: TimeInterval = 1.0 / 60
+    private static let frameInterval: TimeInterval = 1.0 / 30
     private let timer = Timer.publish(every: Self.frameInterval, on: .main, in: .common).autoconnect()
 
     private let colors: [Color] = [Brand.accentRed, Brand.accentOrange, Brand.accentGold, Brand.accentBlue]

@@ -16,11 +16,14 @@ final class MarsSCNView: SCNView {
 
 struct SoftwareView: View {
     @StateObject private var vm = SoftwareViewModel()
+    @ObservedObject private var activity = AppActivityMonitor.shared
     let isVisible: Bool
 
     init(isVisible: Bool = true) {
         self.isVisible = isVisible
     }
+
+    private var sceneVisible: Bool { isVisible && activity.isWindowVisible }
 
     private var isLoading: Bool {
         if case .loading = vm.state { return true }
@@ -30,7 +33,7 @@ struct SoftwareView: View {
     var body: some View {
         ZStack {
             // 3D Mars background
-            SceneKitMarsView(isLoading: isLoading, isVisible: isVisible)
+            SceneKitMarsView(isLoading: isLoading, isVisible: sceneVisible)
 
             // Foreground UI
             content
@@ -454,7 +457,8 @@ struct SceneKitMarsView: NSViewRepresentable {
         let scene = MarsScene(); let v = MarsSCNView()
         v.scene = scene; v.backgroundColor = .clear; v.allowsCameraControl = false
         v.antialiasingMode = .multisampling4X; v.delegate = scene; v.loops = true
-        v.isPlaying = isVisible || isLoading
+        v.preferredFramesPerSecond = 30
+        v.isPlaying = isVisible
         v.sceneRef = scene
         let pan = NSPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
         v.addGestureRecognizer(pan); context.coordinator.scene = scene
@@ -463,7 +467,7 @@ struct SceneKitMarsView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: MarsSCNView, context: Context) {
-        nsView.isPlaying = isVisible || isLoading
+        nsView.isPlaying = isVisible
         guard let scene = nsView.sceneRef else { return }
         scene.updateForLoading(isLoading)
     }

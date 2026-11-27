@@ -252,9 +252,9 @@ struct RootView: View {
             // Keep all views alive in the hierarchy so their state persists
             // when switching tabs (e.g. CleanView's scan progress).
             // SceneKit views receive isVisible to pause rendering when inactive.
-            OverviewView(onNavigate: { activePane = $0 })
+            OverviewView(onNavigate: { activePane = $0 }, isVisible: activePane == .overview)
                 .visible(activePane == .overview)
-            CleanView()
+            CleanView(isVisible: activePane == .clean)
                 .visible(activePane == .clean)
             PurgeView(isVisible: activePane == .purge)
                 .visible(activePane == .purge)
@@ -289,6 +289,36 @@ struct RootView: View {
 // MARK: - Scan Line View
 
 private struct ScanLineView: View {
+    @ObservedObject private var activity = AppActivityMonitor.shared
+
+    var body: some View {
+        // Drop the repeating animation entirely while the window is closed or
+        // occluded; a static line is invisible anyway and stops the redraw loop.
+        if activity.isWindowVisible {
+            AnimatedScanLine()
+        } else {
+            scanLineGradient.frame(height: 2)
+        }
+    }
+
+    private var scanLineGradient: some View {
+        Rectangle().fill(
+            LinearGradient(
+                colors: [
+                    .clear,
+                    Brand.accentOrange.opacity(0.35),
+                    Brand.accentGold.opacity(0.15),
+                    Brand.accentOrange.opacity(0.35),
+                    .clear,
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        )
+    }
+}
+
+private struct AnimatedScanLine: View {
     @State private var yOffset: CGFloat = -16
 
     var body: some View {

@@ -302,7 +302,8 @@ struct SceneKitMercuryView: NSViewRepresentable {
         let scene = MercuryScene(); let v = MercurySCNView()
         v.scene = scene; v.backgroundColor = .clear; v.allowsCameraControl = false
         v.antialiasingMode = .multisampling4X; v.delegate = scene; v.loops = true
-        v.isPlaying = isVisible || isScanning; v.sceneRef = scene
+        v.preferredFramesPerSecond = 30
+        v.isPlaying = isVisible; v.sceneRef = scene
         let pan = NSPanGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handlePan(_:)))
         v.addGestureRecognizer(pan); context.coordinator.scene = scene
         scene.updateForScanning(isScanning)
@@ -310,7 +311,7 @@ struct SceneKitMercuryView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: MercurySCNView, context: Context) {
-        nsView.isPlaying = isVisible || isScanning
+        nsView.isPlaying = isVisible
         guard let scene = nsView.sceneRef else { return }
         scene.updateForScanning(isScanning)
     }

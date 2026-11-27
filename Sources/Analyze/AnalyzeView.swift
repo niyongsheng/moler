@@ -18,11 +18,14 @@ final class EarthSCNView: SCNView {
 
 struct AnalyzeView: View {
     @StateObject private var vm = AnalyzeViewModel()
+    @ObservedObject private var activity = AppActivityMonitor.shared
     let isVisible: Bool
 
     init(isVisible: Bool = true) {
         self.isVisible = isVisible
     }
+
+    private var sceneVisible: Bool { isVisible && activity.isWindowVisible }
 
     private var isScanning: Bool {
         if case .scanning = vm.state { return true }
@@ -32,7 +35,7 @@ struct AnalyzeView: View {
     var body: some View {
         ZStack {
             // 3D background — driven by isScanning Bool + tab visibility
-            SceneKitEarthView(isScanning: isScanning, isVisible: isVisible)
+            SceneKitEarthView(isScanning: isScanning, isVisible: sceneVisible)
 
             // Foreground UI
             content
@@ -316,7 +319,8 @@ struct SceneKitEarthView: NSViewRepresentable {
         scnView.antialiasingMode = .multisampling4X
         scnView.delegate = scene
         scnView.loops = true
-        scnView.isPlaying = isVisible || isScanning
+        scnView.preferredFramesPerSecond = 30
+        scnView.isPlaying = isVisible
         scnView.showsStatistics = false
         scnView.sceneRef = scene
 
@@ -330,7 +334,7 @@ struct SceneKitEarthView: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: EarthSCNView, context: Context) {
-        nsView.isPlaying = isVisible || isScanning
+        nsView.isPlaying = isVisible
         guard let scene = nsView.sceneRef else { return }
         apply(isScanning: isScanning, to: scene)
     }
