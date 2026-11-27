@@ -110,6 +110,57 @@ final class UpdateCheckerTests: XCTestCase {
         XCTAssertNil(UpdateChecker.parseLatestRelease(json))
     }
 
+    // MARK: - Zip asset selection
+
+    func testParseLatestReleasePicksVersionedZipAsset() {
+        let json = """
+        {
+            "tag_name": "v0.2.1",
+            "html_url": "https://github.com/niyongsheng/moler/releases/tag/v0.2.1",
+            "assets": [
+                {"name": "Moler-0.2.1-mac-universal.pkg", "browser_download_url": "https://github.com/niyongsheng/moler/releases/download/v0.2.1/Moler-0.2.1-mac-universal.pkg"},
+                {"name": "Moler-0.2.1.dmg", "browser_download_url": "https://github.com/niyongsheng/moler/releases/download/v0.2.1/Moler-0.2.1.dmg"},
+                {"name": "Moler-0.2.1.zip", "browser_download_url": "https://github.com/niyongsheng/moler/releases/download/v0.2.1/Moler-0.2.1.zip"}
+            ]
+        }
+        """.data(using: .utf8)!
+
+        let release = UpdateChecker.parseLatestRelease(json)
+        XCTAssertEqual(release?.zipURL?.lastPathComponent, "Moler-0.2.1.zip")
+    }
+
+    func testParseLatestReleaseFallsBackToStableZipAlias() {
+        let json = """
+        {
+            "tag_name": "v0.2.1",
+            "html_url": "https://github.com/niyongsheng/moler/releases/tag/v0.2.1",
+            "assets": [
+                {"name": "Moler.pkg", "browser_download_url": "https://github.com/niyongsheng/moler/releases/download/v0.2.1/Moler.pkg"},
+                {"name": "Moler.zip", "browser_download_url": "https://github.com/niyongsheng/moler/releases/download/v0.2.1/Moler.zip"}
+            ]
+        }
+        """.data(using: .utf8)!
+
+        let release = UpdateChecker.parseLatestRelease(json)
+        XCTAssertEqual(release?.zipURL?.lastPathComponent, "Moler.zip")
+    }
+
+    func testParseLatestReleaseWithoutZipAsset() {
+        let json = """
+        {
+            "tag_name": "v0.2.1",
+            "html_url": "https://github.com/niyongsheng/moler/releases/tag/v0.2.1",
+            "assets": [
+                {"name": "Moler-0.2.1.dmg", "browser_download_url": "https://github.com/niyongsheng/moler/releases/download/v0.2.1/Moler-0.2.1.dmg"}
+            ]
+        }
+        """.data(using: .utf8)!
+
+        let release = UpdateChecker.parseLatestRelease(json)
+        XCTAssertNotNil(release)
+        XCTAssertNil(release?.zipURL)
+    }
+
     // MARK: - Release model
 
     func testReleaseInit() {

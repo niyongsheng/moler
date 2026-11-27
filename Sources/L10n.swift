@@ -322,6 +322,27 @@ enum L10n {
     static let updateReleasePage  = String(localized: "update.release_page")
     static let updateClose        = String(localized: "update.close")
 
+    // MARK: - Update (in-app installer)
+
+    static let updateAutoCheck    = String(localized: "update.auto_check")
+    static let updateChecking     = String(localized: "update.checking")
+    static let updateDownloading  = String(localized: "update.downloading")
+    static let updateInstalling   = String(localized: "update.installing")
+    static let updateInstall      = String(localized: "update.install")
+    static let updateRetry        = String(localized: "update.retry")
+    /// "Moler %@ is available" — String(format: L10n.updateAvailableShort, version)
+    static let updateAvailableShort = String(localized: "update.available_short")
+    /// "You have %@" — String(format: L10n.updateCurrentVersionLine, version)
+    static let updateCurrentVersionLine = String(localized: "update.current_version_line")
+    static let updateNewBadge     = String(localized: "update.new_badge")
+    static let updateInstallFailedBody = String(localized: "update.install_failed_body")
+    static let updateManualOnly   = String(localized: "update.manual_only")
+    static let updateVerifyFailed = String(localized: "update.verify_failed")
+    /// "The downloaded update failed verification (%@)." — String(format: ...)
+    static let updateVerifyFailedDetail = String(localized: "update.verify_failed_detail")
+    static let updateAdminPrompt  = String(localized: "update.admin_prompt")
+    static let updateReleaseNotes = String(localized: "update.release_notes")
+
     // MARK: - About
 
     /// "WEBSITE" — button to open project homepage

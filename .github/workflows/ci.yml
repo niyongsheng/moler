@@ -80,7 +80,12 @@ jobs:
           rm -rf "$TMP"
 
       - name: Package ZIP
-        run: ditto -c -k --sequesterRsrc --keepParent ".build/Build/Products/Release/Moler.app" "Moler.zip"
+        run: |
+          # Run from the products directory so the archive contains
+          # Moler.app at its root (a relative source path would embed the
+          # whole .build/... path). The in-app updater expects this layout.
+          cd .build/Build/Products/Release
+          ditto -c -k --sequesterRsrc --keepParent "Moler.app" "$GITHUB_WORKSPACE/Moler.zip"
 
       - name: Upload app (artifact)
         uses: actions/upload-artifact@v4
@@ -148,6 +153,9 @@ jobs:
           # Stable name so the landing page can always link to the newest
           # installer: /releases/latest/download/Moler.pkg
           cp "Moler-${VERSION}-mac-universal.pkg" Moler.pkg
+          # Stable alias for in-app updates (fallback when the versioned
+          # zip name cannot be matched): /releases/latest/download/Moler.zip
+          cp "Moler-${VERSION}.zip" Moler.zip
 
           ls -lh
 

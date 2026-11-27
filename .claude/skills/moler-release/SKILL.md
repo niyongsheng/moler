@@ -42,6 +42,8 @@ git push origin main && git push origin "${TAG}"
 #       Moler-${VERSION}.zip
 #       Moler.pkg   ← stable alias used by docs/index.html:
 #                     https://github.com/niyongsheng/moler/releases/latest/download/Moler.pkg
+#       Moler.zip   ← stable alias for in-app auto-update (the updater
+#                     prefers the versioned zip from the API response)
 #     Keep the Moler.pkg asset name stable — the landing page's download
 #     button hardcodes it.
 # ════════════════════════════════════════════════════
@@ -65,6 +67,6 @@ echo "sha256 = ${sha256}"
 rm -f "Moler-${VERSION}.dmg"
 ```
 
-After release, users clicking "Check for Updates" in the app will detect the new version via the GitHub Releases API and be directed to the release page to download.
+After release, running apps detect the new version via the GitHub Releases API — automatically at launch (at most once a day, silent) and from Settings → "Check for Updates". A newer release shows an "Install Update" button: the app downloads the `.zip` asset, verifies the bundle identifier, version and ad-hoc signature, then swaps the bundle in place (asking for an admin password when installed in `/Applications` via the pkg) and relaunches.
 
-> **Note**: No code signing — `CODE_SIGNING_ALLOWED: NO`. Unsigned .app triggers macOS Gatekeeper. Users must allow it in System Settings → Privacy & Security.
+> **Note**: No code signing — `CODE_SIGNING_ALLOWED: NO`. Unsigned .app triggers macOS Gatekeeper. Users must allow it in System Settings → Privacy & Security. Auto-update only offers in-app installation when the app lives in `/Applications` or `~/Applications`; other copies fall back to the release page.

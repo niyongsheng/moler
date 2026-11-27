@@ -23,6 +23,8 @@ enum Brand {
     static let accentRed    = Color(hex: "#c82337")
     /// Steel blue — calm, informational (#2f4c79)
     static let accentBlue   = Color(hex: "#2f4c79")
+    /// Signal green — external links, positive actions (#4caf6d)
+    static let accentGreen  = Color(hex: "#4caf6d")
 
     // MARK: - Line & Text Colors
 

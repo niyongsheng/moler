@@ -3,6 +3,7 @@ import SwiftUI
 /// Settings pane rendered inside the main window content area.
 struct SettingsView: View {
     @StateObject private var store = Store.shared
+    @ObservedObject private var updater = UpdateManager.shared
     @State private var hasFDA: Bool = false
     @State private var moleVersion: String?
     @State private var moleVersionLoaded = false
@@ -114,14 +115,28 @@ struct SettingsView: View {
                 Divider()
                     .overlay(Brand.lineColor.opacity(0.2))
 
-                HStack {
+                HStack(spacing: 6) {
                     Text(L10n.settingsVersion)
                         .font(.custom("RobotoMono-Regular", size: 12))
                         .foregroundColor(Brand.textPrimary)
                     Spacer()
-                    Text(UpdateChecker.currentVersion)
-                        .font(.custom("RobotoMono-Light", size: 12))
-                        .foregroundColor(Brand.textDim)
+                    if let new = updater.availableVersion {
+                        Text(L10n.updateNewBadge)
+                            .font(.custom("RobotoMono-Regular", size: 8))
+                            .kerning(1)
+                            .foregroundColor(Brand.bgNavy)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Brand.accentOrange)
+                            .cornerRadius(3)
+                        Text("v\(UpdateChecker.currentVersion) → v\(new)")
+                            .font(.custom("RobotoMono-Light", size: 12))
+                            .foregroundColor(Brand.accentOrange)
+                    } else {
+                        Text(UpdateChecker.currentVersion)
+                            .font(.custom("RobotoMono-Light", size: 12))
+                            .foregroundColor(Brand.textDim)
+                    }
                 }
                 .padding(.vertical, 4)
 
@@ -149,14 +164,35 @@ struct SettingsView: View {
                     .padding(.top, 2)
                 }
 
+                Divider()
+                    .overlay(Brand.lineColor.opacity(0.2))
+
+                // Automatic update checks
+                HStack {
+                    Text(L10n.updateAutoCheck)
+                        .font(.custom("RobotoMono-Regular", size: 12))
+                        .foregroundColor(Brand.textPrimary)
+                    Spacer()
+                    Toggle("", isOn: $updater.autoCheckEnabled)
+                        .toggleStyle(.switch)
+                        .controlSize(.mini)
+                        .labelsHidden()
+                        .tint(Brand.accentOrange)
+                }
+                .padding(.vertical, 4)
+
+                updateStatusView
+
                 // Check for Updates + Website buttons
                 HStack(spacing: 8) {
                     settingsLinkButton(
                         icon: "arrow.down.circle",
-                        label: L10n.updateCheck,
+                        label: updater.state == .checking ? L10n.updateChecking : L10n.updateCheck,
                         color: Brand.accentOrange,
-                        action: { UpdateChecker.checkNow() }
+                        action: { updater.check(userInitiated: true) }
                     )
+                    .disabled(updater.isBusy)
+                    .opacity(updater.isBusy ? 0.5 : 1)
                     settingsLinkButton(
                         icon: "link",
                         label: L10n.settingsWebsite,
@@ -166,6 +202,151 @@ struct SettingsView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Update Status
+
+    @ViewBuilder
+    private var updateStatusView: some View {
+        switch updater.state {
+        case .idle:
+            EmptyView()
+
+        case .checking:
+            spinnerStatus(L10n.updateChecking)
+
+        case .upToDate:
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 11))
+                    .foregroundColor(Brand.accentGreen)
+                Text(String(format: L10n.updateUpToDateBody, UpdateChecker.currentVersion))
+                    .font(.custom("RobotoMono-Light", size: 11))
+                    .foregroundColor(Brand.textDim)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 2)
+
+        case .available(let release):
+            availableUpdateCard(release)
+
+        case .downloading(let progress):
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text(L10n.updateDownloading)
+                        .font(.custom("RobotoMono-Light", size: 11))
+                        .foregroundColor(Brand.textDim)
+                    Spacer()
+                    Text("\(Int((progress * 100).rounded()))%")
+                        .font(.custom("RobotoMono-Regular", size: 11))
+                        .foregroundColor(Brand.accentOrange)
+                }
+                ProgressView(value: progress)
+                    .progressViewStyle(.linear)
+                    .tint(Brand.accentOrange)
+            }
+            .padding(.vertical, 4)
+
+        case .installing:
+            spinnerStatus(L10n.updateInstalling)
+
+        case .failed(let message):
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 11))
+                        .foregroundColor(Brand.accentRed)
+                    Text(message)
+                        .font(.custom("RobotoMono-Light", size: 11))
+                        .foregroundColor(Brand.accentRed)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 0)
+                }
+                HStack(spacing: 8) {
+                    updateActionButton(L10n.updateRetry, color: Brand.accentOrange) {
+                        updater.check(userInitiated: true)
+                    }
+                    updateActionButton(L10n.updateReleasePage, color: Brand.accentGreen) {
+                        NSWorkspace.shared.open(UpdateChecker.releasesPageURL)
+                    }
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func spinnerStatus(_ text: String) -> some View {
+        HStack(spacing: 6) {
+            ProgressView()
+                .controlSize(.small)
+                .tint(Brand.accentOrange)
+            Text(text)
+                .font(.custom("RobotoMono-Light", size: 11))
+                .foregroundColor(Brand.textDim)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func availableUpdateCard(_ release: UpdateChecker.Release) -> some View {
+        let canInstall = release.zipURL != nil && UpdateInstaller.canInstall
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundColor(Brand.accentOrange)
+                Text(String(format: L10n.updateAvailableShort, release.version))
+                    .font(.custom("RobotoMono-Regular", size: 12))
+                    .foregroundColor(Brand.textPrimary)
+                Spacer()
+                Text(String(format: L10n.updateCurrentVersionLine, UpdateChecker.currentVersion))
+                    .font(.custom("RobotoMono-Light", size: 10))
+                    .foregroundColor(Brand.textDim)
+            }
+
+            HStack(spacing: 8) {
+                if canInstall {
+                    updateActionButton(L10n.updateInstall, color: Brand.accentOrange) {
+                        updater.install()
+                    }
+                    updateActionButton(L10n.updateReleaseNotes, color: Brand.accentGreen) {
+                        NSWorkspace.shared.open(release.url)
+                    }
+                } else {
+                    updateActionButton(L10n.updateReleasePage, color: Brand.accentOrange) {
+                        NSWorkspace.shared.open(release.url)
+                    }
+                }
+            }
+
+            if !canInstall {
+                Text(L10n.updateManualOnly)
+                    .font(.custom("RobotoMono-Light", size: 10))
+                    .foregroundColor(Brand.accentGold)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(10)
+        .background(Brand.accentOrange.opacity(0.08))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(Brand.accentOrange.opacity(0.25), lineWidth: 0.5)
+        )
+        .cornerRadius(6)
+    }
+
+    private func updateActionButton(_ title: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.custom("RobotoMono-Regular", size: 10))
+                .foregroundColor(color)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(color.opacity(0.15))
+                .cornerRadius(4)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Language Picker

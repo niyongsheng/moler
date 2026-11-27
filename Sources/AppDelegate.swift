@@ -25,6 +25,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         Analytics.configure()
         Analytics.track(.appStarted)
 
+        // Silent update check once a day; a newer release lights up the
+        // sidebar badge. Never blocks launch and never installs by itself.
+        UpdateManager.shared.start()
+
         // Set up the main menu (Cmd-, → Settings)
         setupMainMenu()
 
@@ -55,6 +59,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         let appMenuItem = NSMenuItem()
         appMenuItem.submenu = appMenu
 
+        let updateItem = NSMenuItem(
+            title: "\(L10n.updateCheck)...",
+            action: #selector(checkForUpdatesFromMenu),
+            keyEquivalent: ""
+        )
+        updateItem.target = self
+        appMenu.addItem(updateItem)
+
+        appMenu.addItem(.separator())
+
         let settingsItem = NSMenuItem(
             title: "\(L10n.settingsWindowTitle)...",
             action: #selector(openSettingsFromMenu),
@@ -78,6 +92,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     @objc private func openSettingsFromMenu() {
         openSettingsWindow()
+    }
+
+    @objc private func checkForUpdatesFromMenu() {
+        openSettingsWindow()
+        Task { @MainActor in
+            UpdateManager.shared.check(userInitiated: true)
+        }
     }
 
     // MARK: - Install Window

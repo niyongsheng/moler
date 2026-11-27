@@ -1,10 +1,7 @@
 import Foundation
-import AppKit
 
-/// Manual-only "Check for Updates": one GET to the GitHub Releases API,
-/// compare against the running version, then point the user at the
-/// release page. Never automatic, never silent — the request happens only
-/// on explicit user action.
+/// Talks to the GitHub Releases API and compares versions.
+/// UI lives in `UpdateManager`; installation lives in `UpdateInstaller`.
 enum UpdateChecker {
 
     static let latestReleaseURL = URL(
@@ -14,9 +11,31 @@ enum UpdateChecker {
         string: "https://github.com/niyongsheng/moler/releases"
     )!
 
-    struct Release {
+    struct Release: Equatable {
+        /// Version without the leading "v" (e.g. "0.2.1").
         let version: String
+        /// Release page shown in the browser.
         let url: URL
+        /// Universal .zip asset used for in-app updates, when the release has one.
+        let zipURL: URL?
+
+        init(version: String, url: URL, zipURL: URL? = nil) {
+            self.version = version
+            self.url = url
+            self.zipURL = zipURL
+        }
+    }
+
+    enum CheckError: LocalizedError {
+        case http(Int)
+        case badResponse
+
+        var errorDescription: String? {
+            switch self {
+            case .http(let code): return "GitHub returned HTTP \(code)."
+            case .badResponse:    return "Unexpected response from GitHub."
+            }
+        }
     }
 
     // MARK: - Version Comparison
@@ -40,7 +59,7 @@ enum UpdateChecker {
 
     // MARK: - API Response Parsing
 
-    /// Pull tag + page URL out of a /releases/latest response.
+    /// Pull tag + page URL + zip asset out of a /releases/latest response.
     static func parseLatestRelease(_ data: Data) -> Release? {
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let tag = obj["tag_name"] as? String,
@@ -49,7 +68,36 @@ enum UpdateChecker {
         var version = tag.trimmingCharacters(in: .whitespaces)
         if version.hasPrefix("v") || version.hasPrefix("V") { version.removeFirst() }
         guard !version.isEmpty else { return nil }
-        return Release(version: version, url: url)
+        let assets = obj["assets"] as? [[String: Any]] ?? []
+        return Release(
+            version: version,
+            url: url,
+            zipURL: preferredZipAsset(assets, version: version)
+        )
+    }
+
+    /// Choose the universal .zip asset for in-app updates. Prefers the
+    /// versioned name produced by CI (`Moler-0.2.1.zip`), then a stable
+    /// `Moler.zip` alias, then any Moler*.zip asset.
+    static func preferredZipAsset(_ assets: [[String: Any]], version: String) -> URL? {
+        var candidates: [(name: String, url: URL)] = []
+        for asset in assets {
+            guard let name = asset["name"] as? String,
+                  let urlString = asset["browser_download_url"] as? String,
+                  let url = URL(string: urlString) else { continue }
+            let lower = name.lowercased()
+            guard lower.hasPrefix("moler"), lower.hasSuffix(".zip"),
+                  !lower.contains("sha256"), !lower.contains("checksum") else { continue }
+            candidates.append((name, url))
+        }
+        let versioned = "moler-\(version.lowercased()).zip"
+        if let exact = candidates.first(where: { $0.name.lowercased() == versioned }) {
+            return exact.url
+        }
+        if let stable = candidates.first(where: { $0.name.lowercased() == "moler.zip" }) {
+            return stable.url
+        }
+        return candidates.first?.url
     }
 
     // MARK: - Current Version
@@ -59,70 +107,29 @@ enum UpdateChecker {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
     }
 
-    // MARK: - Main Entry Point
+    // MARK: - Fetching
 
-    /// Guards against concurrent in-flight checks.
-    private static var isChecking = false
+    private static let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 20
+        config.waitsForConnectivity = false
+        return URLSession(configuration: config)
+    }()
 
-    /// Fetch the latest release, compare, and present the result via NSAlert.
-    /// Called only on explicit user action — never automatically.
-    static func checkNow() {
-        guard !isChecking else { return }
-        isChecking = true
-
+    /// Fetch the latest published (non-prerelease) release.
+    static func fetchLatest() async throws -> Release {
         var request = URLRequest(url: latestReleaseURL)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = 20
 
-        URLSession.shared.dataTask(with: request) { data, _, error in
-            DispatchQueue.main.async {
-                self.isChecking = false
-                guard let data, error == nil, let release = parseLatestRelease(data) else {
-                    Analytics.track(.updateChecked, ["result": "error"])
-                    presentResult(
-                        title: L10n.updateError,
-                        body: L10n.updateErrorBody,
-                        link: releasesPageURL
-                    )
-                    return
-                }
-
-                if isNewer(release.version, than: currentVersion) {
-                    Analytics.track(.updateChecked, ["result": "available"])
-                    let body = String(
-                        format: L10n.updateAvailable,
-                        release.version, currentVersion
-                    )
-                    presentResult(title: L10n.updateCheckResult, body: body, link: release.url)
-                } else {
-                    Analytics.track(.updateChecked, ["result": "up_to_date"])
-                    let body = String(
-                        format: L10n.updateUpToDateBody, currentVersion
-                    )
-                    presentResult(
-                        title: L10n.updateUpToDate,
-                        body: body,
-                        link: nil
-                    )
-                }
-            }
-        }.resume()
-    }
-
-    // MARK: - Alert
-
-    private static func presentResult(title: String, body: String, link: URL?) {
-        let alert = NSAlert()
-        alert.messageText = title
-        alert.informativeText = body
-        if let link {
-            alert.addButton(withTitle: L10n.updateReleasePage)
-            alert.addButton(withTitle: L10n.updateClose)
-        } else {
-            alert.addButton(withTitle: L10n.updateClose)
+        let (data, response) = try await session.data(for: request)
+        if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            throw CheckError.http(http.statusCode)
         }
-        NSApp.activate(ignoringOtherApps: true)
-        if alert.runModal() == .alertFirstButtonReturn, let link {
-            NSWorkspace.shared.open(link)
+        guard let release = parseLatestRelease(data) else {
+            throw CheckError.badResponse
         }
+        return release
     }
 }

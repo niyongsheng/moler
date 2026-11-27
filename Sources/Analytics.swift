@@ -31,8 +31,10 @@ enum Analytics {
         case softwareUninstalled = "software_uninstalled"
         /// The `mo` CLI was missing at launch (install window shown).
         case moleMissing         = "mole_missing"
-        /// The user explicitly checked for updates.
+        /// An update check ran (manual or automatic).
         case updateChecked       = "update_checked"
+        /// An update was downloaded and the app handed off to the installer.
+        case updateInstalled     = "update_installed"
     }
 
     // MARK: - Lifecycle

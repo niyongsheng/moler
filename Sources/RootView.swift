@@ -41,6 +41,7 @@ enum Pane: Equatable {
 struct RootView: View {
     @State private var activePane: Pane = .overview
     @State private var sidebarVisible: Bool = true
+    @ObservedObject private var updater = UpdateManager.shared
 
     private let sidebarTabs: [(pane: Pane, title: String)] = [
         (.clean,    L10n.navClean),
@@ -171,17 +172,44 @@ struct RootView: View {
                 }
                 .buttonStyle(.plain)
 
-                Button(action: { UpdateChecker.checkNow() }) {
-                    Text("v\(UpdateChecker.currentVersion)")
-                        .font(.system(size: 10))
-                        .foregroundColor(Brand.textDim.opacity(0.5))
+                Button(action: openUpdatePane) {
+                    HStack(spacing: 4) {
+                        if updater.hasUpdate {
+                            Image(systemName: "arrow.down.circle.fill")
+                                .font(.system(size: 8))
+                                .foregroundColor(Brand.accentOrange)
+                        }
+                        Text(versionLabel)
+                            .font(.system(size: 10))
+                            .foregroundColor(
+                                updater.hasUpdate
+                                    ? Brand.accentOrange
+                                    : Brand.textDim.opacity(0.5)
+                            )
+                    }
                 }
                 .buttonStyle(.plain)
-                .help(L10n.updateCheck)
+                .help(updater.hasUpdate ? L10n.updateInstall : L10n.updateCheck)
             }
             .padding(.bottom, 16)
         }
         .background(Brand.bgCard.opacity(0.3))
+    }
+
+    // MARK: - Update
+
+    private var versionLabel: String {
+        if let new = updater.availableVersion {
+            return "v\(UpdateChecker.currentVersion) → v\(new)"
+        }
+        return "v\(UpdateChecker.currentVersion)"
+    }
+
+    private func openUpdatePane() {
+        activePane = .settings
+        if !updater.hasUpdate && !updater.isBusy {
+            updater.check(userInitiated: true)
+        }
     }
 
     // MARK: - Nav Item

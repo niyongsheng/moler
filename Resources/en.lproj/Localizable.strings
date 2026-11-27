@@ -264,3 +264,20 @@
 "update.error_body" = "GitHub didn't answer. Try again later, or open the releases page.";
 "update.release_page" = "Open Release Page";
 "update.close" = "Close";
+
+/* === Update: in-app installer === */
+"update.auto_check" = "Automatically check for updates";
+"update.checking" = "Checking...";
+"update.downloading" = "Downloading update...";
+"update.installing" = "Installing update. Moler will relaunch.";
+"update.install" = "Install Update";
+"update.retry" = "Try Again";
+"update.available_short" = "Moler %@ is available";
+"update.current_version_line" = "You have %@";
+"update.new_badge" = "NEW";
+"update.install_failed_body" = "The update could not be installed. Download it from the release page instead.";
+"update.manual_only" = "Automatic install is only available when Moler is in the Applications folder. Download the update from the release page.";
+"update.verify_failed" = "The downloaded update failed verification and was discarded.";
+"update.verify_failed_detail" = "The downloaded update failed verification (%@).";
+"update.admin_prompt" = "Moler needs administrator permission to install the update.";
+"update.release_notes" = "Release Page";
