@@ -17,7 +17,7 @@ xcodebuild -project Moler.xcodeproj -scheme Moler -configuration Debug clean bui
 # Run the built app
 open ~/Library/Developer/Xcode/DerivedData/Moler-*/Build/Products/Debug/Moler.app
 
-# Run tests (none yet — Tests/ is empty)
+# Run tests (261 unit tests; run after changing parsers, models, or process plumbing)
 xcodebuild -project Moler.xcodeproj -scheme MolerTests -configuration Debug test
 ```
 
@@ -31,13 +31,14 @@ CI (`.github/workflows/ci.yml`) builds a **universal** Release (arm64 + x86_64),
 
 ## Architecture
 
-Moler is a **macOS SwiftUI app** that wraps the `mo` CLI (from [tw93/Mole](https://github.com/tw93/Mole), install via `brew install mole`) in a NASA-Punk themed GUI for disk cleanup. Built with XcodeGen; the Xcode project is generated, not committed. Current version: **v0.1.0**. Version displayed in the sidebar and Settings is read dynamically from `Info.plist` via `UpdateChecker.currentVersion`.
+Moler is a **macOS SwiftUI app** that wraps the `mo` CLI (from [tw93/Mole](https://github.com/tw93/Mole), install via `brew install mole`) in a NASA-Punk themed GUI for disk cleanup. Built with XcodeGen; the Xcode project is generated, not committed. Current version: **v0.3.0**. Version displayed in the sidebar and Settings is read dynamically from `Info.plist` via `UpdateChecker.currentVersion`.
 
 For NASA-Punk design tokens (colors, fonts, spacing, layout) see [`docs/design-token.html`](docs/design-token.html).
 
 ### Mole CLI Compatibility Notes
 
 - Since Mole **V1.62.0**, `mo uninstall <name>` requires a real terminal for its confirmation prompt. `MolePTYProcess` gives the child a PTY on stdin only (no controlling terminal) and answers the `Enter confirm` prompt; keep this path for uninstall commands.
+- Long-running commands (`clean`, `purge`, `optimize`) run through `MoleCLI.stream` / `MoleStreamingProcess`, which owns the pipes, optional timeout kill, drain-on-exit, and exit delivery; `LineBuffer` handles chunk → line splitting and the raw output parsers read. `SystemMonitor` keeps its own long-lived `mo status --watch` process, and uninstall keeps the PTY path.
 - Parse `mo clean` totals from its summary line (`CleanSummaryParser`). Mole **1.67+** prints `Removed: 6.74GB · 768 items` for real runs and `Potential space: 6.74GB · 768 items` for dry runs; older releases used `Tracked cleanup: … | Items cleaned: …`. The parser accepts both. Summing every size token in the log over-counts badly.
 - Since Mole **1.74**, a clean summary can also read `Removed: Partially measured · N items` when every size check timed out, and a lower-bound total is suffixed with `+` (`6.74GB+`). `CleanSummaryParser.Summary.isPartial` carries that state; `CleanResultView` shows a lower-bound note instead of a false `0 B`.
 - The Clean review is built from `mo clean --dry-run`, not a directory scan (`CleanDryRunParser`). Mole **1.74** added the trailing `Skipped in this preview · …` line and `Detailed file list: …`; the preview also marks review-only rows with `⊙` and skipped/protected rows with `◎`. Real runs stream `Cleaning <section> N/M · <item>` progress. `mo clean` has no path arguments, so the UI must not imply per-path selection affects execution.
@@ -49,7 +50,7 @@ For NASA-Punk design tokens (colors, fonts, spacing, layout) see [`docs/design-t
 - Purge delegates to `mo purge --dry-run` + `mo purge --yes` (`PurgePlanParser`, `PurgeViewModel`) — the app must not delete artifacts itself. Mole **1.70–1.74** handle in-use protection, recent/cloud-synced skips, project discovery, and `*.build` compiler-output handling. The review is built from `--dry-run`; real runs print per-item `✓` lines only on a TTY, so the result screen parses the summary (`Estimated space freed: … | Items: …`). `--yes` skips cloud-synced artifacts in unattended mode — the review marks them via `PurgeEntry.isCloud`.
 - Purge scan scope is Mole's shared `~/.config/mole/purge_paths` (`PurgePathConfig`). An empty/missing file means defaults (and Mole may auto-discover project roots on first run and rewrite it); never write an empty file, because that falls back to defaults rather than scanning nothing.
 - `SystemMonitor` streams one long-lived `mo status --watch --interval 2s` process (10 s while the app is in the background) instead of re-spawning `mo status --json`. The **first** watch snapshot is a warm-up with empty hardware/pressure fields and `top_processes: null` — `SystemStats.isComplete` filters it out. The stream is stopped when the Overview is hidden and on app termination (`SystemMonitor.stopShared()`), so no `status-go` child outlives Moler.
-- `mo status --json`/`--watch` gained `bluetooth`, `top_processes`, `trash_size`, `proxy`, and per-disk `purgeable`/`smart_status`/`external`/`fstype` fields by **1.74**; the Overview surfaces connected Bluetooth devices, top processes, proxy, purgeable space, and SMART status.
+- `mo status --json`/`--watch` gained `bluetooth`, `top_processes`, `trash_size`, `proxy`, and per-disk `purgeable`/`smart_status`/`external`/`fstype` fields by **1.74**; the Overview surfaces top processes, a proxy indicator, purgeable space, and SMART status.
 - The Overview's RECENT ACTIVITY card reads `mo history --json --limit 20` (`MoleHistoryLoader`). It filters `*-dry-run` sessions and empty `0B` probes, so only real clean/purge/optimize/uninstall runs from both Moler and the CLI appear.
 
 ### Analytics
@@ -76,5 +77,5 @@ For NASA-Punk design tokens (colors, fonts, spacing, layout) see [`docs/design-t
 - App sandbox disabled, network client+server allowed
 - SceneKit.framework linked for Jupiter 3D scene
 - The `mo` CLI must be installed separately (`brew install mole`). App checks availability and shows error with install instructions if missing.
-- Tests directory exists but contains no test files.
+- Unit tests live in `Tests/` and cover the parsers, models, formatters, and updater logic.
 
