@@ -253,6 +253,7 @@
 "settings.mole_not_installed" = "Not installed";
 "settings.mole_too_old" = "Mole %@ or newer is required. Run brew upgrade mole.";
 "settings.website" = "WEBSITE";
+"settings.donate" = "TIP";
 
 /* === Update === */
 "update.check" = "Check for Updates";

@@ -347,4 +347,7 @@ enum L10n {
 
     /// "WEBSITE" — button to open project homepage
     static let settingsWebsite = String(localized: "settings.website")
+
+    /// "TIP" — button to open the donation page
+    static let settingsDonate = String(localized: "settings.donate")
 }

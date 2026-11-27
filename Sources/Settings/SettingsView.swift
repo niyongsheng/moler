@@ -196,8 +196,14 @@ struct SettingsView: View {
                     settingsLinkButton(
                         icon: "link",
                         label: L10n.settingsWebsite,
-                        color: Brand.accentBlue,
-                        action: { NSWorkspace.shared.open(projectURL) }
+                        color: Brand.accentGreen,
+                        action: { NSWorkspace.shared.open(officialWebsiteURL) }
+                    )
+                    settingsLinkButton(
+                        icon: "heart.fill",
+                        label: L10n.settingsDonate,
+                        color: Brand.accentRed,
+                        action: { NSWorkspace.shared.open(donateURL) }
                     )
                 }
             }
@@ -467,7 +473,8 @@ struct SettingsView: View {
     }
 }
 
-private let projectURL = URL(string: "https://niyongsheng.github.io/moler/")!
+private let officialWebsiteURL = URL(string: "https://moler.looplooptech.com/")!
+private let donateURL = URL(string: "https://ifdian.net/a/nico2026")!
 
 #Preview {
     SettingsView()

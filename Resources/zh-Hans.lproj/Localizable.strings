@@ -252,7 +252,8 @@
 "settings.mole_version" = "Mole CLI";
 "settings.mole_not_installed" = "未安装";
 "settings.mole_too_old" = "需要 Mole %@ 或更高版本，请运行 brew upgrade mole。";
-"settings.website" = "网站";
+"settings.website" = "官网";
+"settings.donate" = "打赏";
 
 /* === 更新 === */
 "update.check" = "检查更新";
