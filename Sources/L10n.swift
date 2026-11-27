@@ -42,6 +42,7 @@ enum L10n {
     static let cleanElapsed   = String(localized: "clean.scanning.elapsed")
     static let cleanFiles    = String(localized: "clean.files")
     static let cleanSize     = String(localized: "clean.size")
+    static let cleanSections = String(localized: "clean.sections")
     static let cleanCancel   = String(localized: "clean.cancel")
     static let cleanStop     = String(localized: "clean.stop")
 
@@ -58,6 +59,13 @@ enum L10n {
     static let cleanReviewNoFiles = String(localized: "clean.review.no_files")
     static let cleanReviewBack    = String(localized: "clean.review.back")
     static let cleanReviewExecute = String(localized: "clean.review.execute")
+    static let cleanReviewCategories = String(localized: "clean.review.categories")
+    static let cleanReviewCleanable = String(localized: "clean.review.cleanable")
+    static let cleanReviewItems = String(localized: "clean.review.items")
+    static let cleanReviewSkippedNote = String(localized: "clean.review.skipped_note")
+    static let cleanReviewSudoHint = String(localized: "clean.review.sudo_hint")
+    static let cleanReviewDetailedList = String(localized: "clean.review.detailed_list")
+    static let cleanReviewReveal = String(localized: "clean.review.reveal")
 
     /// "N files selected" — use String(format: L10n.cleanReviewFilesSelected, count)
     static let cleanReviewFilesSelected = String(localized: "clean.review.files_selected")
@@ -76,6 +84,7 @@ enum L10n {
     static let cleanDoneSubtitle = String(localized: "clean.done.subtitle")
     static let cleanDoneSpaceFreed = String(localized: "clean.done.space_freed")
     static let cleanDoneFilesRemoved = String(localized: "clean.done.files_removed")
+    static let cleanDonePartialNote = String(localized: "clean.done.partial_note")
     static let cleanDoneNewScan  = String(localized: "clean.done.new_scan")
 
     // MARK: - Errors
@@ -130,6 +139,15 @@ enum L10n {
     static let overviewDiskRead    = String(localized: "overview.disk_read")
     static let overviewDiskWrite   = String(localized: "overview.disk_write")
     static let overviewDisk        = String(localized: "overview.disk")
+    static let overviewDiskPurgeable = String(localized: "overview.disk_purgeable")
+    static let overviewDiskTrash   = String(localized: "overview.disk_trash")
+    static let overviewDiskSmart   = String(localized: "overview.disk_smart")
+    static let overviewProxy       = String(localized: "overview.proxy")
+    static let overviewPanelProcesses = String(localized: "overview.panel_processes")
+    static let overviewPanelBluetooth = String(localized: "overview.panel_bluetooth")
+    static let overviewActivity    = String(localized: "overview.activity")
+    static let overviewActivityEmpty = String(localized: "overview.activity_empty")
+    static let overviewActivityItems = String(localized: "overview.activity_items")
     /// "FREE %@" — String(format: L10n.overviewFreeFormat, bytesString)
     static let overviewFreeFormat  = String(localized: "overview.free_format")
     /// "%d%% USED" — String(format: L10n.overviewUsedFormat, percent)
@@ -179,6 +197,9 @@ enum L10n {
     static let purgeSubtitle  = String(localized: "purge.subtitle")
     static let purgeScanPath  = String(localized: "purge.scan_path")
     static let purgeInitiate  = String(localized: "purge.initiate")
+    static let purgePathsDefaults = String(localized: "purge.paths.defaults")
+    static let purgePathsCustom = String(localized: "purge.paths.custom")
+    static let purgePathsShared = String(localized: "purge.paths.shared")
 
     // MARK: - Purge Scanning
 
@@ -192,6 +213,12 @@ enum L10n {
     static let purgeReviewTitle   = String(localized: "purge.review.title")
     static let purgeReviewTotal   = String(localized: "purge.review.total")
     static let purgeReviewExecute = String(localized: "purge.review.execute")
+    static let purgeReviewPaths   = String(localized: "purge.review.paths")
+    static let purgeReviewItems   = String(localized: "purge.review.items")
+    static let purgeReviewEmpty   = String(localized: "purge.review.empty")
+    static let purgeReviewNote    = String(localized: "purge.review.note")
+    /// "%d cloud-synced artifacts are skipped in unattended mode…"
+    static let purgeReviewCloudNote = String(localized: "purge.review.cloud_note")
 
     // MARK: - Purge Running
 
@@ -207,6 +234,7 @@ enum L10n {
     static let purgeDoneSubtitle    = String(localized: "purge.done.subtitle")
     static let purgeDoneSpaceFreed  = String(localized: "purge.done.space_freed")
     static let purgeDoneItemsRemoved = String(localized: "purge.done.items_removed")
+    static let purgeDoneFailed      = String(localized: "purge.done.failed")
     static let purgeDoneNewScan     = String(localized: "purge.done.new_scan")
 
     // MARK: - Optimize Idle
@@ -236,6 +264,9 @@ enum L10n {
     static let optimizeDonePreviewSubtitle = String(localized: "optimize.done.preview_subtitle")
     static let optimizeDoneAllAreas = String(localized: "optimize.done.all_areas")
     static let optimizeDoneDuration = String(localized: "optimize.done.duration")
+    static let optimizeDoneUnchanged = String(localized: "optimize.done.unchanged")
+    static let optimizeDoneSkipped = String(localized: "optimize.done.skipped")
+    static let optimizeDoneUnavailable = String(localized: "optimize.done.unavailable")
     static let optimizeDoneNoCategories = String(localized: "optimize.done.no_categories")
     static let optimizeDoneNewRun   = String(localized: "optimize.done.new_run")
 

@@ -35,19 +35,27 @@
 "clean.stop" = "STOP";
 "clean.files" = "FILES";
 "clean.size" = "SIZE";
+"clean.sections" = "SECTIONS";
 
 /* === Clean: Review === */
-"clean.review.title" = "SCAN_RESULTS";
-"clean.review.subtitle" = "REVIEW_AND_SELECT";
+"clean.review.title" = "CLEANUP_PLAN";
+"clean.review.subtitle" = "REVIEW_MOLE_PLAN";
 "clean.review.scan_path" = "SCAN_PATH";
-"clean.review.total_size" = "TOTAL_SIZE";
-"clean.review.total_files" = "TOTAL_FILES";
+"clean.review.total_size" = "RECLAIMABLE";
+"clean.review.total_files" = "ITEMS";
 "clean.review.selected" = "SELECTED";
 "clean.review.select_all" = "SELECT_ALL";
 "clean.review.deselect_all" = "DESELECT_ALL";
-"clean.review.no_files" = "NO_FILES_FOUND";
+"clean.review.no_files" = "NOTHING_TO_CLEAN";
 "clean.review.back" = "BACK";
 "clean.review.execute" = "EXECUTE_CLEAN";
+"clean.review.categories" = "SECTIONS";
+"clean.review.cleanable" = "REMOVABLE";
+"clean.review.items" = "items";
+"clean.review.skipped_note" = "Skipped in this preview";
+"clean.review.sudo_hint" = "System caches need admin access. For a full clean, run `sudo -v && mo clean` in Terminal.";
+"clean.review.detailed_list" = "DETAILED LIST";
+"clean.review.reveal" = "REVEAL";
 "clean.review.files_selected" = "%d files selected";
 
 /* === Clean: Running === */
@@ -62,6 +70,7 @@
 "clean.done.subtitle" = "ALL_SELECTED_ITEMS_PROCESSED";
 "clean.done.space_freed" = "SPACE_FREED";
 "clean.done.files_removed" = "FILES_REMOVED";
+"clean.done.partial_note" = "Some items could not be measured — the total is a lower bound.";
 "clean.done.new_scan" = "NEW_SCAN";
 
 /* === Error === */
@@ -109,6 +118,15 @@
 "overview.disk_read" = "DISK_READ";
 "overview.disk_write" = "DISK_WRITE";
 "overview.disk" = "DISK";
+"overview.disk_purgeable" = "PURGEABLE";
+"overview.disk_trash" = "TRASH";
+"overview.disk_smart" = "SMART";
+"overview.proxy" = "PROXY";
+"overview.panel_processes" = "TOP PROCESSES";
+"overview.panel_bluetooth" = "BLUETOOTH";
+"overview.activity" = "RECENT ACTIVITY";
+"overview.activity_empty" = "No activity recorded yet.";
+"overview.activity_items" = "items";
 "overview.free_format" = "FREE %@";
 "overview.used_format" = "%d%% USED";
 
@@ -137,15 +155,23 @@
 "purge.subtitle" = "REMOVE_OLD_BUILD_ARTIFACTS";
 "purge.scan_path" = "SCAN_PATHS";
 "purge.initiate" = "SCAN_PROJECTS";
+"purge.paths.defaults" = "Using Mole's default project roots.";
+"purge.paths.custom" = "Using custom paths from ~/.config/mole/purge_paths.";
+"purge.paths.shared" = "Shared with `mo purge --paths`; Mole re-checks in-use protection at run time.";
 "purge.scanning" = "SCANNING_PROJECTS";
 "purge.scanning.hint" = "> SCANNING_PROJECT_DIRECTORIES...";
 "purge.cancel" = "CANCEL";
 "purge.stop" = "STOP";
 
 /* === Purge: Review === */
-"purge.review.title" = "SELECT_TO_PURGE";
-"purge.review.total" = "TOTAL";
+"purge.review.title" = "PURGE_PLAN";
+"purge.review.total" = "RECLAIMABLE";
 "purge.review.execute" = "PURGE";
+"purge.review.paths" = "PATHS";
+"purge.review.items" = "items";
+"purge.review.empty" = "No project artifacts found in the selected paths.";
+"purge.review.note" = "Mole protects artifacts that are recent, in use, or contain authored files. Cloud-synced artifacts are skipped in unattended mode.";
+"purge.review.cloud_note" = "%d cloud-synced artifacts are listed but skipped in unattended mode; run `mo purge` in Terminal to include them.";
 
 /* === Purge: Running === */
 "purge.run.title" = "PURGE_IN_PROGRESS";
@@ -159,6 +185,7 @@
 "purge.done.subtitle" = "ALL_SELECTED_ARTIFACTS_REMOVED";
 "purge.done.space_freed" = "SPACE_FREED";
 "purge.done.items_removed" = "ITEMS_REMOVED";
+"purge.done.failed" = "FAILED";
 "purge.done.new_scan" = "NEW_SCAN";
 
 /* === Optimize: Idle === */
@@ -229,6 +256,9 @@
 "optimize.done.preview_subtitle" = "DRY_RUN_NO_CHANGES";
 "optimize.done.all_areas" = "AREAS_OPTIMIZED";
 "optimize.done.duration" = "DURATION";
+"optimize.done.unchanged" = "UNCHANGED";
+"optimize.done.skipped" = "SKIPPED";
+"optimize.done.unavailable" = "UNAVAILABLE";
 "optimize.done.no_categories" = "No optimization data available";
 "optimize.done.new_run" = "NEW_OPTIMIZE";
 

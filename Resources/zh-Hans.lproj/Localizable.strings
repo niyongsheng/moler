@@ -35,19 +35,27 @@
 "clean.stop" = "停止";
 "clean.files" = "文件数";
 "clean.size" = "大小";
+"clean.sections" = "分区";
 
 /* === 清理：审核 === */
-"clean.review.title" = "扫描结果";
-"clean.review.subtitle" = "勾选要清理的项目";
+"clean.review.title" = "清理计划";
+"clean.review.subtitle" = "确认 Mole 的安全清理清单";
 "clean.review.scan_path" = "扫描路径";
-"clean.review.total_size" = "总计大小";
-"clean.review.total_files" = "文件总数";
+"clean.review.total_size" = "可回收空间";
+"clean.review.total_files" = "条目";
 "clean.review.selected" = "已选";
 "clean.review.select_all" = "全选";
 "clean.review.deselect_all" = "取消全选";
-"clean.review.no_files" = "未发现文件";
+"clean.review.no_files" = "当前没有可清理的内容";
 "clean.review.back" = "返回";
 "clean.review.execute" = "执行清理";
+"clean.review.categories" = "分区";
+"clean.review.cleanable" = "可清理";
+"clean.review.items" = "项";
+"clean.review.skipped_note" = "本次预览已跳过";
+"clean.review.sudo_hint" = "系统缓存需要管理员权限；如需完整清理，请在终端运行 `sudo -v && mo clean`。";
+"clean.review.detailed_list" = "详细清单";
+"clean.review.reveal" = "在访达中显示";
 "clean.review.files_selected" = "已选 %d 个文件";
 
 /* === 清理：执行中 === */
@@ -62,6 +70,7 @@
 "clean.done.subtitle" = "所有选中项目已处理";
 "clean.done.space_freed" = "释放空间";
 "clean.done.files_removed" = "移除文件";
+"clean.done.partial_note" = "部分条目无法测量，统计值为下限。";
 "clean.done.new_scan" = "重新扫描";
 
 /* === 错误 === */
@@ -109,6 +118,15 @@
 "overview.disk_read" = "磁盘读取";
 "overview.disk_write" = "磁盘写入";
 "overview.disk" = "磁盘";
+"overview.disk_purgeable" = "可清除";
+"overview.disk_trash" = "废纸篓";
+"overview.disk_smart" = "磁盘健康";
+"overview.proxy" = "代理";
+"overview.panel_processes" = "占用进程";
+"overview.panel_bluetooth" = "蓝牙";
+"overview.activity" = "最近活动";
+"overview.activity_empty" = "暂无操作记录";
+"overview.activity_items" = "项";
 "overview.free_format" = "可用 %@";
 "overview.used_format" = "已用 %d%%";
 
@@ -137,15 +155,23 @@
 "purge.subtitle" = "清理旧的构建缓存";
 "purge.scan_path" = "扫描路径";
 "purge.initiate" = "扫描项目";
+"purge.paths.defaults" = "当前使用 Mole 的默认项目目录。";
+"purge.paths.custom" = "当前使用 ~/.config/mole/purge_paths 中的自定义目录。";
+"purge.paths.shared" = "与 `mo purge --paths` 共享；Mole 会在执行时重新检查占用保护。";
 "purge.scanning" = "正在扫描项目";
 "purge.scanning.hint" = "> 正在扫描项目目录...";
 "purge.cancel" = "取消";
 "purge.stop" = "停止";
 
 /* === 清除项目残留：审核 === */
-"purge.review.title" = "选择要清除的项";
-"purge.review.total" = "总计";
+"purge.review.title" = "清除计划";
+"purge.review.total" = "可回收空间";
 "purge.review.execute" = "开始清除";
+"purge.review.paths" = "扫描目录";
+"purge.review.items" = "项";
+"purge.review.empty" = "所选目录中没有发现项目构建产物。";
+"purge.review.note" = "Mole 会保护最近修改、正在使用或包含手写文件的产物；无人值守模式会跳过云盘同步的产物。";
+"purge.review.cloud_note" = "%d 个云盘同步的产物已列出，但无人值守模式会跳过；如需包含，请在终端运行 `mo purge`。";
 
 /* === 清除项目残留：执行中 === */
 "purge.run.title" = "清除执行中";
@@ -159,6 +185,7 @@
 "purge.done.subtitle" = "所有选中的项目残留已清除";
 "purge.done.space_freed" = "释放空间";
 "purge.done.items_removed" = "清除项数";
+"purge.done.failed" = "失败";
 "purge.done.new_scan" = "重新扫描";
 
 /* === 优化：待机 === */
@@ -229,6 +256,9 @@
 "optimize.done.preview_subtitle" = "试运行模式，未作修改";
 "optimize.done.all_areas" = "优化项数";
 "optimize.done.duration" = "耗时";
+"optimize.done.unchanged" = "未变化";
+"optimize.done.skipped" = "已跳过";
+"optimize.done.unavailable" = "不可用";
 "optimize.done.no_categories" = "暂无优化数据";
 "optimize.done.new_run" = "重新优化";
 
