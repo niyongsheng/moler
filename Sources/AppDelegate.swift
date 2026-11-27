@@ -186,6 +186,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return false
     }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        // The long-lived `mo status --watch` child must not outlive the app.
+        SystemMonitor.stopShared()
+    }
 }
 
 // MARK: - NSWindowDelegate

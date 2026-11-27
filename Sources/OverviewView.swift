@@ -14,6 +14,8 @@ struct OverviewView: View {
     @ObservedObject private var activity = AppActivityMonitor.shared
     @State private var diskCapacity: Int64 = 0
     @State private var diskFree: Int64 = 0
+    @State private var history: [MoleHistorySession] = []
+    @State private var lastHistoryLoad = Date.distantPast
 
     // Popover state
     @State private var showHealthTip = false
@@ -24,21 +26,35 @@ struct OverviewView: View {
                 headerBar
                 toolGrid
                 systemRow
+                processesSection
                 batterySection
                 networkSection
                 diskSection
+                activitySection
                 quickBar
             }
             .padding(.horizontal, 28)
             .padding(.vertical, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task { loadDiskInfo() }
+        .task {
+            loadDiskInfo()
+            loadHistory(force: true)
+        }
         .onAppear { updatePolling() }
         .onDisappear { monitor.stop() }
-        .onChange(of: isVisible) { _, _ in updatePolling() }
-        .onChange(of: activity.isWindowVisible) { _, _ in updatePolling() }
-        .onChange(of: activity.isAppActive) { _, _ in updatePolling() }
+        .onChange(of: isVisible) { _, visible in
+            updatePolling()
+            if visible { loadHistory() }
+        }
+        .onChange(of: activity.isWindowVisible) { _, visible in
+            updatePolling()
+            if visible { loadHistory() }
+        }
+        .onChange(of: activity.isAppActive) { _, active in
+            updatePolling()
+            if active { loadHistory() }
+        }
     }
 
     /// Poll system stats only while this pane is on screen. The dashboard is
@@ -277,6 +293,32 @@ struct OverviewView: View {
         .padding(.vertical, 20)
     }
 
+    // MARK: - Top Processes
+
+    @ViewBuilder
+    private var processesSection: some View {
+        if let s = monitor.stats, !s.topProcesses.isEmpty {
+            InstrumentPanel(title: L10n.overviewPanelProcesses, badge: nil) {
+                VStack(spacing: 3) {
+                    ForEach(s.topProcesses.prefix(5)) { process in
+                        HStack(spacing: 8) {
+                            Text(process.name)
+                                .monoFont(10).foregroundColor(Brand.textPrimary).lineLimit(1)
+                            Spacer()
+                            Text(String(format: "%.1f%%", process.cpu))
+                                .monoFont(9).foregroundColor(cpuColor(process.cpu))
+                                .frame(width: 44, alignment: .trailing)
+                            Text(Format.bytes(Int64(process.memoryBytes)))
+                                .monoFont(9).foregroundColor(Brand.textDim)
+                                .frame(width: 64, alignment: .trailing)
+                        }
+                    }
+                }
+                .padding(.horizontal, 8).padding(.bottom, 8)
+            }
+        }
+    }
+
     // MARK: - CPU Card
 
     private func cpuCard(_ s: SystemStats) -> some View {
@@ -402,6 +444,29 @@ struct OverviewView: View {
                             .foregroundColor(Brand.accentGold)
                         Spacer()
                     }
+
+                    // Connected Bluetooth devices (Mole 1.71+).
+                    if s.bluetooth.contains(where: \.connected) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(s.bluetooth.filter(\.connected).prefix(3)) { device in
+                                HStack(spacing: 4) {
+                                    Image(systemName: "dot.radiowaves.left.and.right")
+                                        .font(.system(size: 7))
+                                    Text(device.name)
+                                        .monoFont(8)
+                                        .lineLimit(1)
+                                    if let battery = device.batteryPercentLabel {
+                                        Text(battery)
+                                            .monoFont(8)
+                                            .foregroundColor(Brand.accentGold)
+                                    }
+                                    Spacer()
+                                }
+                                .foregroundColor(Brand.textDim)
+                            }
+                        }
+                        .padding(.top, 2)
+                    }
                 }
                 .padding(.horizontal, 8)
                 .padding(.bottom, 8)
@@ -456,6 +521,15 @@ struct OverviewView: View {
                                         .monoFont(10).foregroundColor(Brand.accentBlue)
                                 }
                             }
+
+                            if let proxy = s.proxy, proxy.enabled {
+                                HStack(spacing: 4) {
+                                    Text("> \(L10n.overviewProxy):")
+                                        .monoFont(7).foregroundColor(Brand.textDim)
+                                    Text("\(proxy.type) · \(proxy.host)")
+                                        .monoFont(9).foregroundColor(Brand.accentGold)
+                                }
+                            }
                         }
 
                         Spacer()
@@ -508,12 +582,63 @@ struct OverviewView: View {
                         Text(String(format: L10n.overviewUsedFormat, Int(pct * 100)))
                             .monoFont(9).foregroundColor(pct > 0.9 ? Brand.accentRed : pct > 0.75 ? Brand.accentGold : Brand.textDim)
                     }
+
+                    HStack(spacing: 10) {
+                        if let purgeable = disk.purgeable, purgeable > 0 {
+                            InfoChip(label: L10n.overviewDiskPurgeable, value: Format.bytes(Int64(purgeable)))
+                        }
+                        if let trash = monitor.stats?.trashSize, trash > 0 {
+                            InfoChip(label: L10n.overviewDiskTrash, value: Format.bytes(Int64(trash)))
+                        }
+                        if let smart = disk.smartStatus, !smart.isEmpty, smart != "unknown" {
+                            InfoChip(label: L10n.overviewDiskSmart, value: smart.uppercased())
+                        }
+                        if disk.external == true {
+                            InfoChip(label: "EXT", value: disk.fstype?.uppercased() ?? "—")
+                        }
+                        Spacer()
+                    }
                 } else {
                     DataRow(label: L10n.overviewDiskCapacity, value: formatBytes(diskCapacity))
                     DataRow(label: L10n.overviewDiskFree, value: formatBytes(diskFree))
                     if diskCapacity > 0 {
                         let pct = Double(diskCapacity - diskFree) / Double(diskCapacity)
                         ProgressGlow(progress: pct).frame(height: 6)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Recent Activity
+
+    @ViewBuilder
+    private var activitySection: some View {
+        if !history.isEmpty {
+            GlassCard {
+                VStack(spacing: 6) {
+                    HStack {
+                        Text(L10n.overviewActivity)
+                            .titleFont(12).kerning(3).foregroundColor(Brand.accentOrange)
+                        Spacer()
+                        Text("\(history.count)")
+                            .monoFont(8).foregroundColor(Brand.textDim)
+                    }
+                    ForEach(history) { session in
+                        HStack(spacing: 8) {
+                            Text(session.displayCommand)
+                                .monoFont(9).foregroundColor(Brand.accentGold)
+                                .frame(width: 78, alignment: .leading)
+                            Text(session.startedDate.map { Format.relativeDate($0) } ?? session.startedAt)
+                                .monoFont(8).foregroundColor(Brand.textDim)
+                            Spacer()
+                            if session.items > 0 {
+                                Text("\(session.items) \(L10n.overviewActivityItems)")
+                                    .monoFont(8).foregroundColor(Brand.textDim)
+                            }
+                            Text(session.size)
+                                .monoFont(9).foregroundColor(Brand.accentOrange)
+                        }
                     }
                 }
             }
@@ -547,6 +672,21 @@ struct OverviewView: View {
             .overlay(RoundedRectangle(cornerRadius: 4).stroke(color, lineWidth: 0.5))
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - History Loading
+
+    private func loadHistory(force: Bool = false) {
+        let now = Date()
+        guard force || now.timeIntervalSince(lastHistoryLoad) > 20 else { return }
+        lastHistoryLoad = now
+
+        Task { @MainActor in
+            let sessions = await Task.detached(priority: .utility) {
+                (try? MoleHistoryLoader.load(limit: 20)) ?? []
+            }.value
+            history = Array(sessions.prefix(8))
+        }
     }
 
     // MARK: - Disk Info Loading

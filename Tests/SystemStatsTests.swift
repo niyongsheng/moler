@@ -81,6 +81,77 @@ final class SystemStatsTests: XCTestCase {
         XCTAssertEqual(io.writeRate, 0)
     }
 
+    // MARK: - Mole 1.74 watch fields
+
+    func testDecodeWatchSnapshotFields() throws {
+        let json = """
+        {
+            "collected_at": "2026-11-27T10:38:19.333539+08:00",
+            "cpu": {"usage": 17.8, "load1": 7.9, "load5": 7.8, "load15": 7.8, "core_count": 8},
+            "memory": {"used": 13851525120, "total": 17179869184, "used_percent": 80.6, "swap_used": 10749345792, "swap_total": 11811160064, "pressure": "warn"},
+            "hardware": {"model": "MacBook Pro", "cpu_model": "Apple M2", "total_ram": "16.0 GB", "disk_size": "460.4 GB", "os_version": "macOS 27.2.1", "refresh_rate": "60Hz"},
+            "uptime_seconds": 164519,
+            "health_score": 90,
+            "health_score_msg": "Excellent",
+            "top_processes": [
+                {"pid": 456, "ppid": 1, "name": "WindowServer", "command": "WindowServer", "cpu": 44.3, "memory": 0.6, "memory_bytes": 97124352}
+            ],
+            "bluetooth": [
+                {"name": "AirPods", "connected": true, "battery": "Right Battery Level: 1%"}
+            ],
+            "trash_size": 12345,
+            "trash_approx": false,
+            "proxy": {"enabled": true, "type": "SOCKS", "host": "127.0.0.1:7890"},
+            "zombie_count": 1,
+            "disks": [
+                {"mount": "/", "used": 376372564134, "total": 494384795648, "used_percent": 76.1, "purgeable": 8080236378, "smart_status": "verified", "external": false, "fstype": "apfs"}
+            ]
+        }
+        """.data(using: .utf8)!
+
+        let stats = try JSONDecoder().decode(SystemStats.self, from: json)
+
+        XCTAssertEqual(stats.topProcesses.count, 1)
+        XCTAssertEqual(stats.topProcesses[0].name, "WindowServer")
+        XCTAssertEqual(stats.topProcesses[0].cpu, 44.3, accuracy: 0.01)
+        XCTAssertEqual(stats.topProcesses[0].memoryBytes, 97_124_352)
+
+        XCTAssertEqual(stats.bluetooth.count, 1)
+        XCTAssertTrue(stats.bluetooth[0].connected)
+        XCTAssertEqual(stats.bluetooth[0].batteryPercentLabel, "1%")
+
+        XCTAssertEqual(stats.trashSize, 12345)
+        XCTAssertEqual(stats.proxy?.host, "127.0.0.1:7890")
+        XCTAssertEqual(stats.zombieCount, 1)
+
+        XCTAssertEqual(stats.disks[0].purgeable, 8_080_236_378)
+        XCTAssertEqual(stats.disks[0].smartStatus, "verified")
+        XCTAssertEqual(stats.disks[0].external, false)
+        XCTAssertEqual(stats.disks[0].fstype, "apfs")
+
+        XCTAssertTrue(stats.isComplete)
+    }
+
+    func testWarmupSnapshotIsIncomplete() throws {
+        let json = """
+        {
+            "collected_at": "2026-11-27T10:38:19.333539+08:00",
+            "cpu": {"usage": 0, "load1": 0, "load5": 0, "load15": 0, "core_count": 8},
+            "memory": {"used": 0, "total": 0, "used_percent": 0, "swap_used": 0, "swap_total": 0, "pressure": ""},
+            "hardware": {"model": "", "cpu_model": "", "total_ram": "", "disk_size": "", "os_version": "", "refresh_rate": ""},
+            "uptime_seconds": 0,
+            "health_score": 0,
+            "top_processes": null
+        }
+        """.data(using: .utf8)!
+
+        let stats = try JSONDecoder().decode(SystemStats.self, from: json)
+        XCTAssertFalse(stats.isComplete)
+        XCTAssertTrue(stats.topProcesses.isEmpty)
+        XCTAssertEqual(stats.trashSize, 0)
+        XCTAssertNil(stats.proxy)
+    }
+
     func testCPUStatsEquality() {
         let a = CPUStats(usage: 50, load1: 1, load5: 0.8, load15: 0.6, coreCount: 8)
         let b = CPUStats(usage: 50, load1: 1, load5: 0.8, load15: 0.6, coreCount: 8)

@@ -15,6 +15,21 @@ struct SystemStats: Codable {
     let healthScoreMsg: String
     let thermal: ThermalStats?
     let batteries: [BatteryStats]
+    /// Present from Mole 1.71+; a `--watch` warm-up snapshot may omit these.
+    let topProcesses: [ProcessStats]
+    let bluetooth: [BluetoothDevice]
+    let trashSize: UInt64
+    let proxy: ProxyInfo?
+    let zombieCount: Int
+
+    /// The first `--watch` snapshot is a warm-up with empty hardware,
+    /// pressure, and process fields. Do not publish it.
+    var isComplete: Bool {
+        // The warm-up snapshot has every hardware field empty. Do not also
+        // require `memory.pressure`: it regressed to an empty string in some
+        // Mole 1.68–1.70 releases, which would otherwise hide every snapshot.
+        !hardware.cpuModel.isEmpty || !hardware.totalRam.isEmpty
+    }
 
     enum CodingKeys: String, CodingKey {
         case collectedAt = "collected_at"
@@ -26,6 +41,11 @@ struct SystemStats: Codable {
         case healthScoreMsg = "health_score_msg"
         case thermal
         case batteries
+        case topProcesses = "top_processes"
+        case bluetooth
+        case trashSize = "trash_size"
+        case proxy
+        case zombieCount = "zombie_count"
     }
 
     init(from decoder: Decoder) throws {
@@ -47,7 +67,56 @@ struct SystemStats: Codable {
         healthScoreMsg = try c.decodeIfPresent(String.self, forKey: .healthScoreMsg) ?? ""
         thermal = try c.decodeIfPresent(ThermalStats.self, forKey: .thermal)
         batteries = try c.decodeIfPresent([BatteryStats].self, forKey: .batteries) ?? []
+        topProcesses = try c.decodeIfPresent([ProcessStats].self, forKey: .topProcesses) ?? []
+        bluetooth = try c.decodeIfPresent([BluetoothDevice].self, forKey: .bluetooth) ?? []
+        trashSize = try c.decodeIfPresent(UInt64.self, forKey: .trashSize) ?? 0
+        proxy = try c.decodeIfPresent(ProxyInfo.self, forKey: .proxy)
+        zombieCount = try c.decodeIfPresent(Int.self, forKey: .zombieCount) ?? 0
     }
+}
+
+// MARK: - Processes
+
+struct ProcessStats: Codable, Identifiable, Equatable {
+    let pid: Int
+    let name: String
+    let command: String
+    let cpu: Double
+    let memory: Double
+    let memoryBytes: UInt64
+
+    var id: Int { pid }
+
+    enum CodingKeys: String, CodingKey {
+        case pid, name, command, cpu, memory
+        case memoryBytes = "memory_bytes"
+    }
+}
+
+// MARK: - Bluetooth
+
+struct BluetoothDevice: Codable, Identifiable, Equatable {
+    let name: String
+    let connected: Bool
+    let battery: String
+
+    var id: String { name }
+
+    /// Mole reports strings like "Right Battery Level: 1%"; keep the percent.
+    var batteryPercentLabel: String? {
+        guard let range = battery.range(
+            of: #"[0-9]{1,3}%"#, options: .regularExpression
+        ) else { return nil }
+        return String(battery[range])
+    }
+}
+
+// MARK: - Proxy
+
+struct ProxyInfo: Codable, Equatable {
+    let enabled: Bool
+    let type: String
+    let host: String
 }
 
 // MARK: - CPU
@@ -169,10 +238,17 @@ struct DiskStats: Codable {
     let used: UInt64
     let total: UInt64
     let usedPercent: Double
+    let purgeable: UInt64?
+    let smartStatus: String?
+    let external: Bool?
+    let fstype: String?
 
     enum CodingKeys: String, CodingKey {
         case mount, used, total
         case usedPercent = "used_percent"
+        case purgeable
+        case smartStatus = "smart_status"
+        case external, fstype
     }
 }
 
