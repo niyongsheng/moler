@@ -170,7 +170,11 @@ final class EarthScene: SCNScene {
             n += noise.noise3D(x*0.6, y*0.6, z*0.6) * 0.25
 
             let lat = 90.0 - phi * 180.0 / .pi
-            let lon = atan2(z, x) * 180.0 / .pi
+            // The (x, z) = (cos θ, sin θ) embedding is left-handed with +Y
+            // up, so sampling the map with +z mirrors the continents when
+            // seen from outside. Using −z restores real-Earth east/west
+            // (east is to the viewer's right when north is up).
+            let lon = atan2(-z, x) * 180.0 / .pi
             let isLand = landMask?.contains(latitude: lat, longitude: lon) ?? (n > 0.1)
 
             let r: Double
