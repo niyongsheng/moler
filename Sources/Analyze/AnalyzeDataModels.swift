@@ -4,7 +4,7 @@ import SwiftUI
 // MARK: - State Machine
 
 /// The state machine for Analyze (disk usage treemap) operations.
-enum AnalyzeState: Equatable {
+enum AnalyzeState {
     /// Initial state with "Scan Home" button + history
     case idle
 
@@ -14,18 +14,8 @@ enum AnalyzeState: Equatable {
     /// Scan complete, treemap ready to display
     case loaded(result: DiskScanResult, breadcrumb: [BreadcrumbItem])
 
-    /// Fatal error
-    case error(String)
-
-    static func == (lhs: AnalyzeState, rhs: AnalyzeState) -> Bool {
-        switch (lhs, rhs) {
-        case (.idle, .idle): return true
-        case (.scanning, .scanning): return true
-        case (.loaded(let a, _), .loaded(let b, _)): return a.path == b.path
-        case (.error, .error): return true
-        default: return false
-        }
-    }
+    /// Fatal error; the message lives in `AnalyzeViewModel.errorMessage`
+    case error
 }
 
 // MARK: - Supporting Types
@@ -48,16 +38,15 @@ struct TreemapCell: Identifiable {
     let path: String
     let size: Int64
     let isDir: Bool
-    let weight: Double       // 0...1 normalised size proportion
     let rect: CGRect         // computed by TreemapLayout
     let color: Color         // pre-computed based on type/extension
 }
 
 // MARK: - Color helpers
 
-/// A curated palette of 18 distinct colors for treemap blocks, spanning the hue
-/// spectrum at roughly equal visual intervals, plus a few neutral tones. Colors
-/// are designed to work on dark backgrounds (NASA-Punk dark navy).
+/// A curated palette of 18 distinct colors for treemap files, spanning the hue
+/// spectrum at roughly equal visual intervals. Colors are designed to work on
+/// dark backgrounds (NASA-Punk dark navy).
 private let treemapPalette: [Color] = [
     Color(hex: "#4a9eff"), // bright blue
     Color(hex: "#34d399"), // emerald
@@ -79,27 +68,27 @@ private let treemapPalette: [Color] = [
     Color(hex: "#e879f9"), // fuchsia
 ]
 
-/// Returns a stable colour for a given file entry.
+/// Warm hue palette for directories, anchored near accentOrange. A hash of the
+/// directory name gives visual variety while keeping a warm anchor.
+private let directoryPalette: [Color] = [
+    Brand.accentOrange,        // #e06236
+    Color(hex: "#d47a3a"),     // amber-orange
+    Color(hex: "#c4703a"),     // burnt orange
+    Color(hex: "#e88d4a"),     // lighter orange
+    Color(hex: "#cc6633"),     // deep orange
+    Color(hex: "#d7ab61"),     // gold
+]
+
+/// Returns a colour for a given file entry.
 ///
-/// - Directories always get accent orange (consistent visual anchor).
+/// - Directories draw from `directoryPalette`, keyed by a hash of the name.
 /// - Common file extensions get semantic colours (archives = gold, media = purple, etc.).
-/// - Everything else gets a deterministic colour derived from a hash of its name,
-///   drawn from the 18-colour `treemapPalette` so adjacent blocks are visually distinct.
+/// - Everything else gets a colour derived from a hash of its name, drawn from
+///   the 18-colour `treemapPalette`. Swift's `String.hash` is seeded per
+///   process, so the mapping can differ after a relaunch.
 func treemapColor(for entry: DiskScanEntry) -> Color {
     if entry.isDir {
-        // Warm hue palette anchored near accentOrange — deterministic hash
-        // per directory name gives visual variety while keeping a warm anchor.
-        let dirPalette: [Color] = [
-            Brand.accentOrange,        // #e06236
-            Color(hex: "#d47a3a"),     // amber-orange
-            Color(hex: "#c4703a"),     // burnt orange
-            Color(hex: "#e88d4a"),     // lighter orange
-            Color(hex: "#cc6633"),     // deep orange
-            Color(hex: "#d7ab61"),     // gold
-        ]
-        let hash = entry.name.hash
-        let index = abs(hash) % dirPalette.count
-        return dirPalette[index]
+        return directoryPalette[abs(entry.name.hash) % directoryPalette.count]
     }
 
     let ext = URL(fileURLWithPath: entry.path).pathExtension.lowercased()
@@ -129,10 +118,9 @@ func treemapColor(for entry: DiskScanEntry) -> Color {
     case "swift", "kt", "java", "py", "js", "ts", "go", "rs", "cpp", "c", "h", "m", "mm":
         return Color(hex: "#38bdf8") // light blue
     default:
-        // Deterministic hash-based colour for unrecognised extensions.
-        // Uses the full name so identical extensions in different dirs get different colours.
-        let hash = entry.name.hash
-        let index = abs(hash) % treemapPalette.count
+        // Hash-based colour for unrecognised extensions. Seeded per process,
+        // so the same file can change colour after a relaunch.
+        let index = abs(entry.name.hash) % treemapPalette.count
         return treemapPalette[index]
     }
 }

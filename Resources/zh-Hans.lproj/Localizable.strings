@@ -5,19 +5,13 @@
 
 /* === 导航 === */
 "nav.clean" = "系统清理";
-"nav.clean.sub" = "深度扫描";
 "nav.purge" = "项目清理";
-"nav.purge.sub" = "项目残留";
 "nav.optimize" = "系统优化";
-"nav.optimize.sub" = "系统服务";
 "nav.analyze" = "磁盘分析";
-"nav.analyze.sub" = "磁盘图谱";
 "nav.software" = "软件管理";
-"nav.software.sub" = "关于";
-"nav.offline" = "模块未上线";
 
 /* === 清理：待机 === */
-"clean.title" = "系统扫描";
+"clean.title" = "系统垃圾扫描";
 "clean.subtitle" = "释放磁盘空间";
 "clean.last_scan" = "上次扫描";
 "clean.last_clean" = "上次清理";
@@ -29,7 +23,6 @@
 /* === 清理：扫描中 === */
 "clean.scanning" = "扫描进行中";
 "clean.scanning.hint" = "> 正在分析磁盘结构...";
-"clean.scanning.wait" = "可能需要一分钟左右...";
 "clean.scanning.elapsed" = "已用时间";
 "clean.cancel" = "取消";
 "clean.stop" = "停止";
@@ -40,14 +33,11 @@
 /* === 清理：审核 === */
 "clean.review.title" = "清理计划";
 "clean.review.subtitle" = "确认 Mole 的安全清理清单";
-"clean.review.scan_path" = "扫描路径";
 "clean.review.total_size" = "可回收空间";
 "clean.review.total_files" = "条目";
-"clean.review.selected" = "已选";
 "clean.review.select_all" = "全选";
 "clean.review.deselect_all" = "取消全选";
 "clean.review.no_files" = "当前没有可清理的内容";
-"clean.review.back" = "返回";
 "clean.review.execute" = "执行清理";
 "clean.review.categories" = "分区";
 "clean.review.cleanable" = "可清理";
@@ -79,6 +69,14 @@
 "error.mo_failed" = "mo 执行失败 (退出码 %d): %@";
 "error.timed_out" = "扫描超时（%d 分钟）。家目录文件过多，建议扫描子目录。";
 "error.parse_failed" = "解析 mo 输出失败: %@";
+"error.mo_exit_code" = "mo 退出码 %d";
+
+/* === 相对时间 === */
+"relative.never" = "从未";
+"relative.just_now" = "刚刚";
+"relative.minutes_ago" = "%d分钟前";
+"relative.hours_ago" = "%d小时前";
+"relative.days_ago" = "%d天前";
 
 /* === 安装引导 === */
 "install.title" = "需要 Mole 引擎";
@@ -100,23 +98,19 @@
 
 /* === 概览 === */
 "overview.title" = "控制中心";
-"overview.subtitle" = "系统概览 v1.0";
+"overview.subtitle" = "系统概览";
+"overview.health" = "健康度";
+"overview.health_excellent" = "极佳";
+"overview.health_good" = "良好";
+"overview.health_fair" = "一般";
+"overview.health_attention" = "需要关注";
+"overview.live" = "实时";
+"overview.uptime" = "运行时长";
+"overview.load" = "负载";
 "overview.total_freed" = "累计释放";
-"overview.clean_count" = "清理次数";
-"overview.last_clean" = "上次清理";
-"overview.last_scan" = "上次扫描";
-"overview.disk_capacity" = "磁盘容量";
-"overview.disk_free" = "可用空间";
-"overview.disk_usage" = "磁盘占用";
-"overview.quick_scan" = "系统清理";
-"overview.quick_settings" = "设置";
 "overview.loading" = "正在加载系统数据…";
 "overview.cpu_cores" = "%d 核";
 "overview.swap" = "交换内存";
-"overview.down" = "↓ 下载";
-"overview.up" = "↑ 上传";
-"overview.disk_read" = "磁盘读取";
-"overview.disk_write" = "磁盘写入";
 "overview.disk" = "磁盘";
 "overview.disk_purgeable" = "可清除";
 "overview.disk_trash" = "废纸篓";
@@ -126,42 +120,37 @@
 "overview.panel_bluetooth" = "蓝牙";
 "overview.activity" = "最近活动";
 "overview.activity_empty" = "暂无操作记录";
-"overview.activity_items" = "项";
 "overview.free_format" = "可用 %@";
 "overview.used_format" = "已用 %d%%";
-
-/* === 概览：统计标签 === */
-"overview.stat_freed" = "已释放";
-"overview.stat_count" = "次数";
-"overview.stat_last" = "上次";
-"overview.stat_ops" = "操作数";
-"overview.stat_date" = "日期";
-"overview.stat_path" = "路径";
-"overview.stat_removed" = "已移除";
 
 /* === 概览：面板标题 === */
 "overview.panel_cpu" = "CPU";
 "overview.panel_memory" = "内存";
 "overview.panel_network" = "网络";
 "overview.panel_battery" = "电池";
-"overview.battery_cycle" = "循环";
-"overview.battery_health" = "健康";
-"overview.battery_temp" = "温度";
-"overview.battery_time" = "时间";
 "overview.battery_charged" = "已充满";
+"overview.battery_charging" = "充电中";
+"overview.battery_discharging" = "电池供电";
+"overview.battery_ac" = "电源供电";
 
 /* === 清除项目残留：待机 === */
 "purge.title" = "清除项目残留";
 "purge.subtitle" = "清理旧的构建缓存";
-"purge.scan_path" = "扫描路径";
 "purge.initiate" = "扫描项目";
 "purge.paths.defaults" = "当前使用 Mole 的默认项目目录。";
 "purge.paths.custom" = "当前使用 ~/.config/mole/purge_paths 中的自定义目录。";
 "purge.paths.shared" = "与 `mo purge --paths` 共享；Mole 会在执行时重新检查占用保护。";
+"purge.paths.section_defaults" = "默认路径";
+"purge.paths.section_custom" = "自定义路径";
+"purge.paths.add" = "添加路径";
+"purge.paths.remove" = "移除此路径";
+"purge.paths.save_error" = "无法保存清理路径：%@";
+"purge.picker.message" = "选择要清理的项目构建产物或缓存目录";
+"purge.picker.prompt" = "选择";
+"purge.selected_count" = "已选 %d/%d";
 "purge.scanning" = "正在扫描项目";
 "purge.scanning.hint" = "> 正在扫描项目目录...";
 "purge.cancel" = "取消";
-"purge.stop" = "停止";
 
 /* === 清除项目残留：审核 === */
 "purge.review.title" = "清除计划";
@@ -176,9 +165,7 @@
 /* === 清除项目残留：执行中 === */
 "purge.run.title" = "清除执行中";
 "purge.run.subtitle" = "请勿中断操作";
-"purge.run.status" = "状态";
 "purge.run.executing" = "正在清除项目构建残留...";
-"purge.run.init" = "> 正在启动清除序列...";
 
 /* === 清除项目残留：完成 === */
 "purge.done.title" = "清除完成";
@@ -190,7 +177,7 @@
 
 /* === 优化：待机 === */
 "optimize.title" = "系统维护优化";
-"optimize.subtitle" = "优化模块 v1.0";
+"optimize.subtitle" = "调优系统服务";
 "optimize.last_run" = "上次优化";
 "optimize.total_count" = "优化次数";
 "optimize.total_opts" = "上次优化项数";
@@ -213,17 +200,31 @@
 "analyze.total_count" = "分析次数";
 "analyze.never" = "从未";
 "analyze.scan_home" = "开始分析";
+"analyze.preset.home" = "主目录";
+"analyze.preset.desktop" = "桌面";
+"analyze.preset.documents" = "文稿";
+"analyze.preset.downloads" = "下载";
+"analyze.preset.caches" = "缓存";
 "analyze.new_analysis" = "重新分析";
+"analyze.sidebar.target" = "目标";
+"analyze.sidebar.entries" = "条目";
+"analyze.sidebar.path" = "路径";
+"analyze.sidebar.size" = "大小";
+"analyze.sidebar.files" = "文件数";
+"analyze.treemap.reveal" = "在访达中显示";
+"analyze.treemap.other" = "其他（%d 项）";
 
 /* === 分析：扫描中 === */
 "analyze.scanning" = "正在扫描目录";
 "analyze.cancel" = "取消";
 "analyze.or" = "或";
 "analyze.select_folder" = "选择文件夹...";
+"analyze.picker.message" = "选择要分析的目录";
+"analyze.picker.prompt" = "选择";
 
 /* === 软件管理 === */
 "software.title" = "应用卸载";
-"software.subtitle" = "卸载模块 v1.0";
+"software.subtitle" = "管理已安装应用";
 "software.scan_apps" = "扫描应用";
 "software.last_scan" = "上次扫描";
 "software.total_removed" = "累计卸载";
@@ -237,7 +238,10 @@
 "software.needs_review" = "需要审核";
 "software.sort_name" = "名称";
 "software.sort_size" = "大小";
-"software.size" = "大小";
+"software.confirm_title" = "确认卸载";
+"software.confirm_message" = "要卸载选中的 %d 个应用吗？此操作无法撤销。";
+"software.selection_count" = "%d 个应用 · %@";
+"software.loading_preview" = "加载中…";
 "software.removing" = "正在卸载";
 "software.done.title" = "卸载完成";
 "software.done.subtitle" = "所有选中应用已移除";
@@ -264,6 +268,7 @@
 
 /* === 设置 === */
 "settings.title" = "设置";
+"settings.subtitle" = "偏好设置";
 "settings.general" = "通用";
 "settings.language" = "语言";
 "settings.language.system" = "跟随系统";
@@ -287,14 +292,11 @@
 
 /* === 更新 === */
 "update.check" = "检查更新";
-"update.check_result" = "发现新版本";
-"update.up_to_date" = "已是最新版本";
 "update.up_to_date_body" = "Moler %@ 已是最新版本。";
-"update.available" = "Moler %@ 可用（当前版本 %@）。请从发布页面下载。";
-"update.error" = "检查更新失败";
 "update.error_body" = "GitHub 暂时无响应，请稍后再试，或直接打开发布页面。";
+"update.http_error" = "GitHub 返回 HTTP %d。";
+"update.response_error" = "GitHub 返回了意外响应。";
 "update.release_page" = "打开发布页面";
-"update.close" = "关闭";
 
 /* === 更新：应用内安装 === */
 "update.auto_check" = "自动检查更新";

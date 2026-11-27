@@ -2,33 +2,6 @@ import SceneKit
 import AppKit
 import SwiftUI
 
-// MARK: - Simplex noise (reused from MarsScene)
-
-private final class MSNoise {
-    private var perm: [Int]
-    private let grad3: [(Double,Double,Double)] = [
-        (1,1,0),(-1,1,0),(1,-1,0),(-1,-1,0),
-        (1,0,1),(-1,0,1),(1,0,-1),(-1,0,-1),
-        (0,1,1),(0,-1,1),(0,1,-1),(0,-1,-1),
-    ]
-    init(seed:String){var h=0;for c in seed.utf8{h=h&*31&+Int(c)};perm=(0..<256).map{($0&+h)&255}.shuffled()}
-    private func fade(_ t:Double)->Double{t*t*t*(t*(t*6-15)+10)}
-    private func lerp(_ a:Double,_ b:Double,_ t:Double)->Double{a+(b-a)*t}
-    func noise3D(_ x:Double,_ y:Double,_ z:Double)->Double{
-        let X=Int(floor(x))&255,Y=Int(floor(y))&255,Z=Int(floor(z))&255
-        let fx=x-floor(x),fy=y-floor(y),fz=z-floor(z),u=fade(fx),v=fade(fy),w=fade(fz)
-        func h(_ x:Int,_ y:Int,_ z:Int)->Int{perm[(perm[(perm[x&255]&+y)&255]&+z)&255]}
-        func g(_ h:Int,_ dx:Double,_ dy:Double,_ dz:Double)->Double{let g=grad3[h%12];return g.0*dx+g.1*dy+g.2*dz}
-        let n0=g(h(X,Y,Z),fx,fy,fz),n1=g(h(X+1,Y,Z),fx-1,fy,fz),nx0=lerp(n0,n1,u)
-        let n2=g(h(X,Y+1,Z),fx,fy-1,fz),n3=g(h(X+1,Y+1,Z),fx-1,fy-1,fz),nx1=lerp(n2,n3,u),ny0=lerp(nx0,nx1,v)
-        let n4=g(h(X,Y,Z+1),fx,fy,fz-1),n5=g(h(X+1,Y,Z+1),fx-1,fy,fz-1),nx2=lerp(n4,n5,u)
-        let n6=g(h(X,Y+1,Z+1),fx,fy-1,fz-1),n7=g(h(X+1,Y+1,Z+1),fx-1,fy-1,fz-1),nx3=lerp(n6,n7,u),ny1=lerp(nx2,nx3,v)
-        return lerp(ny0,ny1,w)
-    }
-}
-
-// MARK: -
-
 final class MercuryScene: SCNScene {
     let interactionNode = SCNNode()
     let spinNode = SCNNode()
@@ -69,7 +42,7 @@ final class MercuryScene: SCNScene {
     private let tiltNode = SCNNode()
 
     private func buildSurface() {
-        let noise = MSNoise(seed: "mercury-surface")
+        let noise = SeededNoise3D(seed: "mercury-surface")
         let count = 5_500
         var p = [Float](repeating: 0, count: count * 3)
         var c = [Float](repeating: 0, count: count * 3)
@@ -87,7 +60,7 @@ final class MercuryScene: SCNScene {
         let basinPhi: Double = 1.0
         let basinRadius: Double = 0.55
 
-        // Bias: allocate ~15% of particles to the basin region for density
+        // Bias: allocate ~6% of particles to the basin region for density
         let basinPct = 0.06
         var idx = 0
         while idx < count {
@@ -151,7 +124,7 @@ final class MercuryScene: SCNScene {
             idx += 1
         }
 
-        spinNode.addChildNode(SCNNode(geometry: makeGeo(p: p, col: c, count: idx)))
+        spinNode.addChildNode(SCNNode(geometry: PlanetGeometry.pointCloud(positions: p, colors: c, count: idx)))
         buildCalorisRim()
         buildWireframe()
     }
@@ -178,19 +151,16 @@ final class MercuryScene: SCNScene {
             col[i * 3 + 1] = b * 0.92
             col[i * 3 + 2] = b * 0.80
         }
-        let node = SCNNode(geometry: makeGeo(p: p, col: col, count: rc, ps: 2.0, opacity: 0.3))
+        let node = SCNNode(geometry: PlanetGeometry.pointCloud(
+            positions: p, colors: col, count: rc, pointSize: 2.0, opacity: 0.3
+        ))
         calorisRimNode.addChildNode(node)
         spinNode.addChildNode(calorisRimNode)
     }
 
     private func buildWireframe() {
-        let w = SCNBox(width: 10.02, height: 10.02, length: 10.02, chamferRadius: 5.01)
-        w.widthSegmentCount = 24; w.heightSegmentCount = 16; w.lengthSegmentCount = 24
-        let wm = SCNMaterial()
-        wm.diffuse.contents = NSColor(calibratedRed: 0.45, green: 0.43, blue: 0.40, alpha: 0.06)
-        wm.isDoubleSided = true
-        w.materials = [wm]
-        spinNode.addChildNode(SCNNode(geometry: w))
+        let tint = NSColor(calibratedRed: 0.45, green: 0.43, blue: 0.40, alpha: 0.06)
+        spinNode.addChildNode(SCNNode(geometry: PlanetGeometry.wireframe(tint: tint)))
     }
 
     // MARK: - Sodium Tail
@@ -226,26 +196,13 @@ final class MercuryScene: SCNScene {
             col[i * 3 + 2] = 0.15 * intensity * bright
         }
 
-        let geo = makeGeo(p: p, col: col, count: count, ps: 3.0, opacity: 0.3)
+        let geo = PlanetGeometry.pointCloud(
+            positions: p, colors: col, count: count, pointSize: 3.0, opacity: 0.3
+        )
         tailNode.addChildNode(SCNNode(geometry: geo))
 
         // Parent under tiltNode (matches planet orientation, no spin) — tail fixed direction
         tiltNode.addChildNode(tailNode)
-    }
-
-    private func makeGeo(p: [Float], col: [Float], count: Int, ps: Float = 1.5, opacity: Float = 1) -> SCNGeometry {
-        let pd = Data(bytes: p, count: count * 3 * 4)
-        let cd = Data(bytes: col, count: count * 3 * 4)
-        let psrc = SCNGeometrySource(data: pd, semantic: .vertex, vectorCount: count, usesFloatComponents: true, componentsPerVector: 3, bytesPerComponent: 4, dataOffset: 0, dataStride: 12)
-        let csrc = SCNGeometrySource(data: cd, semantic: .color, vectorCount: count, usesFloatComponents: true, componentsPerVector: 3, bytesPerComponent: 4, dataOffset: 0, dataStride: 12)
-        let el = SCNGeometryElement(data: nil, primitiveType: .point, primitiveCount: count, bytesPerIndex: 0)
-        let g = SCNGeometry(sources: [psrc, csrc], elements: [el])
-        let m = SCNMaterial()
-        m.isDoubleSided = true; m.writesToDepthBuffer = opacity >= 1
-        if opacity < 1 { m.transparency = CGFloat(opacity); m.transparencyMode = .dualLayer }
-        m.shaderModifiers = [.geometry: "#pragma body\n_geometry.pointSize = \(ps);"]
-        g.materials = [m]
-        return g
     }
 
     func animate(at time: TimeInterval) {
@@ -263,7 +220,7 @@ final class MercuryScene: SCNScene {
             cameraNode.position.x = 0
         }
 
-        // Spin — idle 0.12 rad/s, scanning ~6x faster
+        // Spin — idle 0.12 rad/s, scanning ~9x faster
         let speedMul = 1.0 + animationIntensity * 8.0
         spinNode.eulerAngles.y += d * 0.12 * speedMul
 

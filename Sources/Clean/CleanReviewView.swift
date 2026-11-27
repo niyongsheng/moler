@@ -32,7 +32,7 @@ struct CleanReviewView: View {
             badge: "\(plan.displayItemCount)"
         ) {
             HStack(spacing: 24) {
-                DataRow(label: L10n.cleanReviewTotalSize, value: formatBytes(plan.potentialBytes))
+                DataRow(label: L10n.cleanReviewTotalSize, value: Format.bytes(plan.potentialBytes))
                 DataRow(label: L10n.cleanReviewTotalFiles, value: Format.count(plan.displayItemCount))
                 DataRow(label: L10n.cleanReviewCategories, value: "\(plan.categories.count)")
                 DataRow(label: L10n.cleanReviewCleanable, value: "\(plan.cleanableCount)")
@@ -46,7 +46,7 @@ struct CleanReviewView: View {
     private var notices: some View {
         VStack(spacing: 6) {
             if plan.requiresAdminForSystemCaches {
-                notice(
+                NoticeRow(
                     icon: "lock.fill",
                     text: L10n.cleanReviewSudoHint,
                     color: Brand.accentGold
@@ -54,7 +54,7 @@ struct CleanReviewView: View {
             }
 
             if !plan.skippedFamilies.isEmpty {
-                notice(
+                NoticeRow(
                     icon: "pause.circle",
                     text: "\(L10n.cleanReviewSkippedNote) · \(plan.skippedFamilies.joined(separator: ", "))",
                     color: Brand.accentOrange
@@ -85,18 +85,6 @@ struct CleanReviewView: View {
             }
         }
         .padding(.bottom, Brand.marginTight)
-    }
-
-    private func notice(icon: String, text: String, color: Color) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon).font(.system(size: 9))
-            Text(text).monoFont(9)
-            Spacer()
-        }
-        .foregroundColor(color)
-        .padding(.horizontal, 12).padding(.vertical, 6)
-        .background(color.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 
     // MARK: - Plan List
@@ -183,7 +171,7 @@ struct CleanReviewView: View {
 
             Divider().frame(height: 20).overlay(Brand.lineColor)
 
-            Text(formatBytes(plan.potentialBytes))
+            Text(Format.bytes(plan.potentialBytes))
                 .monoFont(12).foregroundColor(Brand.accentOrange)
             Text("· \(plan.displayItemCount) \(L10n.cleanReviewItems)")
                 .monoFont(9).foregroundColor(Brand.textDim)

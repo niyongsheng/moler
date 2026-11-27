@@ -9,21 +9,17 @@ struct Reticle: View {
 
     var body: some View {
         GeometryReader { geo in
-            CornerBracketsPath(
-                armLength: armLength,
-                rect: CGRect(origin: .zero, size: geo.size)
-            )
-            .stroke(strokeColor, lineWidth: lineWidth)
+            CornerBracketsPath(armLength: armLength)
+                .stroke(strokeColor, lineWidth: lineWidth)
         }
     }
 }
 
-/// The reticle path shape reused by ReticleCheck.
+/// The four-corner bracket path shared by `Reticle` and `ReticleCheck`.
 struct CornerBracketsPath: Shape {
-    let armLength: CGFloat
-    let rect: CGRect
+    var armLength: CGFloat = 8
 
-    func path(in _: CGRect) -> Path {
+    func path(in rect: CGRect) -> Path {
         let r = rect
         let len = armLength
         var p = Path()

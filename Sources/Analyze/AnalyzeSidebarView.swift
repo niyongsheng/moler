@@ -12,11 +12,11 @@ struct AnalyzeSidebarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Summary header
-            InstrumentPanel(title: "TARGET", badge: "TOP 40") {
+            InstrumentPanel(title: L10n.analyzeSidebarTarget, badge: L10n.analyzeSidebarEntries) {
                 VStack(alignment: .leading, spacing: 2) {
-                    DataRow(label: "PATH", value: result.path)
-                    DataRow(label: "SIZE", value: Format.bytes(result.totalSize))
-                    DataRow(label: "FILES", value: Format.count(result.totalFiles))
+                    DataRow(label: L10n.analyzeSidebarPath, value: result.path)
+                    DataRow(label: L10n.analyzeSidebarSize, value: Format.bytes(result.totalSize))
+                    DataRow(label: L10n.analyzeSidebarFiles, value: Format.count(result.totalFiles))
                 }
                 .padding(.horizontal, Brand.margin)
                 .padding(.vertical, Brand.marginTight)
@@ -42,7 +42,7 @@ struct AnalyzeSidebarView: View {
             // Entries list
             ScrollView {
                 LazyVStack(spacing: 1) {
-                    ForEach(entries) { entry in
+                    ForEach(result.entries) { entry in
                         SidebarEntryRow(entry: entry)
                             .contentShape(Rectangle())
                             .onTapGesture { onSelect(entry) }
@@ -78,11 +78,6 @@ struct AnalyzeSidebarView: View {
                 .frame(width: 0.5),
             alignment: .trailing
         )
-    }
-
-    /// All entries shown in order (no folding — matches treemap behaviour).
-    private var entries: [DiskScanEntry] {
-        Array(result.entries)
     }
 }
 

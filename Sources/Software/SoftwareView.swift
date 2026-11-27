@@ -36,15 +36,34 @@ struct SoftwareView: View {
             SceneKitMarsView(isLoading: isLoading, isVisible: sceneVisible)
 
             // Foreground UI
-            content
-                .padding(.horizontal, 24)
-                .padding(.vertical, 20)
+            Group {
+                if showsIdlePage {
+                    PageChrome(
+                        icon: Pane.software.iconName,
+                        title: L10n.softwareTitle,
+                        subtitle: L10n.softwareSubtitle
+                    ) {
+                        idleView
+                    }
+                } else {
+                    content
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 20)
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .top) {
             if let error = vm.errorMessage {
                 errorBanner(error)
             }
+        }
+    }
+
+    private var showsIdlePage: Bool {
+        switch vm.state {
+        case .idle, .error: return true
+        default: return false
         }
     }
 
@@ -69,56 +88,38 @@ struct SoftwareView: View {
     // MARK: - Idle State
 
     private var idleView: some View {
-        VStack(spacing: 24) {
-            Spacer()
-
-            ZStack {
-                Reticle(strokeColor: Brand.accentOrange.opacity(0.5), lineWidth: 0.5, armLength: 20)
-                    .frame(width: 120, height: 120)
-
-                Image(systemName: "gearshape.2")
-                    .font(.system(size: 42))
-                    .foregroundColor(Brand.accentOrange)
-            }
-
-            VStack(spacing: 6) {
-                Text(L10n.softwareTitle)
-                    .titleFont(28)
-                    .kerning(8)
-                    .foregroundColor(Brand.accentOrange)
-
-                Text(L10n.softwareSubtitle)
-                    .monoFont(10)
-                    .foregroundColor(Brand.textDim)
-            }
-
+        PageContentColumn {
             GlassCard {
-                VStack(spacing: Brand.unit * 2) {
+                VStack(alignment: .leading, spacing: Brand.unit * 2) {
                     DataRow(label: L10n.softwareLastScan, value: Store.shared.lastSoftwareDate?.formatted() ?? L10n.softwareNever)
                     DataRow(label: L10n.softwareTotalRemoved, value: "\(Store.shared.totalSoftwareRemoved)")
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: 400)
 
-            Button(action: { vm.loadAppList() }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "play.fill")
-                    Text(L10n.softwareScanApps)
-                        .titleFont(14)
-                        .kerning(6)
+            HStack {
+                Spacer()
+
+                Button(action: { vm.loadAppList() }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.fill")
+                        Text(L10n.softwareScanApps)
+                            .titleFont(14)
+                            .kerning(6)
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 12)
+                    .background(Brand.accentOrange.opacity(0.15))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Brand.accentOrange, lineWidth: 1)
+                    )
+                    .foregroundColor(Brand.accentOrange)
                 }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 12)
-                .background(Brand.accentOrange.opacity(0.15))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Brand.accentOrange, lineWidth: 1)
-                )
-                .foregroundColor(Brand.accentOrange)
-            }
-            .buttonStyle(.plain)
+                .buttonStyle(.plain)
 
-            Spacer()
+                Spacer()
+            }
         }
     }
 
@@ -155,13 +156,14 @@ struct SoftwareView: View {
     // MARK: - Loaded State (App List)
 
     private var loadedView: some View {
-        VStack(spacing: 0) {
+        let apps = vm.filteredApps
+        return VStack(spacing: 0) {
             // Top bar: sort + search + refresh
             topBar
                 .padding(.bottom, 8)
 
             // App list
-            if vm.filteredApps.isEmpty {
+            if apps.isEmpty {
                 Spacer()
                 Text(L10n.softwareNoApps)
                     .monoFont(12)
@@ -170,7 +172,7 @@ struct SoftwareView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 2) {
-                        ForEach(vm.filteredApps) { app in
+                        ForEach(apps) { app in
                             AppRow(
                                 app: app,
                                 isSelected: vm.selected.contains(app.id),
@@ -180,9 +182,7 @@ struct SoftwareView: View {
                                 pathSelections: vm.pathSelections[app.id] ?? [],
                                 onToggle: { vm.toggleSelection(app.id) },
                                 onExpand: { vm.toggleExpansion(app) },
-                                onToggleFile: { path in vm.toggleFileSelection(appID: app.id, path: path) },
-                                onSelectAll: { vm.selectAllFiles(appID: app.id) },
-                                onDeselectAll: { vm.deselectAllFiles(appID: app.id) }
+                                onToggleFile: { path in vm.toggleFileSelection(appID: app.id, path: path) }
                             )
                         }
                     }
@@ -309,8 +309,6 @@ struct AppRow: View {
     let onToggle: () -> Void
     let onExpand: () -> Void
     let onToggleFile: (String) -> Void
-    let onSelectAll: () -> Void
-    let onDeselectAll: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -368,7 +366,7 @@ struct AppRow: View {
         if previewLoading {
             HStack {
                 PulseGlow().frame(width: 8, height: 8)
-                Text("Loading...")
+                Text(L10n.softwareLoadingPreview)
                     .monoFont(9)
                     .foregroundColor(Brand.textDim)
                 Spacer()
@@ -380,16 +378,7 @@ struct AppRow: View {
                 // Auto selected section
                 let auto = preview.entries.filter(\.kind.autoSelected)
                 if !auto.isEmpty {
-                    sectionHeader(L10n.softwareAutoSelected, selected: auto.allSatisfy { pathSelections.contains($0.path) },
-                                  onToggle: {
-                        let allAuto = Set(auto.map(\.path))
-                        let current = pathSelections
-                        if allAuto.isSubset(of: current) {
-                            onDeselectAll()
-                        } else {
-                            onSelectAll()
-                        }
-                    })
+                    sectionHeader(L10n.softwareAutoSelected)
                     ForEach(auto) { entry in
                         fileRow(entry)
                     }
@@ -398,7 +387,7 @@ struct AppRow: View {
                 // Needs review section
                 let review = preview.entries.filter { !$0.kind.autoSelected }
                 if !review.isEmpty {
-                    sectionHeader(L10n.softwareNeedsReview, selected: false, onToggle: {})
+                    sectionHeader(L10n.softwareNeedsReview)
                     ForEach(review) { entry in
                         fileRow(entry)
                     }
@@ -409,7 +398,7 @@ struct AppRow: View {
         }
     }
 
-    private func sectionHeader(_ title: String, selected: Bool, onToggle: @escaping () -> Void) -> some View {
+    private func sectionHeader(_ title: String) -> some View {
         HStack(spacing: 4) {
             Text(title)
                 .monoFont(8)

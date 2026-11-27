@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-import os
 
 extension Notification.Name {
     /// Posted when the user wants to show the Settings pane (Cmd-, or gear button).
@@ -8,16 +7,7 @@ extension Notification.Name {
 }
 
 /// The central application delegate — owns the window, orchestrates startup.
-final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
-    /// Weak reference set during `init()` so callers can reach the delegate
-    /// without force-casting `NSApp.delegate`.
-    static private(set) weak var shared: AppDelegate?
-
-    override init() {
-        super.init()
-        AppDelegate.shared = self
-    }
-
+final class AppDelegate: NSObject, NSApplicationDelegate {
     private var windowController: NSWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -38,11 +28,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             let found = MoleCLI.findExecutable() != nil
             DispatchQueue.main.async {
                 guard let self else { return }
+                NSApp.setActivationPolicy(.regular)
                 if found {
-                    NSApp.setActivationPolicy(.regular)
                     self.openMainWindow()
                 } else {
-                    NSApp.setActivationPolicy(.regular)
                     self.showInstallWindow()
                 }
             }
@@ -71,7 +60,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
         let settingsItem = NSMenuItem(
             title: "\(L10n.settingsWindowTitle)...",
-            action: #selector(openSettingsFromMenu),
+            action: #selector(openSettingsWindow),
             keyEquivalent: ","
         )
         settingsItem.target = self
@@ -88,10 +77,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
         mainMenu.addItem(appMenuItem)
         NSApp.mainMenu = mainMenu
-    }
-
-    @objc private func openSettingsFromMenu() {
-        openSettingsWindow()
     }
 
     @objc private func checkForUpdatesFromMenu() {

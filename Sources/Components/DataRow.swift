@@ -37,7 +37,7 @@ struct FileEntryRow: View {
     let onToggle: () -> Void
 
     private var sizeText: String {
-        formatBytes(entry.size)
+        Format.bytes(entry.size)
     }
 
     var body: some View {
@@ -92,7 +92,7 @@ struct ReticleCheck: View {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Brand.accentOrange.opacity(0.6))
                 // Corner brackets
-                CornerBrackets()
+                CornerBracketsPath(armLength: 4)
                     .stroke(Brand.accentOrange, lineWidth: 1.5)
             } else {
                 RoundedRectangle(cornerRadius: 2)
@@ -101,37 +101,6 @@ struct ReticleCheck: View {
         }
     }
 }
-
-/// The four-corner bracket reticle shape.
-struct CornerBrackets: Shape {
-    func path(in rect: CGRect) -> Path {
-        let len: CGFloat = 4
-        var p = Path()
-
-        // Top-left
-        p.move(to: CGPoint(x: rect.minX, y: rect.minY + len))
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.minX + len, y: rect.minY))
-
-        // Top-right
-        p.move(to: CGPoint(x: rect.maxX - len, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + len))
-
-        // Bottom-right
-        p.move(to: CGPoint(x: rect.maxX, y: rect.maxY - len))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        p.addLine(to: CGPoint(x: rect.maxX - len, y: rect.maxY))
-
-        // Bottom-left
-        p.move(to: CGPoint(x: rect.minX + len, y: rect.maxY))
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        p.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - len))
-
-        return p
-    }
-}
-
 #Preview {
     VStack(spacing: 8) {
         DataRow(label: "TGT_SIZE", value: "2.4GB")

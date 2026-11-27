@@ -1,12 +1,14 @@
 import SwiftUI
 
 /// The Overview dashboard — landing page when clicking the Moler logo.
+///
+/// Deliberately minimal: one live vitals strip, the two most useful detail
+/// panels, and a slim status readout. Navigation lives in the sidebar, so the
+/// old tool-shortcut grid and duplicate quick-action bar are gone.
 struct OverviewView: View {
-    let onNavigate: (Pane) -> Void
     let isVisible: Bool
 
-    init(onNavigate: @escaping (Pane) -> Void, isVisible: Bool = true) {
-        self.onNavigate = onNavigate
+    init(isVisible: Bool = true) {
         self.isVisible = isVisible
     }
 
@@ -21,20 +23,47 @@ struct OverviewView: View {
     @State private var showHealthTip = false
 
     var body: some View {
-        ScrollView([.vertical], showsIndicators: false) {
-            VStack(spacing: 20) {
-                headerBar
-                toolGrid
-                systemRow
-                processesSection
-                batterySection
-                networkSection
-                diskSection
-                activitySection
-                quickBar
+        VStack(spacing: 0) {
+            PageHeaderBand(
+                icon: Pane.overview.iconName,
+                title: L10n.overviewTitle,
+                subtitle: overviewSubtitle,
+                statusColor: monitor.stats == nil
+                    ? Brand.accentOrange.opacity(0.65)
+                    : Brand.accentGreen
+            ) {
+                if let stats = monitor.stats {
+                    healthButton(stats)
+                }
             }
-            .padding(.horizontal, 28)
-            .padding(.vertical, 20)
+
+            GeometryReader { geo in
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 20) {
+                        vitalsCard
+
+                        HStack(alignment: .top, spacing: 12) {
+                            processesPanel
+                            activityPanel
+                        }
+
+                        Spacer(minLength: 20)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
+                    .padding(.bottom, 20)
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: geo.size.height, alignment: .top)
+                }
+            }
+
+            // Pinned footer readout, so the dashboard never ends in dead space.
+            if let stats = monitor.stats {
+                statusStripContent(stats)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 2)
+                    .padding(.bottom, 16)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task {
@@ -67,611 +96,657 @@ struct OverviewView: View {
         )
     }
 
-    // MARK: - Header Bar
+    // MARK: - Header
 
-    private var headerBar: some View {
-        HStack {
-            // Title
+    private var overviewSubtitle: String {
+        "\(L10n.overviewSubtitle) · \(monitor.stats == nil ? L10n.overviewLoading : L10n.overviewLive)"
+    }
+
+    // MARK: - Health Ring
+
+    private func healthButton(_ stats: SystemStats) -> some View {
+        let color = healthColor(stats.healthScore)
+        let band = healthBand(stats.healthScore)
+
+        return Button {
+            showHealthTip.toggle()
+        } label: {
             HStack(spacing: 10) {
-                Image(systemName: "gauge.with.dots.needle.33percent")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(Brand.accentOrange)
-                Text(L10n.overviewTitle)
-                    .titleFont(20).kerning(6)
-                    .foregroundColor(Brand.accentOrange)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(L10n.overviewHealth)
+                        .monoFont(7).kerning(2)
+                        .foregroundColor(Brand.textDim)
+                    Text(band)
+                        .monoFont(9)
+                        .foregroundColor(color)
+                }
+
+                ZStack {
+                    Circle()
+                        .stroke(Brand.lineColor.opacity(0.3), lineWidth: 3)
+
+                    Circle()
+                        .trim(from: 0, to: CGFloat(max(0, min(100, stats.healthScore))) / 100)
+                        .stroke(
+                            color,
+                            style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                        )
+                        .rotationEffect(.degrees(-90))
+                        .animation(.easeOut(duration: 0.5), value: stats.healthScore)
+
+                    Text("\(stats.healthScore)")
+                        .titleFont(16)
+                        .foregroundColor(color)
+                        .contentTransition(.numericText())
+                        .animation(.easeOut(duration: 0.3), value: stats.healthScore)
+                }
+                .frame(width: 44, height: 44)
+            }
+            .padding(.leading, 12)
+            .padding(.vertical, 4)
+        }
+        .buttonStyle(.plain)
+        .help(L10n.overviewHealth)
+        .popover(isPresented: $showHealthTip, arrowEdge: .bottom) {
+            healthTip(stats)
+        }
+    }
+
+    private func healthTip(_ stats: SystemStats) -> some View {
+        let color = healthColor(stats.healthScore)
+        let band = healthBand(stats.healthScore)
+
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(L10n.overviewHealth)
+                        .monoFont(8).kerning(2)
+                        .foregroundColor(Brand.textDim)
+                    Text(band)
+                        .monoFont(10)
+                        .foregroundColor(color)
+                }
+                Spacer()
+                Text("\(stats.healthScore)")
+                    .titleFont(24)
+                    .foregroundColor(color)
             }
 
-            Spacer()
+            if !stats.healthScoreMsg.isEmpty {
+                Text(stats.healthScoreMsg)
+                    .monoFont(9)
+                    .foregroundColor(Brand.textDim)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
-            // Health score — click for detail
-            if let s = monitor.stats {
-                Button {
-                    showHealthTip.toggle()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(healthColor(s.healthScore))
-                        Text("\(s.healthScore)")
-                            .titleFont(16)
-                            .foregroundColor(healthColor(s.healthScore))
+            Rectangle()
+                .fill(Brand.lineColor.opacity(0.3))
+                .frame(height: 1)
+
+            let gaugeRings = healthGaugeRings(stats)
+
+            HStack(alignment: .center, spacing: 16) {
+                ConcentricGauge(rings: gaugeRings)
+                    .frame(width: 128, height: 128)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(gaugeRings) { ring in
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(ring.color)
+                                .frame(width: 5, height: 5)
+
+                            Text(ring.label)
+                                .monoFont(9)
+                                .foregroundColor(Brand.textDim)
+
+                            Spacer(minLength: 8)
+
+                            Text(ring.displayValue)
+                                .monoFont(10)
+                                .foregroundColor(ring.color)
+                        }
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Material.ultraThin)
-                    .cornerRadius(4)
                 }
-                .buttonStyle(.plain)
-                .popover(isPresented: $showHealthTip, arrowEdge: .bottom) {
-                    healthScoreTip(s)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if stats.memory.swapUsed > 0 {
+                HStack {
+                    Text(L10n.overviewSwap)
+                        .monoFont(8)
+                        .foregroundColor(Brand.textDim)
+                    Spacer()
+                    Text("\(Format.bytes(stats.memory.swapUsed)) / \(Format.bytes(stats.memory.swapTotal))")
+                        .monoFont(8)
+                        .foregroundColor(Brand.textDim)
                 }
             }
         }
-        .padding(.bottom, 4)
+        .padding(16)
+        .frame(width: 288)
+        .background(Brand.bgElevated)
+    }
+
+    private func healthGaugeRings(_ stats: SystemStats) -> [ConcentricGaugeRing] {
+        var rings = [
+            ConcentricGaugeRing(
+                id: "cpu",
+                label: L10n.overviewPanelCpu,
+                value: stats.cpu.usage / 100,
+                displayValue: "\(Int(stats.cpu.usage))%",
+                color: Brand.accentOrange
+            ),
+            ConcentricGaugeRing(
+                id: "memory",
+                label: L10n.overviewPanelMemory,
+                value: stats.memory.usedPercent / 100,
+                displayValue: "\(Int(stats.memory.usedPercent))%",
+                color: Brand.accentSky
+            ),
+        ]
+
+        if let disk = systemDisk(stats) {
+            rings.append(
+                ConcentricGaugeRing(
+                    id: "disk",
+                    label: L10n.overviewDisk,
+                    value: disk.usedPercent / 100,
+                    displayValue: "\(Int(disk.usedPercent))%",
+                    color: Brand.accentGold
+                )
+            )
+        }
+
+        return rings
     }
 
     private func healthColor(_ score: Int) -> Color {
-        score > 90 ? Brand.accentGold : score > 70 ? Brand.accentOrange : Brand.accentRed
+        if score >= 85 { return Brand.accentGreen }
+        if score >= 65 { return Brand.accentGold }
+        if score >= 45 { return Brand.accentOrange }
+        return Brand.accentRed
     }
 
-    // MARK: - Header Tips (Instrument Panel Style)
-
-    private func boxLabel(_ label: String, _ value: String, _ color: Color) -> some View {
-        HStack(spacing: 8) {
-            Text(label)
-                .titleFont(10).kerning(4)
-                .foregroundColor(color)
-            Spacer()
-            Text(value)
-                .titleFont(20)
-                .foregroundColor(color)
-        }
+    private func healthBand(_ score: Int) -> String {
+        if score >= 85      { return L10n.overviewHealthExcellent }
+        else if score >= 65 { return L10n.overviewHealthGood }
+        else if score >= 45 { return L10n.overviewHealthFair }
+        else                { return L10n.overviewHealthAttention }
     }
 
-    private func line(_ label: String, _ value: String, _ color: Color) -> some View {
-        HStack(spacing: 0) {
-            Text("> \(label):")
-                .monoFont(8)
-                .foregroundColor(Brand.textDim)
-            Spacer()
-            Text(value)
-                .monoFont(10)
-                .foregroundColor(color)
-        }
-    }
+    // MARK: - Vitals
 
-    private func bar(_ label: String, _ value: String, _ pct: Double, _ color: Color) -> some View {
-        VStack(spacing: 3) {
-            line(label, value, color)
-            ProgressGlow(progress: pct)
-                .frame(height: 2)
-        }
-    }
+    private var vitalsCard: some View {
+        OverviewCard(padding: EdgeInsets(top: 16, leading: 2, bottom: 14, trailing: 2)) {
+            if let stats = monitor.stats {
+                HStack(alignment: .top, spacing: 0) {
+                    cpuVital(stats)
+                    vitalDivider
+                    memoryVital(stats)
+                    vitalDivider
+                    diskVital(stats)
+                    vitalDivider
+                    networkVital(stats)
 
-    // MARK: - Health Score Popover
-
-    private func healthScoreTip(_ s: SystemStats) -> some View {
-        let band = healthScoreBand(s.healthScore)
-        let edge = Brand.lineColor.opacity(0.3)
-
-        return VStack(spacing: 0) {
-            // Left accent bar + content
-            HStack(spacing: 0) {
-                Rectangle()
-                    .fill(band.color)
-                    .frame(width: 3)
-
-                VStack(alignment: .leading, spacing: 0) {
-                    boxLabel("HEALTH", "\(s.healthScore)", band.color)
-                        .padding(.horizontal, 14)
-                        .padding(.top, 12)
-                        .padding(.bottom, 6)
-
-                    if !s.healthScoreMsg.isEmpty {
-                        HStack(spacing: 0) {
-                            Text("> \(s.healthScoreMsg)")
-                                .monoFont(9)
-                                .foregroundColor(band.color.opacity(0.85))
-                            Spacer()
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.bottom, 8)
-                    }
-
-                    edge.frame(height: 1)
-
-                    VStack(spacing: 8) {
-                        bar("CPU",  "\(Int(s.cpu.usage))%",   s.cpu.usage / 100,             Brand.accentOrange)
-                        if let disk = s.disks.first {
-                            bar("DISK", "\(Int(disk.usedPercent))%", disk.usedPercent / 100,  Brand.accentGold)
-                        }
-                        bar("MEM",  "\(Int(s.memory.usedPercent))%", s.memory.usedPercent / 100, Brand.accentBlue)
-                    }
-                    .padding(14)
-                }
-            }
-            .frame(width: 210)
-            .background(Brand.bgElevated)
-        }
-    }
-
-    private func healthScoreBand(_ score: Int) -> (color: Color, label: String) {
-        let label: String
-        if score > 90       { label = "Excellent" }
-        else if score > 70  { label = "Good" }
-        else if score > 45  { label = "Fair" }
-        else                { label = "Needs Attention" }
-        return (healthColor(score), label)
-    }
-
-    // MARK: - Tool Stats Grid
-
-    private var toolGrid: some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-            toolCard(icon: Pane.clean.iconName,    label: L10n.navClean,     color: Brand.accentOrange, stats: [
-                (L10n.overviewStatFreed, formatBytes(Store.shared.totalFreedBytes)),
-                (L10n.overviewStatCount, "\(Store.shared.totalCleanCount)"),
-                (L10n.overviewStatLast,  Format.relativeDate(Store.shared.lastCleanDate)),
-            ])
-            toolCard(icon: Pane.purge.iconName,    label: L10n.navPurge,     color: Brand.accentOrange, stats: [
-                (L10n.overviewStatFreed, formatBytes(Store.shared.totalPurgeFreedBytes)),
-                (L10n.overviewStatCount, "\(Store.shared.totalPurgeCount)"),
-                (L10n.overviewStatLast,  Format.relativeDate(Store.shared.lastPurgeDate)),
-            ])
-            toolCard(icon: Pane.optimize.iconName, label: L10n.navOptimize, color: Brand.accentOrange, stats: [
-                (L10n.overviewStatOps,   "\(Store.shared.totalOptimizeCount)"),
-                (L10n.overviewStatLast,  "\(Store.shared.lastOptimizeOptimizations)"),
-                (L10n.overviewStatDate,  Format.relativeDate(Store.shared.lastOptimizeDate)),
-            ])
-            toolCard(icon: Pane.analyze.iconName,  label: L10n.navAnalyze,   color: Brand.accentOrange, stats: [
-                (L10n.overviewStatCount, "\(Store.shared.totalAnalyzeCount)"),
-                (L10n.overviewStatLast,  Format.relativeDate(Store.shared.lastAnalyzeDate)),
-                (L10n.overviewStatPath,  Format.abbreviatePath(Store.shared.lastAnalyzePath, maxLen: 18)),
-            ])
-            toolCard(icon: Pane.software.iconName, label: L10n.navSoftware,  color: Brand.accentOrange, stats: [
-                (L10n.overviewStatRemoved, "\(Store.shared.totalSoftwareRemoved)"),
-                (L10n.overviewStatFreed,   formatBytes(Store.shared.totalSoftwareBytesFreed)),
-                (L10n.overviewStatLast,    Format.relativeDate(Store.shared.lastSoftwareDate)),
-            ])
-        }
-    }
-
-    private func toolCard(icon: String, label: String, color: Color, stats: [(String, String)]) -> some View {
-        InstrumentPanel(title: "", badge: nil) {
-            VStack(alignment: .leading, spacing: 6) {
-                // Icon + label (InstrumentPanel header hidden; this is the heading)
-                HStack(spacing: 6) {
-                    Image(systemName: icon)
-                        .font(.system(size: 12))
-                        .foregroundColor(color)
-                    Text(label)
-                        .titleFont(11).kerning(3)
-                        .foregroundColor(color)
-                }
-                .padding(.top, 4)
-
-                ForEach(stats.indices, id: \.self) { i in
-                    let (l, v) = stats[i]
-                    HStack(spacing: 4) {
-                        Text("> \(l):")
-                            .monoFont(8)
-                            .foregroundColor(Brand.textDim)
-                        Text(v)
-                            .monoFont(9)
-                            .foregroundColor(Brand.accentGold)
-                            .lineLimit(1)
-                        Spacer()
+                    if let battery = stats.batteries.first {
+                        vitalDivider
+                        batteryVital(battery)
                     }
                 }
-            }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 8)
-        }
-    }
-
-    // MARK: - System Row (CPU + Memory)
-
-    private var systemRow: some View {
-        HStack(spacing: 12) {
-            if let s = monitor.stats {
-                cpuCard(s)
-                memoryCard(s)
-            } else if monitor.isLoading {
-                loadingIndicator
-            }
-        }
-    }
-
-    private var loadingIndicator: some View {
-        HStack(spacing: 8) {
-            PulseGlow()
-            Text(L10n.overviewLoading)
-                .monoFont(10)
-                .foregroundColor(Brand.textDim)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-    }
-
-    // MARK: - Top Processes
-
-    @ViewBuilder
-    private var processesSection: some View {
-        if let s = monitor.stats, !s.topProcesses.isEmpty {
-            InstrumentPanel(title: L10n.overviewPanelProcesses, badge: nil) {
-                VStack(spacing: 3) {
-                    ForEach(s.topProcesses.prefix(5)) { process in
-                        HStack(spacing: 8) {
-                            Text(process.name)
-                                .monoFont(10).foregroundColor(Brand.textPrimary).lineLimit(1)
-                            Spacer()
-                            Text(String(format: "%.1f%%", process.cpu))
-                                .monoFont(9).foregroundColor(cpuColor(process.cpu))
-                                .frame(width: 44, alignment: .trailing)
-                            Text(Format.bytes(Int64(process.memoryBytes)))
-                                .monoFont(9).foregroundColor(Brand.textDim)
-                                .frame(width: 64, alignment: .trailing)
-                        }
-                    }
-                }
-                .padding(.horizontal, 8).padding(.bottom, 8)
-            }
-        }
-    }
-
-    // MARK: - CPU Card
-
-    private func cpuCard(_ s: SystemStats) -> some View {
-        InstrumentPanel(title: L10n.overviewPanelCpu, badge: s.hardware.cpuModel) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(Int(s.cpu.usage))").titleFont(36).foregroundColor(cpuColor(s.cpu.usage))
-                    Text("%").monoFont(12).foregroundColor(Brand.textDim)
+            } else {
+                HStack(spacing: 10) {
+                    PulseGlow()
+                    Text(L10n.overviewLoading)
+                        .monoFont(10)
+                        .foregroundColor(Brand.textDim)
                     Spacer()
-                    Text(String(format: L10n.overviewCpuCores, s.cpu.coreCount)).monoFont(9).foregroundColor(Brand.textDim)
                 }
-                ProgressGlow(progress: s.cpu.usage / 100).frame(height: 4)
-
-                HStack(spacing: 8) {
-                    loadChip("1m", s.cpu.load1)
-                    loadChip("5m", s.cpu.load5)
-                    loadChip("15m", s.cpu.load15)
-                }
-
-                // Network RX sparkline (mini preview)
-                if !monitor.rxHistory.isEmpty {
-                    Sparkline(values: Array(monitor.rxHistory.suffix(15)), color: Brand.accentOrange, lineWidth: 1)
-                        .frame(height: 24)
-                }
+                .padding(.horizontal, 16)
+                .frame(height: 92)
             }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 8)
         }
     }
 
-    private func loadChip(_ label: String, _ value: Double) -> some View {
-        InfoChip(label: label, value: String(format: "%.1f", value))
+    private var vitalDivider: some View {
+        Rectangle()
+            .fill(Brand.lineColor.opacity(0.22))
+            .frame(width: 1, height: 74)
+    }
+
+    private func vitalHeader(_ title: String) -> some View {
+        Text(title)
+            .monoFont(8).kerning(2)
+            .foregroundColor(Brand.textDim)
+    }
+
+    private func vitalValue(_ value: String, unit: String, color: Color, size: CGFloat = 26) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 2) {
+            Text(value)
+                .titleFont(size)
+                .foregroundColor(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .contentTransition(.numericText())
+                .animation(.easeOut(duration: 0.3), value: value)
+
+            Text(unit)
+                .monoFont(9)
+                .foregroundColor(Brand.textDim)
+
+            Spacer(minLength: 0)
+        }
+        .frame(height: 30, alignment: .leading)
+    }
+
+    private func vitalVisual<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .frame(height: 12, alignment: .topLeading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func vitalFootnote(_ text: String, color: Color = Brand.textDim) -> some View {
+        Text(text)
+            .monoFont(8)
+            .foregroundColor(color)
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
+            .frame(height: 10, alignment: .leading)
+    }
+
+    private func cpuVital(_ stats: SystemStats) -> some View {
+        let color = cpuColor(stats.cpu.usage)
+        let cores = String(format: L10n.overviewCpuCores, stats.cpu.coreCount)
+        let load = String(format: "%.1f", stats.cpu.load1)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            vitalHeader(L10n.overviewPanelCpu)
+            vitalValue("\(Int(stats.cpu.usage))", unit: "%", color: color)
+            vitalVisual {
+                MetricBar(progress: stats.cpu.usage / 100, color: color)
+            }
+            vitalFootnote("\(cores) · \(L10n.overviewLoad) \(load)")
+        }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func memoryVital(_ stats: SystemStats) -> some View {
+        let color = memColor(stats.memory.usedPercent)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            vitalHeader(L10n.overviewPanelMemory)
+            vitalValue("\(Int(stats.memory.usedPercent))", unit: "%", color: color)
+            vitalVisual {
+                MetricBar(progress: stats.memory.usedPercent / 100, color: color)
+            }
+            vitalFootnote("\(Format.bytes(stats.memory.used)) / \(Format.bytes(stats.memory.total))")
+        }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func diskVital(_ stats: SystemStats) -> some View {
+        let disk = systemDisk(stats)
+        let total = disk?.total ?? UInt64(max(0, diskCapacity))
+        let used = disk?.used ?? UInt64(max(0, diskCapacity - diskFree))
+        let free = total > used ? total - used : 0
+        let percent = disk?.usedPercent ?? (total > 0 ? Double(used) / Double(total) * 100 : 0)
+        let color = diskColor(percent / 100)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            vitalHeader(L10n.overviewDisk)
+            vitalValue("\(Int(percent))", unit: "%", color: color)
+            vitalVisual {
+                MetricBar(progress: percent / 100, color: color)
+            }
+            vitalFootnote(String(format: L10n.overviewFreeFormat, Format.bytes(free)))
+        }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func networkVital(_ stats: SystemStats) -> some View {
+        let net = stats.network.first
+        let proxy = (stats.proxy?.enabled ?? false) ? stats.proxy : nil
+
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                vitalHeader(L10n.overviewPanelNetwork)
+                Spacer(minLength: 0)
+                if proxy != nil {
+                    Circle()
+                        .fill(Brand.accentGreen)
+                        .frame(width: 3, height: 3)
+                    Text(L10n.overviewProxy)
+                        .monoFont(6).kerning(1)
+                        .foregroundColor(Brand.accentGreen.opacity(0.85))
+                }
+            }
+            .help(proxy.map { "\($0.type.uppercased()) · \($0.host)" } ?? "")
+
+            HStack(alignment: .firstTextBaseline, spacing: 3) {
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(Brand.accentOrange)
+
+                Text(net?.rxRateMbs.map { String(format: "%.1f", $0) } ?? "—")
+                    .titleFont(22)
+                    .foregroundColor(Brand.accentOrange)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .contentTransition(.numericText())
+
+                Text("MB/s")
+                    .monoFont(8)
+                    .foregroundColor(Brand.textDim)
+
+                Spacer(minLength: 0)
+            }
+            .frame(height: 30, alignment: .leading)
+
+            vitalVisual {
+                Sparkline(
+                    values: Array(monitor.rxHistory.suffix(24)),
+                    color: Brand.accentOrange,
+                    lineWidth: 1
+                )
+            }
+
+            let tx = net?.txRateMbs.map { String(format: "%.1f", $0) } ?? "—"
+            vitalFootnote("↑ \(tx) MB/s\(net.map { " · \($0.name)" } ?? "")")
+        }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func batteryVital(_ battery: BatteryStats) -> some View {
+        let color = batteryColor(battery.percent)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            vitalHeader(L10n.overviewPanelBattery)
+            vitalValue("\(battery.percent)", unit: "%", color: color)
+            vitalVisual {
+                MetricBar(progress: Double(battery.percent) / 100, color: color)
+            }
+            vitalFootnote(batteryFootnote(battery), color: batteryStatusColor(battery))
+        }
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func batteryFootnote(_ battery: BatteryStats) -> String {
+        if battery.isCharged { return L10n.overviewBatteryCharged }
+
+        let status: String
+        if battery.isCharging {
+            status = L10n.overviewBatteryCharging
+        } else if battery.isDischarging {
+            status = L10n.overviewBatteryDischarging
+        } else if battery.status.uppercased() == "AC" {
+            status = L10n.overviewBatteryAC
+        } else {
+            status = battery.status.uppercased()
+        }
+
+        return battery.timeLeft.isEmpty ? status : "\(status) · \(battery.timeLeft)"
     }
 
     private func cpuColor(_ usage: Double) -> Color {
         usage > 80 ? Brand.accentRed : usage > 50 ? Brand.accentGold : Brand.accentOrange
     }
 
-    // MARK: - Memory Card
+    private func memColor(_ percent: Double) -> Color {
+        percent > 85 ? Brand.accentRed : percent > 65 ? Brand.accentGold : Brand.accentSky
+    }
 
-    private func memoryCard(_ s: SystemStats) -> some View {
-        InstrumentPanel(title: L10n.overviewPanelMemory, badge: Format.bytes(Int64(s.memory.total))) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(Int(s.memory.usedPercent))").titleFont(36).foregroundColor(memColor(s.memory.usedPercent))
-                    Text("%").monoFont(12).foregroundColor(Brand.textDim)
-                    Spacer()
-                    Text("\(Format.bytes(Int64(s.memory.used))) / \(Format.bytes(Int64(s.memory.total)))")
-                        .monoFont(9).foregroundColor(Brand.textDim)
-                }
-                ProgressGlow(progress: s.memory.usedPercent / 100).frame(height: 4)
+    private func diskColor(_ fraction: Double) -> Color {
+        fraction > 0.9 ? Brand.accentRed : fraction > 0.75 ? Brand.accentOrange : Brand.accentGold
+    }
 
-                if s.memory.swapUsed > 0 {
-                    HStack(spacing: 4) {
-                        Text(L10n.overviewSwap).monoFont(8).foregroundColor(Brand.textDim)
-                        Text("\(Format.bytes(Int64(s.memory.swapUsed))) / \(Format.bytes(Int64(s.memory.swapTotal)))")
-                            .monoFont(9).foregroundColor(Brand.accentGold)
-                    }
-                }
-                if !s.memory.pressure.isEmpty {
-                    Text(s.memory.pressure).monoFont(8).foregroundColor(Brand.textDim.opacity(0.7))
-                }
+    /// The boot volume. `mo status` also reports simulator volumes and other
+    /// mounts; the dashboard should read the system disk's health, capacity,
+    /// and purgeable space, not whichever mount happens to be listed first.
+    private func systemDisk(_ stats: SystemStats) -> DiskStats? {
+        stats.disks.first(where: { $0.mount == "/" }) ?? stats.disks.first
+    }
 
-                // Network TX sparkline (mini preview)
-                if !monitor.txHistory.isEmpty {
-                    Sparkline(values: Array(monitor.txHistory.suffix(15)), color: Brand.accentBlue, lineWidth: 1)
-                        .frame(height: 24)
-                }
-            }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 8)
+    private func batteryColor(_ percent: Int) -> Color {
+        percent > 60 ? Brand.accentBlue : percent > 20 ? Brand.accentGold : Brand.accentRed
+    }
+
+    private func batteryStatusColor(_ battery: BatteryStats) -> Color {
+        if battery.isCharging || battery.status.uppercased() == "AC" {
+            return Brand.accentGold
         }
+        return battery.isCharged ? Brand.accentBlue : Brand.accentOrange
     }
 
-    private func memColor(_ pct: Double) -> Color {
-        pct > 85 ? Brand.accentRed : pct > 65 ? Brand.accentGold : Brand.accentBlue
-    }
+    // MARK: - Top Processes
 
-    // MARK: - Battery Section
+    private var processesPanel: some View {
+        OverviewCard {
+            VStack(alignment: .leading, spacing: 12) {
+                panelHeader(L10n.overviewPanelProcesses, trailing: "TOP 5")
 
-    @ViewBuilder private var batterySection: some View {
-        if let s = monitor.stats, let b = s.batteries.first {
-            let temp = s.thermal?.batteryTemp ?? 0
-            InstrumentPanel(title: L10n.overviewPanelBattery, badge: nil) {
-                VStack(alignment: .leading, spacing: 8) {
-                    // Charge percentage + status
-                    HStack(alignment: .firstTextBaseline, spacing: 4) {
-                        if b.isCharging {
-                            Image(systemName: "bolt.fill")
-                                .font(.system(size: 16))
-                                .foregroundColor(Brand.accentGold)
+                if let processes = monitor.stats?.topProcesses, !processes.isEmpty {
+                    VStack(spacing: 7) {
+                        ForEach(processes.prefix(5)) { process in
+                            processRow(process)
                         }
-                        Text("\(b.percent)")
-                            .titleFont(36)
-                            .foregroundColor(batteryColor(b.percent))
-                        Text("%")
-                            .monoFont(12)
-                            .foregroundColor(Brand.textDim)
-                        Spacer()
-                        Text(b.status.uppercased())
-                            .monoFont(9)
-                            .foregroundColor(batteryStatusColor(b))
-                    }
-
-                    // Stats row: cycles, health, temp
-                    HStack(spacing: 12) {
-                        InfoChip(label: L10n.overviewBatteryCycle, value: "\(b.cycleCount)")
-                        if b.capacity > 0 {
-                            InfoChip(label: L10n.overviewBatteryHealth, value: "\(b.capacity)%")
-                        }
-                        if temp > 0 {
-                            InfoChip(label: L10n.overviewBatteryTemp, value: "\(Int(temp))°C")
-                        }
-                    }
-
-                    // Time remaining
-                    HStack(spacing: 4) {
-                        Text("> \(L10n.overviewBatteryTime):")
-                            .monoFont(8)
-                            .foregroundColor(Brand.textDim)
-                        Text(timeDisplay(b))
-                            .monoFont(9)
-                            .foregroundColor(Brand.accentGold)
-                        Spacer()
-                    }
-
-                    // Connected Bluetooth devices (Mole 1.71+).
-                    if s.bluetooth.contains(where: \.connected) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            ForEach(s.bluetooth.filter(\.connected).prefix(3)) { device in
-                                HStack(spacing: 4) {
-                                    Image(systemName: "dot.radiowaves.left.and.right")
-                                        .font(.system(size: 7))
-                                    Text(device.name)
-                                        .monoFont(8)
-                                        .lineLimit(1)
-                                    if let battery = device.batteryPercentLabel {
-                                        Text(battery)
-                                            .monoFont(8)
-                                            .foregroundColor(Brand.accentGold)
-                                    }
-                                    Spacer()
-                                }
-                                .foregroundColor(Brand.textDim)
-                            }
-                        }
-                        .padding(.top, 2)
-                    }
-                }
-                .padding(.horizontal, 8)
-                .padding(.bottom, 8)
-            }
-        }
-    }
-
-    private func batteryColor(_ pct: Int) -> Color {
-        pct > 60 ? Brand.accentBlue : pct > 20 ? Brand.accentGold : Brand.accentRed
-    }
-
-    private func batteryStatusColor(_ b: BatteryStats) -> Color {
-        b.isCharging ? Brand.accentGold : b.isCharged ? Brand.accentBlue : Brand.accentOrange
-    }
-
-    private func timeDisplay(_ b: BatteryStats) -> String {
-        if b.isCharged { return L10n.overviewBatteryCharged }
-        if b.isCharging { return "\(b.timeLeft) to full" }
-        return "\(b.timeLeft) remaining"
-    }
-
-    // MARK: - Network Section (full width)
-
-    private var networkSection: some View {
-        Group {
-            if let s = monitor.stats, let net = s.network.first {
-                InstrumentPanel(title: L10n.overviewPanelNetwork, badge: net.name) {
-                    HStack(spacing: 16) {
-                        // Rates
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack(spacing: 24) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(L10n.overviewDown).monoFont(8).foregroundColor(Brand.textDim)
-                                    Text(net.rxRateMbs.map { "\(String(format: "%.1f", $0)) MB/s" } ?? "—")
-                                        .monoFont(16).foregroundColor(Brand.accentOrange)
-                                }
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(L10n.overviewUp).monoFont(8).foregroundColor(Brand.textDim)
-                                    Text(net.txRateMbs.map { "\(String(format: "%.1f", $0)) MB/s" } ?? "—")
-                                        .monoFont(16).foregroundColor(Brand.accentBlue)
-                                }
-                            }
-                            HStack(spacing: 16) {
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(L10n.overviewDiskRead).monoFont(7).foregroundColor(Brand.textDim)
-                                    Text("\(String(format: "%.1f", s.diskIO.readRate)) MB/s")
-                                        .monoFont(10).foregroundColor(Brand.accentOrange)
-                                }
-                                VStack(alignment: .leading, spacing: 1) {
-                                    Text(L10n.overviewDiskWrite).monoFont(7).foregroundColor(Brand.textDim)
-                                    Text("\(String(format: "%.1f", s.diskIO.writeRate)) MB/s")
-                                        .monoFont(10).foregroundColor(Brand.accentBlue)
-                                }
-                            }
-
-                            if let proxy = s.proxy, proxy.enabled {
-                                HStack(spacing: 4) {
-                                    Text("> \(L10n.overviewProxy):")
-                                        .monoFont(7).foregroundColor(Brand.textDim)
-                                    Text("\(proxy.type) · \(proxy.host)")
-                                        .monoFont(9).foregroundColor(Brand.accentGold)
-                                }
-                            }
-                        }
-
-                        Spacer()
-
-                        // Sparklines
-                        if !monitor.rxHistory.isEmpty {
-                            VStack(spacing: 6) {
-                                Sparkline(values: monitor.rxHistory, color: Brand.accentOrange, lineWidth: 1.2)
-                                    .frame(width: 120, height: 36)
-                                Sparkline(values: monitor.txHistory, color: Brand.accentBlue, lineWidth: 1.2)
-                                    .frame(width: 120, height: 36)
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 8)
-                }
-            }
-        }
-    }
-
-    // MARK: - Disk Section (full width)
-
-    private var diskSection: some View {
-        GlassCard {
-            VStack(spacing: 8) {
-                HStack {
-                    Text(L10n.overviewDisk).titleFont(12).kerning(3).foregroundColor(Brand.accentOrange)
-                    Spacer()
-                    if let disk = monitor.stats?.disks.first {
-                        Text(disk.mount).monoFont(8).foregroundColor(Brand.textDim)
-                    }
-                }
-
-                if let disk = monitor.stats?.disks.first {
-                    let pct = disk.usedPercent / 100
-                    let free = disk.total - disk.used
-                    HStack(spacing: 0) {
-                        Text("> " + L10n.overviewDiskUsage + ":")
-                            .monoFont(11).foregroundColor(Brand.textPrimary)
-                        Spacer()
-                        Text("\(Format.bytes(Int64(disk.used))) / \(Format.bytes(Int64(disk.total)))")
-                            .monoFont(10).foregroundColor(Brand.textDim)
-                    }
-                    ProgressGlow(progress: pct).frame(height: 6)
-                    HStack {
-                        Text(String(format: L10n.overviewFreeFormat, Format.bytes(Int64(free))))
-                            .monoFont(9).foregroundColor(pct > 0.9 ? Brand.accentRed : Brand.accentGold)
-                        Spacer()
-                        Text(String(format: L10n.overviewUsedFormat, Int(pct * 100)))
-                            .monoFont(9).foregroundColor(pct > 0.9 ? Brand.accentRed : pct > 0.75 ? Brand.accentGold : Brand.textDim)
-                    }
-
-                    HStack(spacing: 10) {
-                        if let purgeable = disk.purgeable, purgeable > 0 {
-                            InfoChip(label: L10n.overviewDiskPurgeable, value: Format.bytes(Int64(purgeable)))
-                        }
-                        if let trash = monitor.stats?.trashSize, trash > 0 {
-                            InfoChip(label: L10n.overviewDiskTrash, value: Format.bytes(Int64(trash)))
-                        }
-                        if let smart = disk.smartStatus, !smart.isEmpty, smart != "unknown" {
-                            InfoChip(label: L10n.overviewDiskSmart, value: smart.uppercased())
-                        }
-                        if disk.external == true {
-                            InfoChip(label: "EXT", value: disk.fstype?.uppercased() ?? "—")
-                        }
-                        Spacer()
                     }
                 } else {
-                    DataRow(label: L10n.overviewDiskCapacity, value: formatBytes(diskCapacity))
-                    DataRow(label: L10n.overviewDiskFree, value: formatBytes(diskFree))
-                    if diskCapacity > 0 {
-                        let pct = Double(diskCapacity - diskFree) / Double(diskCapacity)
-                        ProgressGlow(progress: pct).frame(height: 6)
-                    }
+                    panelPlaceholder
                 }
+
+                Spacer(minLength: 0)
             }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 152, alignment: .top)
+    }
+
+    private func processRow(_ process: ProcessStats) -> some View {
+        HStack(spacing: 8) {
+            Text(process.name)
+                .monoFont(9)
+                .foregroundColor(Brand.textPrimary)
+                .lineLimit(1)
+
+            Spacer(minLength: 4)
+
+            Text(String(format: "%.1f%%", process.cpu))
+                .monoFont(9)
+                .foregroundColor(cpuColor(process.cpu))
+                .frame(width: 44, alignment: .trailing)
+
+            Text(Format.bytes(process.memoryBytes))
+                .monoFont(8)
+                .foregroundColor(Brand.textDim)
+                .frame(width: 60, alignment: .trailing)
         }
     }
 
     // MARK: - Recent Activity
 
-    @ViewBuilder
-    private var activitySection: some View {
-        if !history.isEmpty {
-            GlassCard {
-                VStack(spacing: 6) {
-                    HStack {
-                        Text(L10n.overviewActivity)
-                            .titleFont(12).kerning(3).foregroundColor(Brand.accentOrange)
-                        Spacer()
-                        Text("\(history.count)")
-                            .monoFont(8).foregroundColor(Brand.textDim)
-                    }
-                    ForEach(history) { session in
-                        HStack(spacing: 8) {
-                            Text(session.displayCommand)
-                                .monoFont(9).foregroundColor(Brand.accentGold)
-                                .frame(width: 78, alignment: .leading)
-                            Text(session.startedDate.map { Format.relativeDate($0) } ?? session.startedAt)
-                                .monoFont(8).foregroundColor(Brand.textDim)
-                            Spacer()
-                            if session.items > 0 {
-                                Text("\(session.items) \(L10n.overviewActivityItems)")
-                                    .monoFont(8).foregroundColor(Brand.textDim)
-                            }
-                            Text(session.size)
-                                .monoFont(9).foregroundColor(Brand.accentOrange)
+    private var activityPanel: some View {
+        OverviewCard {
+            VStack(alignment: .leading, spacing: 12) {
+                panelHeader(L10n.overviewActivity)
+
+                if history.isEmpty {
+                    Text(L10n.overviewActivityEmpty)
+                        .monoFont(9)
+                        .foregroundColor(Brand.textDim.opacity(0.8))
+                } else {
+                    VStack(spacing: 7) {
+                        ForEach(history.prefix(5)) { session in
+                            activityRow(session)
                         }
                     }
+                }
+
+                Spacer(minLength: 0)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 152, alignment: .top)
+    }
+
+    private func activityRow(_ session: MoleHistorySession) -> some View {
+        HStack(spacing: 8) {
+            Text(session.displayCommand)
+                .monoFont(8).kerning(1)
+                .foregroundColor(Brand.accentGold)
+                .lineLimit(1)
+                .frame(width: 64, alignment: .leading)
+
+            Text(session.startedDate.map { Format.relativeDate($0) } ?? session.startedAt)
+                .monoFont(8)
+                .foregroundColor(Brand.textDim)
+                .lineLimit(1)
+
+            Spacer(minLength: 4)
+
+            if let failed = session.failedTasks, failed > 0 {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 7))
+                    .foregroundColor(Brand.accentRed)
+                    .help("\(failed)")
+            }
+
+            Text(session.size)
+                .monoFont(9)
+                .foregroundColor(Brand.accentOrange)
+        }
+    }
+
+    private func panelHeader(_ title: String, trailing: String? = nil) -> some View {
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 1)
+                .fill(Brand.accentOrange)
+                .frame(width: 3, height: 10)
+
+            Text(title)
+                .titleFont(10).kerning(2)
+                .foregroundColor(Brand.textPrimary)
+
+            Spacer()
+
+            if let trailing {
+                Text(trailing)
+                    .monoFont(8)
+                    .foregroundColor(Brand.textDim.opacity(0.65))
+            }
+        }
+    }
+
+    private var panelPlaceholder: some View {
+        HStack {
+            Text(monitor.stats == nil ? L10n.overviewLoading : "—")
+                .monoFont(9)
+                .foregroundColor(Brand.textDim.opacity(0.75))
+            Spacer()
+        }
+    }
+
+    // MARK: - Status Strip
+
+    private func statusStripContent(_ stats: SystemStats) -> some View {
+        let totalFreed = Store.shared.totalFreedBytes
+            + Store.shared.totalPurgeFreedBytes
+            + Store.shared.totalSoftwareBytesFreed
+        let disk = systemDisk(stats)
+        let purgeable = disk?.purgeable ?? 0
+        let smart = disk?.smartStatus?.lowercased() ?? ""
+        let smartFailing = smart.contains("fail")
+
+        return OverviewCard(padding: EdgeInsets(top: 10, leading: 0, bottom: 10, trailing: 0)) {
+            HStack(spacing: 0) {
+                statusCell(
+                    icon: "sparkles",
+                    label: L10n.overviewTotalFreed,
+                    value: Format.bytes(totalFreed),
+                    color: Brand.accentGold
+                )
+
+                statusDivider
+
+                statusCell(
+                    icon: "clock",
+                    label: L10n.overviewUptime,
+                    value: Format.uptime(stats.uptimeSeconds)
+                )
+
+                if purgeable > 0 {
+                    statusDivider
+                    statusCell(
+                        icon: "arrow.down.circle",
+                        label: L10n.overviewDiskPurgeable,
+                        value: Format.bytes(purgeable),
+                        color: Brand.accentGold
+                    )
+                }
+
+                if stats.trashSize > 0 {
+                    statusDivider
+                    statusCell(
+                        icon: "trash",
+                        label: L10n.overviewDiskTrash,
+                        value: Format.bytes(stats.trashSize)
+                    )
+                }
+
+                if smartFailing {
+                    statusDivider
+                    statusCell(
+                        icon: "exclamationmark.triangle.fill",
+                        label: L10n.overviewDiskSmart,
+                        value: smart.uppercased(),
+                        color: Brand.accentRed,
+                        iconColor: Brand.accentRed
+                    )
                 }
             }
         }
     }
 
-    // MARK: - Quick Actions
+    private func statusCell(
+        icon: String,
+        label: String,
+        value: String,
+        color: Color = Brand.textPrimary,
+        iconColor: Color = Brand.textDim
+    ) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(iconColor)
+                .frame(width: 14)
 
-    private var quickBar: some View {
-        HStack(spacing: 12) {
-            quickBtn(icon: Pane.clean.iconName, label: L10n.overviewQuickScan, color: Brand.accentOrange) { onNavigate(.clean) }
-            quickBtn(icon: Pane.purge.iconName, label: L10n.navPurge, color: Brand.accentOrange) { onNavigate(.purge) }
-            quickBtn(icon: Pane.optimize.iconName, label: L10n.navOptimize, color: Brand.accentOrange) { onNavigate(.optimize) }
-            quickBtn(icon: Pane.analyze.iconName, label: L10n.navAnalyze, color: Brand.accentOrange) { onNavigate(.analyze) }
-            quickBtn(icon: Pane.software.iconName, label: L10n.navSoftware, color: Brand.accentOrange) { onNavigate(.software) }
-            Spacer()
-            quickBtn(icon: "gearshape.fill", label: L10n.overviewQuickSettings, color: Brand.accentBlue) { onNavigate(.settings) }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .monoFont(7).kerning(1.5)
+                    .foregroundColor(Brand.textDim)
+                    .lineLimit(1)
+
+                Text(value)
+                    .monoFont(9)
+                    .foregroundColor(color)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+
+            Spacer(minLength: 0)
         }
-        .padding(.top, 8)
+        .padding(.horizontal, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func quickBtn(icon: String, label: String, color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Image(systemName: icon).font(.system(size: 10))
-                Text(label).monoFont(10).lineLimit(1)
-            }
-            .foregroundColor(color)
-            .padding(.horizontal, 10).padding(.vertical, 6)
-            .background(color.opacity(0.1))
-            .overlay(RoundedRectangle(cornerRadius: 4).stroke(color, lineWidth: 0.5))
-        }
-        .buttonStyle(.plain)
+    private var statusDivider: some View {
+        Rectangle()
+            .fill(Brand.lineColor.opacity(0.25))
+            .frame(width: 1, height: 26)
     }
 
     // MARK: - History Loading
@@ -685,7 +760,7 @@ struct OverviewView: View {
             let sessions = await Task.detached(priority: .utility) {
                 (try? MoleHistoryLoader.load(limit: 20)) ?? []
             }.value
-            history = Array(sessions.prefix(8))
+            history = Array(sessions.prefix(5))
         }
     }
 
@@ -702,8 +777,92 @@ struct OverviewView: View {
     }
 }
 
+// MARK: - Card Container
+
+/// A quiet, rounded panel used only by the Overview. Slightly translucent so
+/// the topographic background shows through, with a hairline border and a
+/// faint top sheen.
+private struct OverviewCard<Content: View>: View {
+    var padding: EdgeInsets
+    let content: () -> Content
+
+    init(
+        padding: EdgeInsets = EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16),
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.padding = padding
+        self.content = content
+    }
+
+    var body: some View {
+        content()
+            .padding(padding)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Brand.bgCard.opacity(0.92),
+                                Brand.bgCard.opacity(0.64),
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(Brand.lineColor.opacity(0.28), lineWidth: 0.5)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [Color.white.opacity(0.06), .clear],
+                            startPoint: .top,
+                            endPoint: .center
+                        ),
+                        lineWidth: 0.5
+                    )
+                    .allowsHitTesting(false)
+            )
+    }
+}
+
+// MARK: - Metric Bar
+
+/// A thin, colored meter. Replaces the shared `ProgressGlow` here so each
+/// vital can keep its own semantic color.
+private struct MetricBar: View {
+    let progress: Double
+    var color: Color = Brand.accentOrange
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Brand.lineColor.opacity(0.35))
+
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [color.opacity(0.7), color],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: max(0, geo.size.width * min(max(progress, 0), 1)))
+                    .shadow(color: color.opacity(0.45), radius: 4)
+            }
+        }
+        .frame(height: 3)
+        .animation(.easeOut(duration: 0.5), value: progress)
+    }
+}
+
 #Preview {
-    OverviewView(onNavigate: { _ in })
+    OverviewView()
         .frame(width: 900, height: 640)
         .background(Brand.bgNavy)
         .environment(\.colorScheme, .dark)

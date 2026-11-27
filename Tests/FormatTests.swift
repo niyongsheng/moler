@@ -3,7 +3,7 @@ import XCTest
 
 final class FormatTests: XCTestCase {
 
-    // MARK: - formatBytes
+    // MARK: - bytes
 
     func testFormatBytesZero() {
         XCTAssertEqual(Format.bytes(0 as Int64), "0 B")
@@ -43,15 +43,6 @@ final class FormatTests: XCTestCase {
         XCTAssertEqual(Format.bytes(val), "2.0 TB")
     }
 
-    // MARK: - free function formatBytes
-
-    func testFreeFormatBytes() {
-        XCTAssertEqual(formatBytes(0), "0 B")
-        XCTAssertEqual(formatBytes(1024), "1.0 KB")
-        XCTAssertEqual(formatBytes(1_048_576), "1.0 MB")
-        XCTAssertEqual(formatBytes(-2048), "-2.0 KB")
-    }
-
     // MARK: - count
 
     func testCountZero() {
@@ -77,32 +68,32 @@ final class FormatTests: XCTestCase {
     // MARK: - relativeDate
 
     func testRelativeDateNil() {
-        XCTAssertEqual(Format.relativeDate(nil), "Never")
+        XCTAssertEqual(Format.relativeDate(nil), L10n.relativeNever)
     }
 
     func testRelativeDateJustNow() {
         let date = Date()
-        XCTAssertEqual(Format.relativeDate(date), "just now")
+        XCTAssertEqual(Format.relativeDate(date), L10n.relativeJustNow)
     }
 
     func testRelativeDateMinutes() {
         let date = Date(timeIntervalSinceNow: -180)  // 3 min ago
-        XCTAssertEqual(Format.relativeDate(date), "3m ago")
+        XCTAssertEqual(Format.relativeDate(date), String(format: L10n.relativeMinutesAgo, 3))
     }
 
     func testRelativeDateHours() {
         let date = Date(timeIntervalSinceNow: -7200)  // 2 hours ago
-        XCTAssertEqual(Format.relativeDate(date), "2h ago")
+        XCTAssertEqual(Format.relativeDate(date), String(format: L10n.relativeHoursAgo, 2))
     }
 
     func testRelativeDateDays() {
         let date = Date(timeIntervalSinceNow: -432000)  // 5 days ago
-        XCTAssertEqual(Format.relativeDate(date), "5d ago")
+        XCTAssertEqual(Format.relativeDate(date), String(format: L10n.relativeDaysAgo, 5))
     }
 
     func testRelativeDateEdgeMinute() {
         let date = Date(timeIntervalSinceNow: -59)
-        XCTAssertEqual(Format.relativeDate(date), "just now")
+        XCTAssertEqual(Format.relativeDate(date), L10n.relativeJustNow)
     }
 
     // MARK: - uptime

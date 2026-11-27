@@ -17,16 +17,31 @@ struct PurgeView: View {
             SceneKitMercuryView(isScanning: vm.isScanning, isVisible: sceneVisible)
 
             // Foreground UI
-            VStack(spacing: 0) {
-                content
+            Group {
+                if isIdle {
+                    PageChrome(
+                        icon: Pane.purge.iconName,
+                        title: L10n.purgeTitle,
+                        subtitle: L10n.purgeSubtitle
+                    ) {
+                        idleView
+                    }
+                } else {
+                    content
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 20)
+                }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .top) {
             if let error = vm.errorMessage { errorBanner(error) }
         }
+    }
+
+    private var isIdle: Bool {
+        if case .idle = vm.state { return true }
+        return false
     }
 
     @ViewBuilder private var content: some View {
@@ -42,23 +57,16 @@ struct PurgeView: View {
     // MARK: - Idle
 
     private var idleView: some View {
-        VStack(spacing: 24) {
-            Spacer()
-            ZStack {
-                Reticle(strokeColor: Brand.accentOrange.opacity(0.5), lineWidth: 0.5, armLength: 20)
-                    .frame(width: 120, height: 120)
-                Image(systemName: "trash").font(.system(size: 42)).foregroundColor(Brand.accentOrange)
-            }
-            VStack(spacing: 6) {
-                Text(L10n.purgeTitle).titleFont(28).kerning(8).foregroundColor(Brand.accentOrange)
-                Text(L10n.purgeSubtitle).monoFont(10).foregroundColor(Brand.textDim)
-            }
-
+        PageContentColumn {
             // Scan target selector
             VStack(spacing: 10) {
                 // Header
                 HStack {
-                    Text("\(vm.scanTargets.filter(\.isSelected).count)/\(vm.scanTargets.count) selected")
+                    Text(String(
+                        format: L10n.purgeSelectedCount,
+                        vm.scanTargets.filter(\.isSelected).count,
+                        vm.scanTargets.count
+                    ))
                         .monoFont(10).foregroundColor(Brand.accentOrange)
                     Spacer()
                     Button(action: {
@@ -74,7 +82,7 @@ struct PurgeView: View {
                 // Preset targets row
                 if !presetTargets.isEmpty {
                     HStack(spacing: 6) {
-                        Text("DEFAULT PATHS")
+                        Text(L10n.purgePathsSectionDefaults)
                             .monoFont(8).kerning(2).foregroundColor(Brand.textDim.opacity(0.5))
                         Brand.lineColor.frame(height: 0.5)
                     }
@@ -89,7 +97,7 @@ struct PurgeView: View {
 
                 // Custom targets row (with ADD_PATH at the front)
                     HStack(spacing: 6) {
-                        Text("CUSTOM PATHS")
+                        Text(L10n.purgePathsSectionCustom)
                             .monoFont(8).kerning(2).foregroundColor(Brand.textDim.opacity(0.5))
                         Brand.lineColor.frame(height: 0.5)
                     }
@@ -100,19 +108,19 @@ struct PurgeView: View {
                                 HStack(spacing: 4) {
                                     Image(systemName: "plus.circle")
                                         .font(.system(size: 10))
-                                    Text("ADD_PATH")
+                                    Text(L10n.purgePathsAdd)
                                         .monoFont(9)
                                 }
                                 .padding(.horizontal, 12).padding(.vertical, 6)
-                                .background(.green.opacity(0.1))
-                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(.green, style: StrokeStyle(lineWidth: 0.5, dash: [3, 3])))
-                                .foregroundColor(.green)
+                                .background(Brand.accentGreen.opacity(0.1))
+                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Brand.accentGreen, style: StrokeStyle(lineWidth: 0.5, dash: [3, 3])))
+                                .foregroundColor(Brand.accentGreen)
                             }
                             .buttonStyle(.plain)
                             .cornerRadius(4)
 
                             ForEach(customTargets) { target in
-                                targetPill(target, accentColor: .green, showRemove: true)
+                                targetPill(target, accentColor: Brand.accentGreen, showRemove: true)
                             }
                         }
                     }
@@ -136,22 +144,26 @@ struct PurgeView: View {
             .background(Brand.bgCard.opacity(0.5))
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).stroke(Brand.lineColor, lineWidth: 0.5))
-            .frame(maxWidth: 560)
+            .frame(maxWidth: .infinity)
 
-            Button(action: { vm.startScan() }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "play.fill")
-                    Text(L10n.purgeInitiate).titleFont(14).kerning(6)
+            HStack {
+                Spacer()
+
+                Button(action: { vm.startScan() }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.fill")
+                        Text(L10n.purgeInitiate).titleFont(14).kerning(6)
+                    }
+                    .padding(.horizontal, 32).padding(.vertical, 12)
+                    .background(vm.hasSelectedTargets ? Brand.accentOrange.opacity(0.15) : Brand.lineColor.opacity(0.2))
+                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(vm.hasSelectedTargets ? Brand.accentOrange : Brand.lineColor, lineWidth: 1))
+                    .foregroundColor(vm.hasSelectedTargets ? Brand.accentOrange : Brand.textDim)
                 }
-                .padding(.horizontal, 32).padding(.vertical, 12)
-                .background(vm.hasSelectedTargets ? Brand.accentOrange.opacity(0.15) : Brand.lineColor.opacity(0.2))
-                .overlay(RoundedRectangle(cornerRadius: 4).stroke(vm.hasSelectedTargets ? Brand.accentOrange : Brand.lineColor, lineWidth: 1))
-                .foregroundColor(vm.hasSelectedTargets ? Brand.accentOrange : Brand.textDim)
-            }
-            .buttonStyle(.plain)
-            .disabled(!vm.hasSelectedTargets)
+                .buttonStyle(.plain)
+                .disabled(!vm.hasSelectedTargets)
 
-            Spacer()
+                Spacer()
+            }
         }
     }
 
@@ -190,7 +202,7 @@ struct PurgeView: View {
                         .padding(.vertical, 6)
                 }
                 .buttonStyle(.plain)
-                .help("Remove this path")
+                .help(L10n.purgePathsRemove)
             }
         }
         .background(
@@ -213,7 +225,8 @@ struct PurgeView: View {
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.canCreateDirectories = false
-        panel.message = "Select a build artifacts or cache directory to purge"
+        panel.message = L10n.purgePickerMessage
+        panel.prompt = L10n.purgePickerPrompt
         panel.begin { [self] response in
             if response == .OK, let url = panel.url {
                 vm.addCustomPath(url.path)
@@ -231,7 +244,7 @@ struct PurgeView: View {
                 Text(L10n.purgeScanningHint).monoFont(10).foregroundColor(Brand.textDim)
                 HStack(spacing: 24) {
                     DataRow(label: L10n.cleanFiles, value: "\(progress.currentItem)/\(progress.totalItems)")
-                    DataRow(label: L10n.cleanSize, value: formatBytes(progress.scannedBytes))
+                    DataRow(label: L10n.cleanSize, value: Format.bytes(progress.scannedBytes))
                     DataRow(label: L10n.cleanElapsed, value: "\(progress.elapsedSeconds)s")
                 }
             }
@@ -260,7 +273,7 @@ struct PurgeView: View {
                 badge: "\(plan.displayItemCount)"
             ) {
                 HStack(spacing: 24) {
-                    DataRow(label: L10n.purgeReviewTotal, value: formatBytes(plan.totalBytes))
+                    DataRow(label: L10n.purgeReviewTotal, value: Format.bytes(plan.totalBytes))
                     DataRow(
                         label: L10n.purgeReviewPaths,
                         value: "\(vm.scanTargets.filter(\.isSelected).count)"
@@ -297,17 +310,19 @@ struct PurgeView: View {
     private func notices(_ plan: PurgePlan) -> some View {
         VStack(spacing: 6) {
             if plan.cloudCount > 0 {
-                notice(
+                NoticeRow(
                     icon: "icloud",
                     text: String(format: L10n.purgeReviewCloudNote, plan.cloudCount),
-                    color: Brand.accentGold
+                    color: Brand.accentGold,
+                    lineLimit: 2
                 )
             }
             if !plan.warnings.isEmpty {
-                notice(
+                NoticeRow(
                     icon: "exclamationmark.triangle",
                     text: plan.warnings.prefix(2).joined(separator: " · "),
-                    color: Brand.accentOrange
+                    color: Brand.accentOrange,
+                    lineLimit: 2
                 )
             }
             HStack(spacing: 4) {
@@ -320,25 +335,13 @@ struct PurgeView: View {
         .padding(.bottom, Brand.marginTight)
     }
 
-    private func notice(icon: String, text: String, color: Color) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: icon).font(.system(size: 9))
-            Text(text).monoFont(9).lineLimit(2)
-            Spacer()
-        }
-        .foregroundColor(color)
-        .padding(.horizontal, 12).padding(.vertical, 6)
-        .background(color.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 4))
-    }
-
     private func footer(_ plan: PurgePlan) -> some View {
         HStack(spacing: 12) {
             Button(action: { vm.reset() }) {
                 Image(systemName: "arrow.left").font(.system(size: 12, weight: .medium))
             }.buttonStyle(.plain).foregroundColor(Brand.textDim)
             Divider().frame(height: 20).overlay(Brand.lineColor)
-            Text(formatBytes(plan.totalBytes))
+            Text(Format.bytes(plan.totalBytes))
                 .monoFont(12).foregroundColor(Brand.accentOrange)
             Text("· \(plan.displayItemCount) \(L10n.purgeReviewItems)")
                 .monoFont(9).foregroundColor(Brand.textDim)
@@ -394,14 +397,14 @@ struct PurgeView: View {
             Spacer()
             Image(systemName: itemsFailed > 0 ? "checkmark.circle.trianglebadge.exclamationmark" : "checkmark.circle.fill")
                 .font(.system(size: 48))
-                .foregroundColor(itemsFailed > 0 ? Brand.accentOrange : .green)
+                .foregroundColor(itemsFailed > 0 ? Brand.accentOrange : Brand.accentGreen)
             VStack(spacing: 6) {
                 Text(L10n.purgeDoneTitle).titleFont(24).kerning(6).foregroundColor(Brand.accentOrange)
                 Text(L10n.purgeDoneSubtitle).monoFont(10).foregroundColor(Brand.textDim)
             }
             GlassCard {
                 VStack(spacing: Brand.unit * 2) {
-                    DataRow(label: L10n.purgeDoneSpaceFreed, value: formatBytes(freedBytes))
+                    DataRow(label: L10n.purgeDoneSpaceFreed, value: Format.bytes(freedBytes))
                     DataRow(label: L10n.purgeDoneItemsRemoved, value: "\(itemsRemoved)")
                     if itemsFailed > 0 {
                         DataRow(label: L10n.purgeDoneFailed, value: "\(itemsFailed)")
@@ -447,7 +450,7 @@ struct PurgeEntryRow: View {
                 Text(entry.path).monoFont(8).foregroundColor(Brand.textDim).lineLimit(1).truncationMode(.middle)
             }
             Spacer()
-            Text(formatBytes(entry.size)).monoFont(10).foregroundColor(Brand.accentGold)
+            Text(Format.bytes(entry.size)).monoFont(10).foregroundColor(Brand.accentGold)
         }
         .padding(.horizontal, Brand.marginTight + 6).padding(.vertical, 6)
     }

@@ -72,9 +72,11 @@ struct RootView: View {
                     sidebarRevealButton
                 }
 
-                // Content
+                // Content. A short cross-fade keeps sidebar switching calm even
+                // though each pane has a different vertical rhythm.
                 mainContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .animation(.easeInOut(duration: 0.14), value: activePane)
             }
 
             // Bottom divider — animated serif stripes
@@ -123,7 +125,7 @@ struct RootView: View {
                     }
 
                     Text("Moler")
-                        .font(.custom("Jura-Medium", size: 16))
+                        .bodyFont(16)
                         .foregroundColor(isOverview ? Brand.textPrimary : Brand.textDim)
                         .shadow(color: isOverview ? Brand.accentOrange.opacity(0.4) : .clear, radius: 4)
                 }
@@ -280,7 +282,7 @@ struct RootView: View {
             // Keep all views alive in the hierarchy so their state persists
             // when switching tabs (e.g. CleanView's scan progress).
             // SceneKit views receive isVisible to pause rendering when inactive.
-            OverviewView(onNavigate: { activePane = $0 }, isVisible: activePane == .overview)
+            OverviewView(isVisible: activePane == .overview)
                 .visible(activePane == .overview)
             CleanView(isVisible: activePane == .clean)
                 .visible(activePane == .clean)
@@ -297,17 +299,6 @@ struct RootView: View {
         }
     }
 
-    private func placeholderView(for feature: String) -> some View {
-        VStack(spacing: 16) {
-            Image(systemName: "wrench.and.screwdriver")
-                .font(.system(size: 32))
-                .foregroundColor(Brand.textDim.opacity(0.5))
-            Text("\(feature)")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Brand.textDim)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
 }
 
 #Preview {
@@ -325,24 +316,8 @@ private struct ScanLineView: View {
         if activity.isWindowVisible {
             AnimatedScanLine()
         } else {
-            scanLineGradient.frame(height: 2)
+            Rectangle().fill(scanLineGradient).frame(height: 2)
         }
-    }
-
-    private var scanLineGradient: some View {
-        Rectangle().fill(
-            LinearGradient(
-                colors: [
-                    .clear,
-                    Brand.accentOrange.opacity(0.35),
-                    Brand.accentGold.opacity(0.15),
-                    Brand.accentOrange.opacity(0.35),
-                    .clear,
-                ],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        )
     }
 }
 
@@ -351,19 +326,7 @@ private struct AnimatedScanLine: View {
 
     var body: some View {
         Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [
-                        .clear,
-                        Brand.accentOrange.opacity(0.35),
-                        Brand.accentGold.opacity(0.15),
-                        Brand.accentOrange.opacity(0.35),
-                        .clear,
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
+            .fill(scanLineGradient)
             .frame(height: 2)
             .offset(y: yOffset)
             .onAppear {
@@ -377,6 +340,19 @@ private struct AnimatedScanLine: View {
 }
 
 // MARK: - View Extension
+
+/// Gradient for the sidebar scan-line, shared by its static and animated variants.
+private let scanLineGradient = LinearGradient(
+    colors: [
+        .clear,
+        Brand.accentOrange.opacity(0.35),
+        Brand.accentGold.opacity(0.15),
+        Brand.accentOrange.opacity(0.35),
+        .clear,
+    ],
+    startPoint: .leading,
+    endPoint: .trailing
+)
 
 extension View {
     /// Keep the view in the hierarchy but hide it from display and hit testing.

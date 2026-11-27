@@ -12,16 +12,10 @@ enum L10n {
     // MARK: - Navigation
 
     static let navClean      = String(localized: "nav.clean")
-    static let navCleanSub   = String(localized: "nav.clean.sub")
     static let navPurge      = String(localized: "nav.purge")
-    static let navPurgeSub   = String(localized: "nav.purge.sub")
     static let navOptimize   = String(localized: "nav.optimize")
-    static let navOptimizeSub = String(localized: "nav.optimize.sub")
     static let navAnalyze    = String(localized: "nav.analyze")
-    static let navAnalyzeSub = String(localized: "nav.analyze.sub")
     static let navSoftware   = String(localized: "nav.software")
-    static let navSoftwareSub = String(localized: "nav.software.sub")
-    static let navOffline    = String(localized: "nav.offline")
 
     // MARK: - Clean Idle
 
@@ -38,7 +32,6 @@ enum L10n {
 
     static let cleanScanning = String(localized: "clean.scanning")
     static let cleanScanningHint = String(localized: "clean.scanning.hint")
-    static let cleanScanningWait = String(localized: "clean.scanning.wait")
     static let cleanElapsed   = String(localized: "clean.scanning.elapsed")
     static let cleanFiles    = String(localized: "clean.files")
     static let cleanSize     = String(localized: "clean.size")
@@ -50,14 +43,11 @@ enum L10n {
 
     static let cleanReviewTitle    = String(localized: "clean.review.title")
     static let cleanReviewSubtitle = String(localized: "clean.review.subtitle")
-    static let cleanReviewScanPath = String(localized: "clean.review.scan_path")
     static let cleanReviewTotalSize = String(localized: "clean.review.total_size")
     static let cleanReviewTotalFiles = String(localized: "clean.review.total_files")
-    static let cleanReviewSelected = String(localized: "clean.review.selected")
     static let cleanReviewSelectAll = String(localized: "clean.review.select_all")
     static let cleanReviewDeselectAll = String(localized: "clean.review.deselect_all")
     static let cleanReviewNoFiles = String(localized: "clean.review.no_files")
-    static let cleanReviewBack    = String(localized: "clean.review.back")
     static let cleanReviewExecute = String(localized: "clean.review.execute")
     static let cleanReviewCategories = String(localized: "clean.review.categories")
     static let cleanReviewCleanable = String(localized: "clean.review.cleanable")
@@ -97,6 +87,19 @@ enum L10n {
     static let errorTimedOut = String(localized: "error.timed_out")
     /// "Failed to parse mo output: %@" — String(format: L10n.errorParseFailed, msg)
     static let errorParseFailed = String(localized: "error.parse_failed")
+    /// "mo exited with code %d" — String(format: L10n.errorMoExitCode, code)
+    static let errorMoExitCode = String(localized: "error.mo_exit_code")
+
+    // MARK: - Relative Date
+
+    static let relativeNever = String(localized: "relative.never")
+    static let relativeJustNow = String(localized: "relative.just_now")
+    /// "%dm ago" — String(format: L10n.relativeMinutesAgo, minutes)
+    static let relativeMinutesAgo = String(localized: "relative.minutes_ago")
+    /// "%dh ago" — String(format: L10n.relativeHoursAgo, hours)
+    static let relativeHoursAgo = String(localized: "relative.hours_ago")
+    /// "%dd ago" — String(format: L10n.relativeDaysAgo, days)
+    static let relativeDaysAgo = String(localized: "relative.days_ago")
 
     // MARK: - Install
 
@@ -121,23 +124,22 @@ enum L10n {
 
     static let overviewTitle       = String(localized: "overview.title")
     static let overviewSubtitle    = String(localized: "overview.subtitle")
+    static let overviewHealth      = String(localized: "overview.health")
+    static let overviewHealthExcellent = String(localized: "overview.health_excellent")
+    static let overviewHealthGood  = String(localized: "overview.health_good")
+    static let overviewHealthFair  = String(localized: "overview.health_fair")
+    static let overviewHealthAttention = String(localized: "overview.health_attention")
+    static let overviewLive        = String(localized: "overview.live")
+    static let overviewUptime      = String(localized: "overview.uptime")
+    static let overviewLoad        = String(localized: "overview.load")
+    static let overviewBatteryCharging = String(localized: "overview.battery_charging")
+    static let overviewBatteryDischarging = String(localized: "overview.battery_discharging")
+    static let overviewBatteryAC = String(localized: "overview.battery_ac")
     static let overviewTotalFreed  = String(localized: "overview.total_freed")
-    static let overviewCleanCount  = String(localized: "overview.clean_count")
-    static let overviewLastClean   = String(localized: "overview.last_clean")
-    static let overviewLastScan    = String(localized: "overview.last_scan")
-    static let overviewDiskCapacity = String(localized: "overview.disk_capacity")
-    static let overviewDiskFree    = String(localized: "overview.disk_free")
-    static let overviewDiskUsage   = String(localized: "overview.disk_usage")
-    static let overviewQuickScan   = String(localized: "overview.quick_scan")
-    static let overviewQuickSettings = String(localized: "overview.quick_settings")
 
     static let overviewLoading     = String(localized: "overview.loading")
     static let overviewCpuCores    = String(localized: "overview.cpu_cores")
     static let overviewSwap        = String(localized: "overview.swap")
-    static let overviewDown        = String(localized: "overview.down")
-    static let overviewUp          = String(localized: "overview.up")
-    static let overviewDiskRead    = String(localized: "overview.disk_read")
-    static let overviewDiskWrite   = String(localized: "overview.disk_write")
     static let overviewDisk        = String(localized: "overview.disk")
     static let overviewDiskPurgeable = String(localized: "overview.disk_purgeable")
     static let overviewDiskTrash   = String(localized: "overview.disk_trash")
@@ -147,21 +149,10 @@ enum L10n {
     static let overviewPanelBluetooth = String(localized: "overview.panel_bluetooth")
     static let overviewActivity    = String(localized: "overview.activity")
     static let overviewActivityEmpty = String(localized: "overview.activity_empty")
-    static let overviewActivityItems = String(localized: "overview.activity_items")
     /// "FREE %@" — String(format: L10n.overviewFreeFormat, bytesString)
     static let overviewFreeFormat  = String(localized: "overview.free_format")
     /// "%d%% USED" — String(format: L10n.overviewUsedFormat, percent)
     static let overviewUsedFormat  = String(localized: "overview.used_format")
-
-    // MARK: - Overview Stats (tool grid labels)
-
-    static let overviewStatFreed   = String(localized: "overview.stat_freed")
-    static let overviewStatCount   = String(localized: "overview.stat_count")
-    static let overviewStatLast    = String(localized: "overview.stat_last")
-    static let overviewStatOps     = String(localized: "overview.stat_ops")
-    static let overviewStatDate    = String(localized: "overview.stat_date")
-    static let overviewStatPath    = String(localized: "overview.stat_path")
-    static let overviewStatRemoved = String(localized: "overview.stat_removed")
 
     // MARK: - Overview Panel Titles
 
@@ -169,15 +160,12 @@ enum L10n {
     static let overviewPanelMemory  = String(localized: "overview.panel_memory")
     static let overviewPanelNetwork  = String(localized: "overview.panel_network")
     static let overviewPanelBattery   = String(localized: "overview.panel_battery")
-    static let overviewBatteryCycle   = String(localized: "overview.battery_cycle")
-    static let overviewBatteryHealth  = String(localized: "overview.battery_health")
-    static let overviewBatteryTemp    = String(localized: "overview.battery_temp")
-    static let overviewBatteryTime    = String(localized: "overview.battery_time")
     static let overviewBatteryCharged = String(localized: "overview.battery_charged")
 
     // MARK: - Settings
 
     static let settingsWindowTitle = String(localized: "settings.title")
+    static let settingsSubtitle    = String(localized: "settings.subtitle")
     static let settingsGeneral     = String(localized: "settings.general")
     static let settingsLanguage    = String(localized: "settings.language")
     static let settingsLanguageSystem = String(localized: "settings.language.system")
@@ -195,18 +183,26 @@ enum L10n {
 
     static let purgeTitle     = String(localized: "purge.title")
     static let purgeSubtitle  = String(localized: "purge.subtitle")
-    static let purgeScanPath  = String(localized: "purge.scan_path")
     static let purgeInitiate  = String(localized: "purge.initiate")
     static let purgePathsDefaults = String(localized: "purge.paths.defaults")
     static let purgePathsCustom = String(localized: "purge.paths.custom")
     static let purgePathsShared = String(localized: "purge.paths.shared")
+    static let purgePathsSectionDefaults = String(localized: "purge.paths.section_defaults")
+    static let purgePathsSectionCustom = String(localized: "purge.paths.section_custom")
+    static let purgePathsAdd = String(localized: "purge.paths.add")
+    static let purgePathsRemove = String(localized: "purge.paths.remove")
+    /// "Could not save purge paths: %@" — String(format: L10n.purgePathsSaveError, message)
+    static let purgePathsSaveError = String(localized: "purge.paths.save_error")
+    static let purgePickerMessage = String(localized: "purge.picker.message")
+    static let purgePickerPrompt = String(localized: "purge.picker.prompt")
+    /// "%d/%d selected" — String(format: L10n.purgeSelectedCount, selected, total)
+    static let purgeSelectedCount = String(localized: "purge.selected_count")
 
     // MARK: - Purge Scanning
 
     static let purgeScanning      = String(localized: "purge.scanning")
     static let purgeScanningHint  = String(localized: "purge.scanning.hint")
     static let purgeCancel        = String(localized: "purge.cancel")
-    static let purgeStop          = String(localized: "purge.stop")
 
     // MARK: - Purge Review
 
@@ -224,9 +220,7 @@ enum L10n {
 
     static let purgeRunTitle      = String(localized: "purge.run.title")
     static let purgeRunSubtitle   = String(localized: "purge.run.subtitle")
-    static let purgeRunStatus     = String(localized: "purge.run.status")
     static let purgeRunExecuting  = String(localized: "purge.run.executing")
-    static let purgeRunInit       = String(localized: "purge.run.init")
 
     // MARK: - Purge Done
 
@@ -279,11 +273,24 @@ enum L10n {
     static let analyzeTotalCount = String(localized: "analyze.total_count")
     static let analyzeNever     = String(localized: "analyze.never")
     static let analyzeScanHome  = String(localized: "analyze.scan_home")
+    static let analyzePresetHome = String(localized: "analyze.preset.home")
+    static let analyzePresetDesktop = String(localized: "analyze.preset.desktop")
+    static let analyzePresetDocuments = String(localized: "analyze.preset.documents")
+    static let analyzePresetDownloads = String(localized: "analyze.preset.downloads")
+    static let analyzePresetCaches = String(localized: "analyze.preset.caches")
 
     // MARK: - Analyze: Loaded
 
     /// "RE-ANALYZE" — button to return from treemap result to idle page
     static let analyzeNewAnalysis = String(localized: "analyze.new_analysis")
+    static let analyzeSidebarTarget = String(localized: "analyze.sidebar.target")
+    static let analyzeSidebarEntries = String(localized: "analyze.sidebar.entries")
+    static let analyzeSidebarPath = String(localized: "analyze.sidebar.path")
+    static let analyzeSidebarSize = String(localized: "analyze.sidebar.size")
+    static let analyzeSidebarFiles = String(localized: "analyze.sidebar.files")
+    static let analyzeTreemapReveal = String(localized: "analyze.treemap.reveal")
+    /// "Other (%d items)" — String(format: L10n.analyzeTreemapOther, count)
+    static let analyzeTreemapOther = String(localized: "analyze.treemap.other")
 
     // MARK: - Analyze Scanning
 
@@ -296,6 +303,8 @@ enum L10n {
     static let analyzeOr = String(localized: "analyze.or")
     /// "SELECT FOLDER..."
     static let analyzeSelectFolder = String(localized: "analyze.select_folder")
+    static let analyzePickerMessage = String(localized: "analyze.picker.message")
+    static let analyzePickerPrompt = String(localized: "analyze.picker.prompt")
 
     // MARK: - Software
 
@@ -314,7 +323,12 @@ enum L10n {
     static let softwareNeedsReview = String(localized: "software.needs_review")
     static let softwareSortedByName  = String(localized: "software.sort_name")
     static let softwareSortedBySize  = String(localized: "software.sort_size")
-    static let softwareSize     = String(localized: "software.size")
+    static let softwareConfirmTitle = String(localized: "software.confirm_title")
+    /// "Remove %d selected application(s)? This action cannot be undone."
+    static let softwareConfirmMessage = String(localized: "software.confirm_message")
+    /// "%d apps · %@" — String(format: L10n.softwareSelectionCount, count, bytes)
+    static let softwareSelectionCount = String(localized: "software.selection_count")
+    static let softwareLoadingPreview = String(localized: "software.loading_preview")
 
     // MARK: - Software Running & Done
 
@@ -341,17 +355,15 @@ enum L10n {
     // MARK: - Update
 
     static let updateCheck        = String(localized: "update.check")
-    static let updateCheckResult  = String(localized: "update.check_result")
-    static let updateUpToDate     = String(localized: "update.up_to_date")
     /// "Moler %@ is the latest release." — String(format: L10n.updateUpToDateBody, version)
     static let updateUpToDateBody = String(localized: "update.up_to_date_body")
     /// "Moler %@ is available (you have %@). Download it from the release page."
-    static let updateAvailable    = String(localized: "update.available")
-    static let updateError        = String(localized: "update.error")
     /// "GitHub didn't answer. Try again later, or open the releases page."
     static let updateErrorBody    = String(localized: "update.error_body")
+    /// "GitHub returned HTTP %d." — String(format: L10n.updateHttpError, code)
+    static let updateHttpError    = String(localized: "update.http_error")
+    static let updateResponseError = String(localized: "update.response_error")
     static let updateReleasePage  = String(localized: "update.release_page")
-    static let updateClose        = String(localized: "update.close")
 
     // MARK: - Update (in-app installer)
 

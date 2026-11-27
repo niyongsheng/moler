@@ -5,19 +5,13 @@
 
 /* === Navigation === */
 "nav.clean" = "SYSTEM";
-"nav.clean.sub" = "DEEP_SCAN";
 "nav.purge" = "PROJECT";
-"nav.purge.sub" = "PROJECTS";
 "nav.optimize" = "OPTIMIZE";
-"nav.optimize.sub" = "SERVICES";
 "nav.analyze" = "ANALYZE";
-"nav.analyze.sub" = "DISK_MAP";
 "nav.software" = "SOFTWARE";
-"nav.software.sub" = "ABOUT";
-"nav.offline" = "MODULE OFFLINE";
 
 /* === Clean: Idle === */
-"clean.title" = "SYSTEM_SCAN";
+"clean.title" = "SYSTEM_JUNK_SCAN";
 "clean.subtitle" = "FREE UP DISK SPACE";
 "clean.last_scan" = "LAST_SCAN";
 "clean.last_clean" = "LAST_CLEAN";
@@ -29,7 +23,6 @@
 /* === Clean: Scanning === */
 "clean.scanning" = "SCANNING_IN_PROGRESS";
 "clean.scanning.hint" = "> ANALYZING_DISK_STRUCTURE...";
-"clean.scanning.wait" = "This may take a minute...";
 "clean.scanning.elapsed" = "ELAPSED";
 "clean.cancel" = "CANCEL";
 "clean.stop" = "STOP";
@@ -40,14 +33,11 @@
 /* === Clean: Review === */
 "clean.review.title" = "CLEANUP_PLAN";
 "clean.review.subtitle" = "REVIEW_MOLE_PLAN";
-"clean.review.scan_path" = "SCAN_PATH";
 "clean.review.total_size" = "RECLAIMABLE";
 "clean.review.total_files" = "ITEMS";
-"clean.review.selected" = "SELECTED";
 "clean.review.select_all" = "SELECT_ALL";
 "clean.review.deselect_all" = "DESELECT_ALL";
 "clean.review.no_files" = "NOTHING_TO_CLEAN";
-"clean.review.back" = "BACK";
 "clean.review.execute" = "EXECUTE_CLEAN";
 "clean.review.categories" = "SECTIONS";
 "clean.review.cleanable" = "REMOVABLE";
@@ -79,6 +69,14 @@
 "error.mo_failed" = "mo exited with code %d: %@";
 "error.timed_out" = "Scan timed out after %d minutes. The home directory may be too large — try scanning a subdirectory instead.";
 "error.parse_failed" = "Failed to parse mo output: %@";
+"error.mo_exit_code" = "mo exited with code %d";
+
+/* === Relative Date === */
+"relative.never" = "Never";
+"relative.just_now" = "just now";
+"relative.minutes_ago" = "%dm ago";
+"relative.hours_ago" = "%dh ago";
+"relative.days_ago" = "%dd ago";
 
 /* === Install === */
 "install.title" = "Mole engine required";
@@ -100,23 +98,19 @@
 
 /* === Overview === */
 "overview.title" = "CONTROL_CENTER";
-"overview.subtitle" = "SYSTEM_OVERVIEW_v1.0";
+"overview.subtitle" = "SYSTEM_OVERVIEW";
+"overview.health" = "HEALTH";
+"overview.health_excellent" = "EXCELLENT";
+"overview.health_good" = "GOOD";
+"overview.health_fair" = "FAIR";
+"overview.health_attention" = "NEEDS ATTENTION";
+"overview.live" = "LIVE";
+"overview.uptime" = "UPTIME";
+"overview.load" = "LOAD";
 "overview.total_freed" = "TOTAL_FREED";
-"overview.clean_count" = "CLEAN_COUNT";
-"overview.last_clean" = "LAST_CLEAN";
-"overview.last_scan" = "LAST_SCAN";
-"overview.disk_capacity" = "DISK_CAPACITY";
-"overview.disk_free" = "DISK_FREE";
-"overview.disk_usage" = "DISK_USAGE";
-"overview.quick_scan" = "SYSTEM_CLEAN";
-"overview.quick_settings" = "SETTINGS";
 "overview.loading" = "LOADING_SYSTEM_DATA…";
 "overview.cpu_cores" = "%d CORES";
 "overview.swap" = "SWAP";
-"overview.down" = "↓ DOWN";
-"overview.up" = "↑ UP";
-"overview.disk_read" = "DISK_READ";
-"overview.disk_write" = "DISK_WRITE";
 "overview.disk" = "DISK";
 "overview.disk_purgeable" = "PURGEABLE";
 "overview.disk_trash" = "TRASH";
@@ -126,42 +120,37 @@
 "overview.panel_bluetooth" = "BLUETOOTH";
 "overview.activity" = "RECENT ACTIVITY";
 "overview.activity_empty" = "No activity recorded yet.";
-"overview.activity_items" = "items";
 "overview.free_format" = "FREE %@";
 "overview.used_format" = "%d%% USED";
-
-/* === Overview: Stat labels === */
-"overview.stat_freed" = "FREED";
-"overview.stat_count" = "COUNT";
-"overview.stat_last" = "LAST";
-"overview.stat_ops" = "OPS";
-"overview.stat_date" = "DATE";
-"overview.stat_path" = "PATH";
-"overview.stat_removed" = "REMOVED";
 
 /* === Overview: Panel titles === */
 "overview.panel_cpu" = "CPU";
 "overview.panel_memory" = "MEMORY";
 "overview.panel_network" = "NETWORK";
 "overview.panel_battery" = "BATTERY";
-"overview.battery_cycle" = "CYCLE";
-"overview.battery_health" = "HEALTH";
-"overview.battery_temp" = "TEMP";
-"overview.battery_time" = "TIME";
 "overview.battery_charged" = "Charged";
+"overview.battery_charging" = "CHARGING";
+"overview.battery_discharging" = "ON BATTERY";
+"overview.battery_ac" = "ON POWER";
 
 /* === Purge: Idle === */
 "purge.title" = "PURGE_PROJECTS";
 "purge.subtitle" = "REMOVE_OLD_BUILD_ARTIFACTS";
-"purge.scan_path" = "SCAN_PATHS";
 "purge.initiate" = "SCAN_PROJECTS";
 "purge.paths.defaults" = "Using Mole's default project roots.";
 "purge.paths.custom" = "Using custom paths from ~/.config/mole/purge_paths.";
 "purge.paths.shared" = "Shared with `mo purge --paths`; Mole re-checks in-use protection at run time.";
+"purge.paths.section_defaults" = "DEFAULT PATHS";
+"purge.paths.section_custom" = "CUSTOM PATHS";
+"purge.paths.add" = "ADD_PATH";
+"purge.paths.remove" = "Remove this path";
+"purge.paths.save_error" = "Could not save purge paths: %@";
+"purge.picker.message" = "Select a build artifacts or cache directory to purge";
+"purge.picker.prompt" = "Select";
+"purge.selected_count" = "%d/%d selected";
 "purge.scanning" = "SCANNING_PROJECTS";
 "purge.scanning.hint" = "> SCANNING_PROJECT_DIRECTORIES...";
 "purge.cancel" = "CANCEL";
-"purge.stop" = "STOP";
 
 /* === Purge: Review === */
 "purge.review.title" = "PURGE_PLAN";
@@ -176,9 +165,7 @@
 /* === Purge: Running === */
 "purge.run.title" = "PURGE_IN_PROGRESS";
 "purge.run.subtitle" = "DO_NOT_INTERRUPT";
-"purge.run.status" = "STATUS";
 "purge.run.executing" = "Purging project artifacts...";
-"purge.run.init" = "> INITIALIZING_PURGE_SEQUENCE...";
 
 /* === Purge: Done === */
 "purge.done.title" = "PURGE_COMPLETE";
@@ -190,7 +177,7 @@
 
 /* === Optimize: Idle === */
 "optimize.title" = "SYSTEM_OPTIMIZATION";
-"optimize.subtitle" = "OPTIMIZE_MODULE_v1.0";
+"optimize.subtitle" = "TUNE SYSTEM SERVICES";
 "optimize.last_run" = "LAST_OPTIMIZE";
 "optimize.total_count" = "TOTAL_OPTIMIZE";
 "optimize.total_opts" = "LAST_OPTIMIZATIONS";
@@ -213,17 +200,31 @@
 "analyze.total_count" = "TOTAL_ANALYZES";
 "analyze.never" = "NEVER";
 "analyze.scan_home" = "START_ANALYSIS";
+"analyze.preset.home" = "Home";
+"analyze.preset.desktop" = "Desktop";
+"analyze.preset.documents" = "Documents";
+"analyze.preset.downloads" = "Downloads";
+"analyze.preset.caches" = "Caches";
 "analyze.new_analysis" = "RE-ANALYZE";
+"analyze.sidebar.target" = "TARGET";
+"analyze.sidebar.entries" = "ENTRIES";
+"analyze.sidebar.path" = "PATH";
+"analyze.sidebar.size" = "SIZE";
+"analyze.sidebar.files" = "FILES";
+"analyze.treemap.reveal" = "Reveal in Finder";
+"analyze.treemap.other" = "Other (%d items)";
 
 /* === Analyze: Scanning === */
 "analyze.scanning" = "SCANNING_DIRECTORY";
 "analyze.cancel" = "CANCEL";
 "analyze.or" = "OR";
 "analyze.select_folder" = "SELECT FOLDER...";
+"analyze.picker.message" = "Select a directory to analyze";
+"analyze.picker.prompt" = "Select";
 
 /* === Software === */
 "software.title" = "SOFTWARE_UNINSTALL";
-"software.subtitle" = "UNINSTALL_MODULE_v1.0";
+"software.subtitle" = "MANAGE INSTALLED APPS";
 "software.scan_apps" = "SCAN_APPS";
 "software.last_scan" = "LAST_SCAN";
 "software.total_removed" = "TOTAL_REMOVED";
@@ -237,7 +238,10 @@
 "software.needs_review" = "NEEDS_REVIEW";
 "software.sort_name" = "NAME";
 "software.sort_size" = "SIZE";
-"software.size" = "SIZE";
+"software.confirm_title" = "Confirm Removal";
+"software.confirm_message" = "Remove %d selected application(s)? This action cannot be undone.";
+"software.selection_count" = "%d apps · %@";
+"software.loading_preview" = "Loading...";
 "software.removing" = "REMOVING";
 "software.done.title" = "UNINSTALL_COMPLETE";
 "software.done.subtitle" = "ALL_SELECTED_APPS_REMOVED";
@@ -264,6 +268,7 @@
 
 /* === Settings === */
 "settings.title" = "Settings";
+"settings.subtitle" = "PREFERENCES";
 "settings.general" = "GENERAL";
 "settings.language" = "Language";
 "settings.language.system" = "Follow System";
@@ -287,14 +292,11 @@
 
 /* === Update === */
 "update.check" = "Check for Updates";
-"update.check_result" = "Update available";
-"update.up_to_date" = "You're up to date";
 "update.up_to_date_body" = "Moler %@ is the latest release.";
-"update.available" = "Moler %@ is available (you have %@). Download it from the release page.";
-"update.error" = "Couldn't check for updates";
 "update.error_body" = "GitHub didn't answer. Try again later, or open the releases page.";
+"update.http_error" = "GitHub returned HTTP %d.";
+"update.response_error" = "Unexpected response from GitHub.";
 "update.release_page" = "Open Release Page";
-"update.close" = "Close";
 
 /* === Update: in-app installer === */
 "update.auto_check" = "Automatically check for updates";

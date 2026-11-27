@@ -58,24 +58,6 @@ final class Store: ObservableObject {
         }
     }
 
-    /// Display name for the current language setting.
-    var languageDisplayName: String {
-        switch language {
-        case "zh-Hans": return "简体中文"
-        case "en":      return "English"
-        default:        return "跟随系统"
-        }
-    }
-
-    /// Cycle: Follow System → 中文 → English → Follow System
-    func toggleLanguage() {
-        switch language {
-        case "zh-Hans": language = "en"
-        case "en":      language = ""
-        default:        language = "zh-Hans"
-        }
-    }
-
     /// The last directory that was scanned.
     @Published var lastScanPath: String {
         didSet { defaults.set(lastScanPath, forKey: Key.lastScanPath) }
@@ -180,24 +162,13 @@ final class Store: ObservableObject {
 
         self.lastCleanDate = defaults.object(forKey: Key.lastCleanDate) as? Date
 
-        // totalFreedBytes as Int64: UserDefaults stores numbers as NSNumber;
-        // reading as Int gives 0 for Int64 values. Use object(forKey:) + cast.
-        if let num = defaults.object(forKey: Key.totalFreedBytes) as? NSNumber {
-            self.totalFreedBytes = num.int64Value
-        } else {
-            self.totalFreedBytes = 0
-        }
-
+        // Int64 values must be read through NSNumber; `integer(forKey:)`
+        // returns 0 for large Int64 values.
+        self.totalFreedBytes = Self.int64(forKey: Key.totalFreedBytes)
         self.totalCleanCount = defaults.integer(forKey: Key.totalCleanCount)
 
         self.lastPurgeDate = defaults.object(forKey: Key.lastPurgeDate) as? Date
-
-        if let num = defaults.object(forKey: Key.totalPurgeFreedBytes) as? NSNumber {
-            self.totalPurgeFreedBytes = num.int64Value
-        } else {
-            self.totalPurgeFreedBytes = 0
-        }
-
+        self.totalPurgeFreedBytes = Self.int64(forKey: Key.totalPurgeFreedBytes)
         self.totalPurgeCount = defaults.integer(forKey: Key.totalPurgeCount)
 
         self.lastOptimizeDate = defaults.object(forKey: Key.lastOptimizeDate) as? Date
@@ -206,28 +177,28 @@ final class Store: ObservableObject {
 
         self.lastSoftwareDate = defaults.object(forKey: Key.lastSoftwareDate) as? Date
         self.totalSoftwareRemoved = defaults.integer(forKey: Key.totalSoftwareRemoved)
-        if let num = defaults.object(forKey: Key.totalSoftwareBytesFreed) as? NSNumber {
-            self.totalSoftwareBytesFreed = num.int64Value
-        } else {
-            self.totalSoftwareBytesFreed = 0
-        }
+        self.totalSoftwareBytesFreed = Self.int64(forKey: Key.totalSoftwareBytesFreed)
 
         self.lastAnalyzePath = defaults.string(forKey: Key.lastAnalyzePath) ?? home
         self.lastAnalyzeDate = defaults.object(forKey: Key.lastAnalyzeDate) as? Date
         self.totalAnalyzeCount = defaults.integer(forKey: Key.totalAnalyzeCount)
     }
 
+    private static func int64(forKey key: String) -> Int64 {
+        (UserDefaults.standard.object(forKey: key) as? NSNumber)?.int64Value ?? 0
+    }
+
     // MARK: - Actions
 
     /// Record a successful clean operation.
-    func recordClean(freedBytes: Int64, filesRemoved: Int) {
+    func recordClean(freedBytes: Int64) {
         totalFreedBytes += freedBytes
         totalCleanCount += 1
         lastCleanDate = Date()
     }
 
     /// Record a successful purge operation (separate from clean counters).
-    func recordPurge(freedBytes: Int64, itemsRemoved: Int) {
+    func recordPurge(freedBytes: Int64) {
         totalPurgeFreedBytes += freedBytes
         totalPurgeCount += 1
         lastPurgeDate = Date()

@@ -1,31 +1,6 @@
 import SceneKit
 import AppKit
 
-// MARK: - Simplex noise (same algorithm as SimpleNoise in EarthScene)
-
-private final class SimplexNoise {
-    private var perm: [Int]
-    private let grad3: [(Double,Double,Double)] = [
-        (1,1,0),(-1,1,0),(1,-1,0),(-1,-1,0),
-        (1,0,1),(-1,0,1),(1,0,-1),(-1,0,-1),
-        (0,1,1),(0,-1,1),(0,1,-1),(0,-1,-1),
-    ]
-    init(seed:String){var h=0;for c in seed.utf8{h=h&*31&+Int(c)};perm=(0..<256).map{($0&+h)&255}.shuffled()}
-    private func fade(_ t:Double)->Double{t*t*t*(t*(t*6-15)+10)}
-    private func lerp(_ a:Double,_ b:Double,_ t:Double)->Double{a+(b-a)*t}
-    func noise3D(_ x:Double,_ y:Double,_ z:Double)->Double{
-        let X=Int(floor(x))&255,Y=Int(floor(y))&255,Z=Int(floor(z))&255
-        let fx=x-floor(x),fy=y-floor(y),fz=z-floor(z),u=fade(fx),v=fade(fy),w=fade(fz)
-        func h(_ x:Int,_ y:Int,_ z:Int)->Int{perm[(perm[(perm[x&255]&+y)&255]&+z)&255]}
-        func g(_ h:Int,_ dx:Double,_ dy:Double,_ dz:Double)->Double{let g=grad3[h%12];return g.0*dx+g.1*dy+g.2*dz}
-        let n0=g(h(X,Y,Z),fx,fy,fz),n1=g(h(X+1,Y,Z),fx-1,fy,fz),nx0=lerp(n0,n1,u)
-        let n2=g(h(X,Y+1,Z),fx,fy-1,fz),n3=g(h(X+1,Y+1,Z),fx-1,fy-1,fz),nx1=lerp(n2,n3,u),ny0=lerp(nx0,nx1,v)
-        let n4=g(h(X,Y,Z+1),fx,fy,fz-1),n5=g(h(X+1,Y,Z+1),fx-1,fy,fz-1),nx2=lerp(n4,n5,u)
-        let n6=g(h(X,Y+1,Z+1),fx,fy-1,fz-1),n7=g(h(X+1,Y+1,Z+1),fx-1,fy-1,fz-1),nx3=lerp(n6,n7,u),ny1=lerp(nx2,nx3,v)
-        return lerp(ny0,ny1,w)
-    }
-}
-
 final class MarsScene: SCNScene {
     let interactionNode=SCNNode();let spinNode=SCNNode();let atmosNode=SCNNode()
     let cameraNode=SCNNode();var targetZoom:CGFloat=30
@@ -69,7 +44,7 @@ final class MarsScene: SCNScene {
     }
 
     private func buildSurface(){
-        let noise=SimplexNoise(seed:"mars-surface-v2");let count=5_000
+        let noise=SeededNoise3D(seed:"mars-surface-v2");let count=5_000
         var p=[Float](repeating:0,count:count*3);var c=[Float](repeating:0,count:count*3)
         let colBase=SIMD3<Float>(0.58,0.33,0.30)//#94544d
         let colDark=SIMD3<Float>(0.42,0.26,0.24)//#6b433c
@@ -92,7 +67,7 @@ final class MarsScene: SCNScene {
             c[idx*3]=min(1,max(0,cc.x*v));c[idx*3+1]=min(1,max(0,cc.y*v));c[idx*3+2]=min(1,max(0,cc.z*v))
             idx+=1
         }
-        spinNode.addChildNode(SCNNode(geometry:makeGeo(p:p,col:c,count:idx)))
+        spinNode.addChildNode(SCNNode(geometry: PlanetGeometry.pointCloud(positions: p, colors: c, count: idx)))
         //Wireframe
         let w=SCNBox(width:10.02,height:10.02,length:10.02,chamferRadius:5.01)
         w.widthSegmentCount=24;w.heightSegmentCount=16;w.lengthSegmentCount=24
@@ -109,7 +84,10 @@ final class MarsScene: SCNScene {
             p[idx*3]=Float(r*sin(phi)*cos(theta));p[idx*3+1]=Float(r*cos(phi));p[idx*3+2]=Float(r*sin(phi)*sin(theta))
             idx+=1
         }
-        let g=makeGeo(p:p,col:[Float](repeating:0.78,count:count*3),count:idx,ps:3.0,opacity:0.08)
+        let g = PlanetGeometry.pointCloud(
+            positions: p, colors: [Float](repeating: 0.78, count: count * 3),
+            count: idx, pointSize: 3.0, opacity: 0.08
+        )
         let node=SCNNode(geometry:g);atmosNode.addChildNode(node)
     }
 
@@ -118,7 +96,7 @@ final class MarsScene: SCNScene {
             ("Phobos",7.5,0.008,0.25,NSColor(white:0.8,alpha:1),600),
             ("Deimos",12.0,0.003,0.18,NSColor(white:0.67,alpha:1),400)]
         for cfg in configs{
-            let noise=SimplexNoise(seed:"mars-moon-"+cfg.name)
+            let noise=SeededNoise3D(seed:"mars-moon-"+cfg.name)
             var p=[Float](repeating:0,count:cfg.count*3);var c=[Float](repeating:0,count:cfg.count*3)
             for i in 0..<cfg.count{
                 let theta=Double.random(in:0...(2 * .pi)),phi=acos(2*Double.random(in:0...1)-1)
@@ -130,7 +108,7 @@ final class MarsScene: SCNScene {
                 let v=Float.random(in:0.8...1.2);let cc=n < -0.2 ? SIMD3<Float>(0.2,0.2,0.2):SIMD3<Float>(0.5,0.5,0.5)
                 c[i*3]=min(1,cc.x*v);c[i*3+1]=min(1,cc.y*v);c[i*3+2]=min(1,cc.z*v)
             }
-            let g=makeGeo(p:p,col:c,count:cfg.count)
+            let g = PlanetGeometry.pointCloud(positions: p, colors: c, count: cfg.count)
             let body=SCNNode(geometry:g)
             //Orbit ring
             let orb=SCNTorus(ringRadius:CGFloat(cfg.radius),pipeRadius:0.01);orb.ringSegmentCount=96
@@ -141,17 +119,6 @@ final class MarsScene: SCNScene {
             let sn=SCNNode();body.addChildNode(sn)
             moons.append(Moon(orbitNode:mc,meshNode:body,radius:cfg.radius,speed:cfg.speed,angle:Float.random(in:0...(2 * .pi)),spinNode:sn))
         }
-    }
-
-    private func makeGeo(p:[Float],col:[Float],count:Int,ps:Float=1.5,opacity:Float=1)->SCNGeometry{
-        let pd=Data(bytes:p,count:count*3*4),cd=Data(bytes:col,count:count*3*4)
-        let psrc=SCNGeometrySource(data:pd,semantic:.vertex,vectorCount:count,usesFloatComponents:true,componentsPerVector:3,bytesPerComponent:4,dataOffset:0,dataStride:12)
-        let csrc=SCNGeometrySource(data:cd,semantic:.color,vectorCount:count,usesFloatComponents:true,componentsPerVector:3,bytesPerComponent:4,dataOffset:0,dataStride:12)
-        let el=SCNGeometryElement(data:nil,primitiveType:.point,primitiveCount:count,bytesPerIndex:0)
-        let g=SCNGeometry(sources:[psrc,csrc],elements:[el]);let m=SCNMaterial()
-        m.isDoubleSided=true;m.writesToDepthBuffer=opacity>=1
-        if opacity<1{m.transparency=CGFloat(opacity);m.transparencyMode = .dualLayer}
-        m.shaderModifiers=[.geometry:"#pragma body\n_geometry.pointSize = \(ps);"];g.materials=[m];return g
     }
 
     func animate(at time:TimeInterval){

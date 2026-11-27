@@ -141,11 +141,4 @@ final class AnalyzeDataModelsTests: XCTestCase {
         XCTAssertEqual(p.elapsedSeconds, 42)
     }
 
-    // MARK: - MoEngine availability
-
-    func testMoleAvailabilityEquality() {
-        XCTAssertEqual(MoleAvailability.installed(path: "/a"), MoleAvailability.installed(path: "/a"))
-        XCTAssertNotEqual(MoleAvailability.installed(path: "/a"), MoleAvailability.installed(path: "/b"))
-        XCTAssertEqual(MoleAvailability.missing, MoleAvailability.missing)
-    }
 }

@@ -38,15 +38,34 @@ struct AnalyzeView: View {
             SceneKitEarthView(isScanning: isScanning, isVisible: sceneVisible)
 
             // Foreground UI
-            content
-                .padding(.horizontal, 24)
-                .padding(.vertical, 20)
+            Group {
+                if showsIdlePage {
+                    PageChrome(
+                        icon: Pane.analyze.iconName,
+                        title: L10n.analyzeTitle,
+                        subtitle: L10n.analyzeSubtitle
+                    ) {
+                        idleView
+                    }
+                } else {
+                    content
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 20)
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .top) {
             if let error = vm.errorMessage {
                 errorBanner(error)
             }
+        }
+    }
+
+    private var showsIdlePage: Bool {
+        switch vm.state {
+        case .idle, .error: return true
+        default: return false
         }
     }
 
@@ -67,37 +86,15 @@ struct AnalyzeView: View {
     // MARK: - Idle State
 
     private var idleView: some View {
-        VStack(spacing: 24) {
-            Spacer()
-
-            ZStack {
-                Reticle(strokeColor: Brand.accentOrange.opacity(0.5), lineWidth: 0.5, armLength: 20)
-                    .frame(width: 120, height: 120)
-
-                Image(systemName: "chart.pie")
-                    .font(.system(size: 42))
-                    .foregroundColor(Brand.accentOrange)
-            }
-
-            VStack(spacing: 6) {
-                Text(L10n.analyzeTitle)
-                    .titleFont(28)
-                    .kerning(8)
-                    .foregroundColor(Brand.accentOrange)
-
-                Text(L10n.analyzeSubtitle)
-                    .monoFont(10)
-                    .foregroundColor(Brand.textDim)
-            }
-
+        PageContentColumn {
             GlassCard {
-                VStack(spacing: Brand.unit * 2) {
+                VStack(alignment: .leading, spacing: Brand.unit * 2) {
                     DataRow(label: L10n.analyzeLastScan, value: Store.shared.lastAnalyzePath)
                     DataRow(label: L10n.analyzeLastDate, value: Store.shared.lastAnalyzeDate?.formatted() ?? L10n.analyzeNever)
                     DataRow(label: L10n.analyzeTotalCount, value: "\(Store.shared.totalAnalyzeCount)")
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: 400)
 
             // Scan target picker
             VStack(spacing: 12) {
@@ -150,7 +147,7 @@ struct AnalyzeView: View {
                             }
                         }
                     }
-                    .frame(maxWidth: 400)
+                    .frame(maxWidth: .infinity)
                 }
 
                 // Divider with OR
@@ -161,7 +158,7 @@ struct AnalyzeView: View {
                         .foregroundColor(Brand.textDim)
                     Brand.lineColor.frame(height: 0.5)
                 }
-                .frame(maxWidth: 400)
+                .frame(maxWidth: .infinity)
 
                 // Select folder button
                 Button(action: {
@@ -207,9 +204,11 @@ struct AnalyzeView: View {
                 }
                 .buttonStyle(.plain)
             }
-            .frame(maxWidth: 400)
-
-            Spacer()
+            .padding(20)
+            .background(Brand.bgCard.opacity(0.55))
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Brand.lineColor, lineWidth: 0.5))
+            .frame(maxWidth: .infinity)
         }
     }
 
@@ -281,10 +280,8 @@ struct AnalyzeView: View {
             TreemapCanvasView(
                 entries: result.entries,
                 onSelect: { entry in
-                    guard entry.isDir, entry.id != "__other__" else { return }
-                    if let fullEntry = result.entries.first(where: { $0.id == entry.id }) {
-                        vm.drillInto(entry: fullEntry)
-                    }
+                    guard entry.isDir else { return }
+                    vm.drillInto(entry: entry)
                 },
                 onRevealInFinder: { entry in
                     guard !entry.path.isEmpty else { return }

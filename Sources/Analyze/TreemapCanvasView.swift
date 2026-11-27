@@ -8,12 +8,12 @@ struct TreemapCanvasView: View {
     let onRevealInFinder: (DiskScanEntry) -> Void
 
     @State private var hoveredID: String?
+    /// Laid out once per size/entry change instead of on every hover event.
+    @State private var cells: [TreemapCell] = []
 
     var body: some View {
         GeometryReader { geo in
-            let cells = buildCells(in: geo.size)
-
-            Canvas { context, size in
+            Canvas { context, _ in
                 for cell in cells {
                     drawCell(context: &context, cell: cell)
                 }
@@ -23,12 +23,16 @@ struct TreemapCanvasView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear { cells = buildCells(in: geo.size) }
+            .onChange(of: geo.size) { _, size in cells = buildCells(in: size) }
+            .onChange(of: entries) { _, _ in cells = buildCells(in: geo.size) }
             .onContinuousHover { phase in
                 switch phase {
                 case .active(let point):
-                    hoveredID = cells.first(where: { $0.rect.contains(point) })?.id
+                    let id = cells.first(where: { $0.rect.contains(point) })?.id
+                    if hoveredID != id { hoveredID = id }
                 case .ended:
-                    hoveredID = nil
+                    if hoveredID != nil { hoveredID = nil }
                 }
             }
             .gesture(
@@ -42,7 +46,7 @@ struct TreemapCanvasView: View {
             )
             .contextMenu {
                 if let hoveredID, let entry = entries.first(where: { $0.id == hoveredID }) {
-                    Button("Reveal in Finder") { onRevealInFinder(entry) }
+                    Button(L10n.analyzeTreemapReveal) { onRevealInFinder(entry) }
                 }
             }
         }
@@ -67,14 +71,12 @@ struct TreemapCanvasView: View {
 
         var cells: [TreemapCell] = []
         for (entry, rect) in zip(visible, rects) {
-            let weight = Double(entry.size) / Double(totalSize)
             cells.append(TreemapCell(
                 id: entry.id,
                 name: entry.name,
                 path: entry.path,
                 size: entry.size,
                 isDir: entry.isDir,
-                weight: weight,
                 rect: rect,
                 color: treemapColor(for: entry)
             ))
@@ -82,11 +84,10 @@ struct TreemapCanvasView: View {
         if otherSize > 0, let otherRect = rects.last {
             cells.append(TreemapCell(
                 id: "__other__",
-                name: "Other (\(entries.count - visible.count) items)",
+                name: String(format: L10n.analyzeTreemapOther, entries.count - visible.count),
                 path: "",
                 size: otherSize,
                 isDir: false,
-                weight: Double(otherSize) / Double(totalSize),
                 rect: otherRect,
                 color: Brand.textDim
             ))

@@ -39,7 +39,7 @@ struct CleanResultView: View {
                 HStack(spacing: 32) {
                     statBlock(
                         label: L10n.cleanDoneSpaceFreed,
-                        value: partial && freedBytes == 0 ? "—" : formatBytes(freedBytes),
+                        value: partial && freedBytes == 0 ? "—" : Format.bytes(freedBytes),
                         accent: Brand.accentGold
                     )
                     Divider()

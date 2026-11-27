@@ -10,14 +10,11 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            header
-                .padding(.horizontal, Brand.margin)
-                .padding(.top, 20)
-                .padding(.bottom, 16)
-
-            Divider()
-                .overlay(Brand.lineColor.opacity(0.3))
+            PageHeaderBand(
+                icon: Pane.settings.iconName,
+                title: L10n.settingsWindowTitle,
+                subtitle: L10n.settingsSubtitle
+            )
 
             // Content
             ScrollView {
@@ -31,7 +28,6 @@ struct SettingsView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .background(Brand.bgNavy)
         .environment(\.colorScheme, .dark)
         .onAppear {
             hasFDA = Privacy.hasFullDiskAccess()
@@ -42,170 +38,126 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: - Header
-
-    private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(L10n.settingsWindowTitle)
-                    .font(.custom("Jura-Bold", size: 18))
-                    .kerning(4)
-                    .foregroundColor(Brand.accentOrange)
-            }
-            Spacer()
-        }
-    }
-
     // MARK: - General Section
 
     private var generalSection: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: Brand.marginTight) {
-                Text(L10n.settingsGeneral)
-                    .font(.custom("RobotoMono-Regular", size: 10))
-                    .kerning(2)
+        settingsSection(L10n.settingsGeneral) {
+            languagePicker
+
+            HStack(spacing: 6) {
+                Image(systemName: "info.circle")
+                    .font(.system(size: 10))
+                    .foregroundColor(Brand.accentGold)
+                Text(L10n.settingsRestartNote)
+                    .monoLightFont(10)
                     .foregroundColor(Brand.textDim)
-
-                Divider()
-                    .overlay(Brand.lineColor.opacity(0.2))
-
-                languagePicker
-
-                HStack(spacing: 6) {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 10))
-                        .foregroundColor(Brand.accentGold)
-                    Text(L10n.settingsRestartNote)
-                        .font(.custom("RobotoMono-Light", size: 10))
-                        .foregroundColor(Brand.textDim)
-                }
-                .padding(.top, 2)
             }
+            .padding(.top, 2)
         }
     }
 
     // MARK: - Permissions Section
 
     private var permissionsSection: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: Brand.marginTight) {
-                Text(L10n.settingsPermissions)
-                    .font(.custom("RobotoMono-Regular", size: 10))
-                    .kerning(2)
-                    .foregroundColor(Brand.textDim)
-
-                Divider()
-                    .overlay(Brand.lineColor.opacity(0.2))
-
-                fdaRow
-            }
+        settingsSection(L10n.settingsPermissions) {
+            fdaRow
         }
     }
 
     // MARK: - About Section
 
     private var aboutSection: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: Brand.marginTight) {
-                Text(L10n.settingsAbout)
-                    .font(.custom("RobotoMono-Regular", size: 10))
-                    .kerning(2)
-                    .foregroundColor(Brand.textDim)
-
-                Divider()
-                    .overlay(Brand.lineColor.opacity(0.2))
-
-                HStack(spacing: 6) {
-                    Text(L10n.settingsVersion)
-                        .font(.custom("RobotoMono-Regular", size: 12))
-                        .foregroundColor(Brand.textPrimary)
-                    Spacer()
-                    if let new = updater.availableVersion {
-                        Text(L10n.updateNewBadge)
-                            .font(.custom("RobotoMono-Regular", size: 8))
-                            .kerning(1)
-                            .foregroundColor(Brand.bgNavy)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(Brand.accentOrange)
-                            .cornerRadius(3)
-                        Text("v\(UpdateChecker.currentVersion) → v\(new)")
-                            .font(.custom("RobotoMono-Light", size: 12))
-                            .foregroundColor(Brand.accentOrange)
-                    } else {
-                        Text(UpdateChecker.currentVersion)
-                            .font(.custom("RobotoMono-Light", size: 12))
-                            .foregroundColor(Brand.textDim)
-                    }
+        settingsSection(L10n.settingsAbout) {
+            HStack(spacing: 6) {
+                Text(L10n.settingsVersion)
+                    .monoFont(12)
+                    .foregroundColor(Brand.textPrimary)
+                Spacer()
+                if let new = updater.availableVersion {
+                    Text(L10n.updateNewBadge)
+                        .monoFont(8)
+                        .kerning(1)
+                        .foregroundColor(Brand.bgNavy)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
+                        .background(Brand.accentOrange)
+                        .cornerRadius(3)
+                    Text("v\(UpdateChecker.currentVersion) → v\(new)")
+                        .monoLightFont(12)
+                        .foregroundColor(Brand.accentOrange)
+                } else {
+                    Text(UpdateChecker.currentVersion)
+                        .monoLightFont(12)
+                        .foregroundColor(Brand.textDim)
                 }
-                .padding(.vertical, 4)
+            }
+            .padding(.vertical, 4)
 
-                HStack {
-                    Text(L10n.settingsMoleVersion)
-                        .font(.custom("RobotoMono-Regular", size: 12))
-                        .foregroundColor(Brand.textPrimary)
-                    Spacer()
-                    Text(moleVersionDisplay)
-                        .font(.custom("RobotoMono-Light", size: 12))
-                        .foregroundColor(moleVersionColor)
+            HStack {
+                Text(L10n.settingsMoleVersion)
+                    .monoFont(12)
+                    .foregroundColor(Brand.textPrimary)
+                Spacer()
+                Text(moleVersionDisplay)
+                    .monoLightFont(12)
+                    .foregroundColor(moleVersionColor)
+            }
+            .padding(.vertical, 4)
+
+            if let version = moleVersion, !MoleCLI.isSupported(version: version) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(Brand.accentGold)
+                    Text(String(format: L10n.settingsMoleTooOld, MoleCLI.minimumVersion))
+                        .monoLightFont(10)
+                        .foregroundColor(Brand.accentGold)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .padding(.vertical, 4)
+                .padding(.top, 2)
+            }
 
-                if let version = moleVersion, !MoleCLI.isSupported(version: version) {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(Brand.accentGold)
-                        Text(String(format: L10n.settingsMoleTooOld, MoleCLI.minimumVersion))
-                            .font(.custom("RobotoMono-Light", size: 10))
-                            .foregroundColor(Brand.accentGold)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(.top, 2)
-                }
+            Divider()
+                .overlay(Brand.lineColor.opacity(0.2))
 
-                Divider()
-                    .overlay(Brand.lineColor.opacity(0.2))
+            // Automatic update checks
+            HStack {
+                Text(L10n.updateAutoCheck)
+                    .monoFont(12)
+                    .foregroundColor(Brand.textPrimary)
+                Spacer()
+                Toggle("", isOn: $updater.autoCheckEnabled)
+                    .toggleStyle(.switch)
+                    .controlSize(.mini)
+                    .labelsHidden()
+                    .tint(Brand.accentOrange)
+            }
+            .padding(.vertical, 4)
 
-                // Automatic update checks
-                HStack {
-                    Text(L10n.updateAutoCheck)
-                        .font(.custom("RobotoMono-Regular", size: 12))
-                        .foregroundColor(Brand.textPrimary)
-                    Spacer()
-                    Toggle("", isOn: $updater.autoCheckEnabled)
-                        .toggleStyle(.switch)
-                        .controlSize(.mini)
-                        .labelsHidden()
-                        .tint(Brand.accentOrange)
-                }
-                .padding(.vertical, 4)
+            updateStatusView
 
-                updateStatusView
-
-                // Check for Updates + Website buttons
-                HStack(spacing: 8) {
-                    settingsLinkButton(
-                        icon: "arrow.down.circle",
-                        label: updater.state == .checking ? L10n.updateChecking : L10n.updateCheck,
-                        color: Brand.accentOrange,
-                        action: { updater.check(userInitiated: true) }
-                    )
-                    .disabled(updater.isBusy)
-                    .opacity(updater.isBusy ? 0.5 : 1)
-                    settingsLinkButton(
-                        icon: "link",
-                        label: L10n.settingsWebsite,
-                        color: Brand.accentGreen,
-                        action: { NSWorkspace.shared.open(officialWebsiteURL) }
-                    )
-                    settingsLinkButton(
-                        icon: "heart.fill",
-                        label: L10n.settingsDonate,
-                        color: Brand.accentRed,
-                        action: { NSWorkspace.shared.open(donateURL) }
-                    )
-                }
+            // Check for Updates + Website buttons
+            HStack(spacing: 8) {
+                settingsLinkButton(
+                    icon: "arrow.down.circle",
+                    label: updater.state == .checking ? L10n.updateChecking : L10n.updateCheck,
+                    color: Brand.accentOrange,
+                    action: { updater.check(userInitiated: true) }
+                )
+                .disabled(updater.isBusy)
+                .opacity(updater.isBusy ? 0.5 : 1)
+                settingsLinkButton(
+                    icon: "link",
+                    label: L10n.settingsWebsite,
+                    color: Brand.accentGreen,
+                    action: { NSWorkspace.shared.open(officialWebsiteURL) }
+                )
+                settingsLinkButton(
+                    icon: "heart.fill",
+                    label: L10n.settingsDonate,
+                    color: Brand.accentRed,
+                    action: { NSWorkspace.shared.open(donateURL) }
+                )
             }
         }
     }
@@ -227,7 +179,7 @@ struct SettingsView: View {
                     .font(.system(size: 11))
                     .foregroundColor(Brand.accentGreen)
                 Text(String(format: L10n.updateUpToDateBody, UpdateChecker.currentVersion))
-                    .font(.custom("RobotoMono-Light", size: 11))
+                    .monoLightFont(11)
                     .foregroundColor(Brand.textDim)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
@@ -241,11 +193,11 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Text(L10n.updateDownloading)
-                        .font(.custom("RobotoMono-Light", size: 11))
+                        .monoLightFont(11)
                         .foregroundColor(Brand.textDim)
                     Spacer()
                     Text("\(Int((progress * 100).rounded()))%")
-                        .font(.custom("RobotoMono-Regular", size: 11))
+                        .monoFont(11)
                         .foregroundColor(Brand.accentOrange)
                 }
                 ProgressView(value: progress)
@@ -264,7 +216,7 @@ struct SettingsView: View {
                         .font(.system(size: 11))
                         .foregroundColor(Brand.accentRed)
                     Text(message)
-                        .font(.custom("RobotoMono-Light", size: 11))
+                        .monoLightFont(11)
                         .foregroundColor(Brand.accentRed)
                         .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
@@ -288,7 +240,7 @@ struct SettingsView: View {
                 .controlSize(.small)
                 .tint(Brand.accentOrange)
             Text(text)
-                .font(.custom("RobotoMono-Light", size: 11))
+                .monoLightFont(11)
                 .foregroundColor(Brand.textDim)
             Spacer(minLength: 0)
         }
@@ -303,11 +255,11 @@ struct SettingsView: View {
                     .font(.system(size: 12))
                     .foregroundColor(Brand.accentOrange)
                 Text(String(format: L10n.updateAvailableShort, release.version))
-                    .font(.custom("RobotoMono-Regular", size: 12))
+                    .monoFont(12)
                     .foregroundColor(Brand.textPrimary)
                 Spacer()
                 Text(String(format: L10n.updateCurrentVersionLine, UpdateChecker.currentVersion))
-                    .font(.custom("RobotoMono-Light", size: 10))
+                    .monoLightFont(10)
                     .foregroundColor(Brand.textDim)
             }
 
@@ -328,7 +280,7 @@ struct SettingsView: View {
 
             if !canInstall {
                 Text(L10n.updateManualOnly)
-                    .font(.custom("RobotoMono-Light", size: 10))
+                    .monoLightFont(10)
                     .foregroundColor(Brand.accentGold)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -345,7 +297,7 @@ struct SettingsView: View {
     private func updateActionButton(_ title: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.custom("RobotoMono-Regular", size: 10))
+                .monoFont(10)
                 .foregroundColor(color)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
@@ -360,7 +312,7 @@ struct SettingsView: View {
     private var languagePicker: some View {
         HStack {
             Text(L10n.settingsLanguage)
-                .font(.custom("RobotoMono-Regular", size: 12))
+                .monoFont(12)
                 .foregroundColor(Brand.textPrimary)
 
             Spacer()
@@ -385,7 +337,7 @@ struct SettingsView: View {
     private var fdaRow: some View {
         HStack {
             Text(L10n.settingsFDATitle)
-                .font(.custom("RobotoMono-Regular", size: 12))
+                .monoFont(12)
                 .foregroundColor(Brand.textPrimary)
 
             Spacer()
@@ -394,10 +346,10 @@ struct SettingsView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 12))
-                        .foregroundColor(.green)
+                        .foregroundColor(Brand.accentGreen)
                     Text(L10n.settingsFDAGranted)
-                        .font(.custom("RobotoMono-Regular", size: 11))
-                        .foregroundColor(.green)
+                        .monoFont(11)
+                        .foregroundColor(Brand.accentGreen)
                 }
                 .padding(.vertical, 4)
             } else {
@@ -407,7 +359,7 @@ struct SettingsView: View {
                             .font(.system(size: 12))
                             .foregroundColor(Brand.accentRed)
                         Text(L10n.settingsFDANotGranted)
-                            .font(.custom("RobotoMono-Regular", size: 11))
+                            .monoFont(11)
                             .foregroundColor(Brand.accentRed)
                     }
 
@@ -415,7 +367,7 @@ struct SettingsView: View {
                         Privacy.openFullDiskAccessSettings()
                     } label: {
                         Text(L10n.settingsFDAAction)
-                            .font(.custom("RobotoMono-Regular", size: 10))
+                            .monoFont(10)
                     }
                     .buttonStyle(.plain)
                     .foregroundColor(Brand.accentOrange)
@@ -454,6 +406,25 @@ struct SettingsView: View {
     }
 
     // MARK: - Helpers
+
+    private func settingsSection<Content: View>(
+        _ title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        GlassCard {
+            VStack(alignment: .leading, spacing: Brand.marginTight) {
+                Text(title)
+                    .monoFont(10)
+                    .kerning(2)
+                    .foregroundColor(Brand.textDim)
+
+                Divider()
+                    .overlay(Brand.lineColor.opacity(0.2))
+
+                content()
+            }
+        }
+    }
 
     private func settingsLinkButton(icon: String, label: String, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {

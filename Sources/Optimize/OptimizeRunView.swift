@@ -7,12 +7,11 @@ struct OptimizeRunView: View {
     let progress: OptimizeProgress
     let onCancel: () -> Void
 
-    @State private var scrollProxy: ScrollViewProxy?
-
     var body: some View {
+        let lines = displayLines
         VStack(spacing: 16) {
             statusHeader
-            terminalLog
+            terminalLog(lines)
             ProgressGlow(progress: progressFraction)
                 .frame(width: 300)
             footerActions
@@ -51,17 +50,17 @@ struct OptimizeRunView: View {
 
     // MARK: - Terminal Log
 
-    private var terminalLog: some View {
+    private func terminalLog(_ lines: [LogLine]) -> some View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 2) {
-                    ForEach(displayLines, id: \.id) { line in
+                    ForEach(lines, id: \.id) { line in
                         logLineView(line)
                             .id(line.id)
                     }
                 }
                 .padding(12)
-                .font(.custom("RobotoMono-Regular", size: 10))
+                .monoFont(10)
             }
             .background(Brand.bgCard.opacity(0.4))
             .overlay(
@@ -69,8 +68,8 @@ struct OptimizeRunView: View {
                     .stroke(Brand.lineColor, lineWidth: 0.5)
             )
             .clipShape(RoundedRectangle(cornerRadius: 4))
-            .onChange(of: displayLines.count) { _, _ in
-                if let last = displayLines.last {
+            .onChange(of: lines.count) { _, _ in
+                if let last = lines.last {
                     proxy.scrollTo(last.id, anchor: .bottom)
                 }
             }
@@ -128,7 +127,6 @@ struct OptimizeRunView: View {
     @ViewBuilder
     private func logLineView(_ line: LogLine) -> some View {
         if line.isCurrent {
-            // Current task with pulsing glow indicator
             HStack(spacing: 6) {
                 PulseGlow()
                     .frame(width: 6, height: 6)

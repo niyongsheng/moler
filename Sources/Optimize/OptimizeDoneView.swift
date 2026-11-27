@@ -11,7 +11,6 @@ struct OptimizeDoneView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            // Completion icon
             ZStack {
                 Reticle(strokeColor: Brand.accentGold.opacity(0.5), lineWidth: 0.5, armLength: 20)
                     .frame(width: 100, height: 100)
@@ -21,7 +20,6 @@ struct OptimizeDoneView: View {
                     .foregroundColor(Brand.accentGold)
             }
 
-            // Title block
             VStack(spacing: 6) {
                 Text(result.isDryRun ? L10n.optimizeDonePreviewTitle : L10n.optimizeDoneTitle)
                     .titleFont(28)
@@ -33,16 +31,15 @@ struct OptimizeDoneView: View {
                     .foregroundColor(Brand.textDim)
             }
 
-            // Summary InstrumentPanel
             GlassCard {
                 VStack(spacing: Brand.unit * 2) {
                     DataRow(
                         label: L10n.optimizeDoneAllAreas,
-                        value: "\(result.totalOptimizations > 0 ? "\(result.totalOptimizations)" : "0")"
+                        value: "\(result.totalOptimizations)"
                     )
                     DataRow(
                         label: L10n.optimizeDoneDuration,
-                        value: formattedDuration(result.durationSeconds)
+                        value: Format.duration(result.durationSeconds)
                     )
                     if result.outcomes.unchanged > 0 {
                         DataRow(
@@ -66,7 +63,6 @@ struct OptimizeDoneView: View {
             }
             .frame(maxWidth: 360)
 
-            // Category breakdown list
             if !result.categories.isEmpty {
                 categoryList
             } else {
@@ -77,7 +73,6 @@ struct OptimizeDoneView: View {
 
             Spacer()
 
-            // New Optimize button
             Button(action: onReset) {
                 HStack(spacing: 8) {
                     Image(systemName: "arrow.counterclockwise")
@@ -175,16 +170,5 @@ struct OptimizeDoneView: View {
                 : Color.clear
         )
         .cornerRadius(3)
-    }
-
-    // MARK: - Helpers
-
-    private func formattedDuration(_ seconds: Int) -> String {
-        let m = seconds / 60
-        let s = seconds % 60
-        if m > 0 {
-            return "\(m)m \(s)s"
-        }
-        return "\(s)s"
     }
 }

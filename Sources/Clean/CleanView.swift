@@ -4,6 +4,7 @@ import SwiftUI
 /// State-driven: renders different content for each `CleanState`.
 struct CleanView: View {
     @StateObject private var vm = CleanViewModel()
+    @ObservedObject private var activity = AppActivityMonitor.shared
     let isVisible: Bool
 
     init(isVisible: Bool = true) {
@@ -11,11 +12,31 @@ struct CleanView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            content
+        ZStack {
+            // 3D solar-system backdrop. While a scan runs its planets speed up,
+            // becoming the scan animation itself.
+            SolarSystemBackground(
+                isVisible: isVisible && activity.isWindowVisible,
+                isScanning: isScanning
+            )
+
+            Group {
+                if isIdle {
+                    PageChrome(
+                        icon: Pane.clean.iconName,
+                        title: L10n.cleanTitle,
+                        subtitle: L10n.cleanSubtitle
+                    ) {
+                        idleView
+                    }
+                } else {
+                    // Active states keep the full height they were designed for.
+                    content
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 20)
+                }
+            }
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Error banner
         .overlay(alignment: .top) {
@@ -23,6 +44,16 @@ struct CleanView: View {
                 errorBanner(error)
             }
         }
+    }
+
+    private var isIdle: Bool {
+        if case .idle = vm.state { return true }
+        return false
+    }
+
+    private var isScanning: Bool {
+        if case .scanning = vm.state { return true }
+        return false
     }
 
     // MARK: - Content by State
@@ -48,70 +79,45 @@ struct CleanView: View {
         }
     }
 
-    /// Navigate back to the Clean tab from Overview's quick action.
-    func activate() {
-        // no-op for now; resets handled by view lifecycle
-    }
-
     // MARK: - Idle State
 
     private var idleView: some View {
-        VStack(spacing: 24) {
-            Spacer()
-
-            // Central scan icon with reticle
-            ZStack {
-                Reticle(strokeColor: Brand.accentOrange.opacity(0.5), lineWidth: 0.5, armLength: 20)
-                    .frame(width: 120, height: 120)
-
-                Image(systemName: "xmark.bin")
-                    .font(.system(size: 42))
-                    .foregroundColor(Brand.accentOrange)
-            }
-
-            // Title block
-            VStack(spacing: 6) {
-                Text(L10n.cleanTitle)
-                    .titleFont(28)
-                    .kerning(8)
-                    .foregroundColor(Brand.accentOrange)
-
-                Text(L10n.cleanSubtitle)
-                    .monoFont(10)
-                    .foregroundColor(Brand.textDim)
-            }
-
+        PageContentColumn {
             // Stats from last clean
             GlassCard {
-                VStack(spacing: Brand.unit * 2) {
+                VStack(alignment: .leading, spacing: Brand.unit * 2) {
                     DataRow(label: L10n.cleanLastScan, value: Store.shared.lastScanPath)
                     DataRow(label: L10n.cleanLastClean, value: Store.shared.lastCleanDate?.formatted() ?? L10n.cleanNever)
-                    DataRow(label: L10n.cleanTotalFreed, value: formatBytes(Store.shared.totalFreedBytes))
+                    DataRow(label: L10n.cleanTotalFreed, value: Format.bytes(Store.shared.totalFreedBytes))
                     DataRow(label: L10n.cleanCleanCount, value: "\(Store.shared.totalCleanCount)")
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: 400)
 
             // Initiate button
-            Button(action: { vm.startScan() }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "play.fill")
-                    Text(L10n.cleanInitiate)
-                        .titleFont(14)
-                        .kerning(6)
-                }
-                .padding(.horizontal, 32)
-                .padding(.vertical, 12)
-                .background(Brand.accentOrange.opacity(0.15))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Brand.accentOrange, lineWidth: 1)
-                )
-                .foregroundColor(Brand.accentOrange)
-            }
-            .buttonStyle(.plain)
+            HStack {
+                Spacer()
 
-            Spacer()
+                Button(action: { vm.startScan() }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.fill")
+                        Text(L10n.cleanInitiate)
+                            .titleFont(14)
+                            .kerning(6)
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 12)
+                    .background(Brand.accentOrange.opacity(0.15))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Brand.accentOrange, lineWidth: 1)
+                    )
+                    .foregroundColor(Brand.accentOrange)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
         }
     }
 
@@ -121,8 +127,9 @@ struct CleanView: View {
         VStack(spacing: 24) {
             Spacer()
 
-            // Solar system scanning animation
-            SystemMonitorOverlay(isVisible: isVisible)
+            // The 3D solar system behind the page is the scan animation now.
+            // Keep its footprint so the readout stays below the system.
+            Color.clear
                 .frame(width: 300, height: 300)
 
             // Progress readout

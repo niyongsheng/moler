@@ -1,40 +1,6 @@
 import SceneKit
 import AppKit
 
-private final class SimpleNoise {
-    private var perm: [Int] = (0..<256).shuffled()
-    private let grad3: [(Double, Double, Double)] = [
-        (1,1,0),(-1,1,0),(1,-1,0),(-1,-1,0),
-        (1,0,1),(-1,0,1),(1,0,-1),(-1,0,-1),
-        (0,1,1),(0,-1,1),(0,1,-1),(0,-1,-1),
-    ]
-    init(seed: String) {
-        var h = 0
-        for c in seed.utf8 { h = h &* 31 &+ Int(c) }
-        perm = (0..<256).map { ($0 &+ h) & 255 }.shuffled()
-    }
-    private func fade(_ t: Double) -> Double { t*t*t*(t*(t*6-15)+10) }
-    private func lerp(_ a: Double, _ b: Double, _ t: Double) -> Double { a+(b-a)*t }
-    func noise3D(_ x: Double, _ y: Double, _ z: Double) -> Double {
-        let X = Int(floor(x))&255; let Y = Int(floor(y))&255; let Z = Int(floor(z))&255
-        let fx = x-floor(x); let fy = y-floor(y); let fz = z-floor(z)
-        let u = fade(fx); let v = fade(fy); let w = fade(fz)
-        func h(_ x: Int, _ y: Int, _ z: Int) -> Int { perm[(perm[(perm[x&255]&+y)&255]&+z)&255] }
-        func g(_ h: Int, _ dx: Double, _ dy: Double, _ dz: Double) -> Double {
-            let g = grad3[h%12]; return g.0*dx + g.1*dy + g.2*dz
-        }
-        let n0 = g(h(X,Y,Z), fx, fy, fz); let n1 = g(h(X+1,Y,Z), fx-1, fy, fz)
-        let nx0 = lerp(n0, n1, u)
-        let n2 = g(h(X,Y+1,Z), fx, fy-1, fz); let n3 = g(h(X+1,Y+1,Z), fx-1, fy-1, fz)
-        let nx1 = lerp(n2, n3, u); let ny0 = lerp(nx0, nx1, v)
-        let n4 = g(h(X,Y,Z+1), fx, fy, fz-1); let n5 = g(h(X+1,Y,Z+1), fx-1, fy, fz-1)
-        let nx2 = lerp(n4, n5, u)
-        let n6 = g(h(X,Y+1,Z+1), fx, fy-1, fz-1); let n7 = g(h(X+1,Y+1,Z+1), fx-1, fy-1, fz-1)
-        let nx3 = lerp(n6, n7, u); let ny1 = lerp(nx2, nx3, v)
-        return lerp(ny0, ny1, w)
-    }
-}
-
 // MARK: -
 
 /// Real-world coastline lookup backed by an equirectangular raster mask
@@ -101,10 +67,6 @@ final class EarthScene: SCNScene {
         let wasScanning = animationIntensity > 0
         animationIntensity = isScanning ? 1.0 : 0.0
         targetZoom = isScanning ? 35 : 25
-        // Toggle wireframe visibility as a visible indicator of scanning state
-        if isScanning {
-            background.contents = NSColor.clear
-        }
         if isScanning {
             interactionNode.eulerAngles.x = 0.4
         } else if wasScanning {
@@ -146,7 +108,7 @@ final class EarthScene: SCNScene {
     }
 
     private func buildEarth() {
-        let noise = SimpleNoise(seed: "terra-firma")
+        let noise = SeededNoise3D(seed: "terra-firma")
         let landMask = LandMask()
         let count = 24_000
         var p = [Float](repeating: 0, count: count*3)
@@ -208,17 +170,12 @@ final class EarthScene: SCNScene {
             c[idx*3+2] = min(1, max(0, cc.z*v))
             idx += 1
         }
-        spinNode.addChildNode(SCNNode(geometry: makeGeo(positions: p, colors: c, count: idx, pointSize: 1.5)))
+        spinNode.addChildNode(SCNNode(geometry: PlanetGeometry.pointCloud(positions: p, colors: c, count: idx)))
     }
 
     private func buildWireframe() {
-        let w = SCNBox(width: 10.02, height: 10.02, length: 10.02, chamferRadius: 5.01)
-        w.widthSegmentCount = 24; w.heightSegmentCount = 16; w.lengthSegmentCount = 24
-        let m = SCNMaterial()
-        m.diffuse.contents = NSColor(calibratedRed: 0.23, green: 0.31, blue: 0.42, alpha: 0.06)
-        m.isDoubleSided = true
-        w.materials = [m]
-        spinNode.addChildNode(SCNNode(geometry: w))
+        let tint = NSColor(calibratedRed: 0.23, green: 0.31, blue: 0.42, alpha: 0.06)
+        spinNode.addChildNode(SCNNode(geometry: PlanetGeometry.wireframe(tint: tint)))
     }
 
     private func buildLEO() {
@@ -253,7 +210,7 @@ final class EarthScene: SCNScene {
     }
 
     private func buildMoon() {
-        let noise = SimpleNoise(seed: "luna"); let cnt = 1_200
+        let noise = SeededNoise3D(seed: "luna"); let cnt = 1_200
         var p = [Float](repeating: 0, count: cnt*3)
         var c = [Float](repeating: 0, count: cnt*3)
         let maria = SIMD3<Float>(0.12, 0.14, 0.17)
@@ -275,7 +232,7 @@ final class EarthScene: SCNScene {
             c[i*3+1] = min(1, max(0, ccol.y*v))
             c[i*3+2] = min(1, max(0, ccol.z*v))
         }
-        let geo = makeGeo(positions: p, colors: c, count: cnt)
+        let geo = PlanetGeometry.pointCloud(positions: p, colors: c, count: cnt)
         let body = SCNNode(geometry: geo)
         let w = SCNBox(width: 1.6, height: 1.6, length: 1.6, chamferRadius: 0.8)
         w.widthSegmentCount = 16; w.heightSegmentCount = 16; w.lengthSegmentCount = 16
@@ -300,22 +257,6 @@ final class EarthScene: SCNScene {
         let sn = SCNNode()
         body.addChildNode(sn)
         moon = Moon(orbitNode: mc, bodyNode: sn, speed: 0.0035, angle: CGFloat.random(in: 0...(2 * .pi)))
-    }
-
-    private func makeGeo(positions: [Float], colors: [Float], count: Int, pointSize: Float = 1.5, opacity: Float = 1) -> SCNGeometry {
-        let pd = Data(bytes: positions, count: count*3*4)
-        let cd = Data(bytes: colors, count: count*3*4)
-        let ps = SCNGeometrySource(data: pd, semantic: .vertex, vectorCount: count, usesFloatComponents: true, componentsPerVector: 3, bytesPerComponent: 4, dataOffset: 0, dataStride: 12)
-        let cs = SCNGeometrySource(data: cd, semantic: .color, vectorCount: count, usesFloatComponents: true, componentsPerVector: 3, bytesPerComponent: 4, dataOffset: 0, dataStride: 12)
-        let el = SCNGeometryElement(data: nil, primitiveType: .point, primitiveCount: count, bytesPerIndex: 0)
-        let g = SCNGeometry(sources: [ps, cs], elements: [el])
-        let m = SCNMaterial()
-        m.isDoubleSided = true
-        m.writesToDepthBuffer = opacity >= 1
-        if opacity < 1 { m.transparency = CGFloat(opacity); m.transparencyMode = .dualLayer }
-        m.shaderModifiers = [.geometry: "#pragma body\n_geometry.pointSize = \(pointSize);"]
-        g.materials = [m]
-        return g
     }
 
     func animate(at time: TimeInterval) {

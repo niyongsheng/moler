@@ -29,12 +29,6 @@ struct OptimizeView: View {
     /// Render only while the pane is active and the window is on screen.
     private var sceneVisible: Bool { isVisible && activity.isWindowVisible }
 
-    /// Current animation driving state derived from vm.state
-    private var isAnimating: Bool {
-        if case .running = vm.state { return true }
-        return false
-    }
-
     /// Non-idle states (running or done) trigger different scene behaviour
     private var scenePhase: ScenePhase {
         switch vm.state {
@@ -52,17 +46,34 @@ struct OptimizeView: View {
             SceneKitJupiterView(scenePhase: scenePhase, isVisible: sceneVisible)
 
             // Foreground UI
-            VStack(spacing: 0) {
-                content
+            Group {
+                if showsIdlePage {
+                    PageChrome(
+                        icon: Pane.optimize.iconName,
+                        title: L10n.optimizeTitle,
+                        subtitle: L10n.optimizeSubtitle
+                    ) {
+                        idleView
+                    }
+                } else {
+                    content
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 20)
+                }
             }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .top) {
             if let error = vm.errorMessage {
                 errorBanner(error)
             }
+        }
+    }
+
+    private var showsIdlePage: Bool {
+        switch vm.state {
+        case .idle, .error: return true
+        default: return false
         }
     }
 
@@ -89,43 +100,21 @@ struct OptimizeView: View {
     // MARK: - Idle State
 
     private var idleView: some View {
-        VStack(spacing: 24) {
-            Spacer()
-
-            // Central icon with reticle
-            ZStack {
-                Reticle(strokeColor: Brand.accentOrange.opacity(0.5), lineWidth: 0.5, armLength: 20)
-                    .frame(width: 120, height: 120)
-
-                Image(systemName: "speedometer")
-                    .font(.system(size: 42))
-                    .foregroundColor(Brand.accentOrange)
-            }
-
-            // Title
-            VStack(spacing: 6) {
-                Text(L10n.optimizeTitle)
-                    .titleFont(28)
-                    .kerning(8)
-                    .foregroundColor(Brand.accentOrange)
-
-                Text(L10n.optimizeSubtitle)
-                    .monoFont(10)
-                    .foregroundColor(Brand.textDim)
-            }
-
+        PageContentColumn {
             // Stats from last optimize
             GlassCard {
-                VStack(spacing: Brand.unit * 2) {
+                VStack(alignment: .leading, spacing: Brand.unit * 2) {
                     DataRow(label: L10n.optimizeLastRun, value: Store.shared.lastOptimizeDate?.formatted() ?? L10n.optimizeNever)
                     DataRow(label: L10n.optimizeTotalCount, value: "\(Store.shared.totalOptimizeCount)")
                     DataRow(label: L10n.optimizeTotalOpts, value: "\(Store.shared.lastOptimizeOptimizations)")
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: 400)
 
             // Action buttons
             HStack(spacing: 16) {
+                Spacer()
+
                 // Preview button
                 Button(action: { vm.startPreview() }) {
                     HStack(spacing: 8) {
@@ -163,9 +152,9 @@ struct OptimizeView: View {
                     .foregroundColor(Brand.accentOrange)
                 }
                 .buttonStyle(.plain)
-            }
 
-            Spacer()
+                Spacer()
+            }
         }
     }
 
@@ -216,6 +205,7 @@ struct SceneKitJupiterView: NSViewRepresentable {
 
         // Apply initial phase
         apply(phase: scenePhase, to: scene)
+        context.coordinator.lastPhase = scenePhase
 
         return scnView
     }
@@ -224,7 +214,9 @@ struct SceneKitJupiterView: NSViewRepresentable {
         // A hidden pane keeps its state but never renders — the scene simply
         // resumes from where it left off when the tab becomes visible again.
         nsView.isPlaying = isVisible
-        guard let scene = nsView.scene as? JupiterScene else { return }
+        guard let scene = nsView.scene as? JupiterScene,
+              context.coordinator.lastPhase != scenePhase else { return }
+        context.coordinator.lastPhase = scenePhase
         apply(phase: scenePhase, to: scene)
     }
 
@@ -249,6 +241,7 @@ struct SceneKitJupiterView: NSViewRepresentable {
 
 final class Coordinator: NSObject {
     weak var scene: JupiterScene?
+    var lastPhase: OptimizeView.ScenePhase?
     private var lastLocation: CGPoint?
     private var tiltX: CGFloat = 0.15
     private var tiltY: CGFloat = 0

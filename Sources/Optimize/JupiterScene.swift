@@ -23,9 +23,6 @@ final class JupiterScene: SCNScene {
     }
     private var spinSpeedMultiplier: CGFloat = 1.0
 
-    /// Camera zoom smoothing target (existing, reused here)
-    /// - idle: 28  - running: 42 (pull back to see the whole system)
-
     /// Updates animation intensity based on the current Optimize state.
     func updateForRunning(_ isRunning: Bool) {
         animationIntensity = isRunning ? 1.0 : 0.0
@@ -148,52 +145,14 @@ final class JupiterScene: SCNScene {
             colors[i * 3 + 2] = cb
         }
 
-        let posData = Data(bytes: positions, count: positions.count * MemoryLayout<Float>.size)
-        let colData = Data(bytes: colors,    count: colors.count    * MemoryLayout<Float>.size)
-
-        let posSource = SCNGeometrySource(
-            data: posData, semantic: .vertex,
-            vectorCount: count, usesFloatComponents: true,
-            componentsPerVector: 3, bytesPerComponent: MemoryLayout<Float>.size,
-            dataOffset: 0, dataStride: MemoryLayout<Float>.size * 3
-        )
-        let colSource = SCNGeometrySource(
-            data: colData, semantic: .color,
-            vectorCount: count, usesFloatComponents: true,
-            componentsPerVector: 3, bytesPerComponent: MemoryLayout<Float>.size,
-            dataOffset: 0, dataStride: MemoryLayout<Float>.size * 3
-        )
-
-        let element = SCNGeometryElement(
-            data: nil,
-            primitiveType: .point,
-            primitiveCount: count,
-            bytesPerIndex: 0
-        )
-
-        let geometry = SCNGeometry(sources: [posSource, colSource], elements: [element])
-
-        let mat = SCNMaterial()
-        mat.isDoubleSided = true
-        mat.writesToDepthBuffer = opacity >= 1
-        if opacity < 1 {
-            mat.transparency = CGFloat(opacity)
-            mat.transparencyMode = .dualLayer
-        }
-        if additive {
-            mat.blendMode = .add
-        }
-
-        // Metal shader modifier for point size
-        mat.shaderModifiers = [
-            .geometry: """
-            #pragma body
-            _geometry.pointSize = \(pointSize);
-            """
-        ]
-        geometry.materials = [mat]
-
-        return SCNNode(geometry: geometry)
+        return SCNNode(geometry: PlanetGeometry.pointCloud(
+            positions: positions,
+            colors: colors,
+            count: count,
+            pointSize: pointSize,
+            opacity: opacity,
+            additive: additive
+        ))
     }
 
     // MARK: - Jupiter band colour at normalised latitude v (0 = south, 1 = north)
@@ -239,25 +198,6 @@ final class JupiterScene: SCNScene {
     }
 
     // MARK: - Great Red Spot particle colour (inside GRS region)
-
-    private func redSpotColor(u: Double, v: Double) -> (Float, Float, Float) {
-        // longitude offset from GRS centre (u=0.5) and latitude offset from 22°S (v=0.38)
-        let du = u - 0.5, dv = v - 0.38
-        let d = (du * du) / (0.12 * 0.12) + (dv * dv) / (0.07 * 0.07)
-        guard d < 1 else {
-            // outside GRS — fall through to planet colour
-            let (r, g, b) = planetParticleColor(u: u, v: v, 0.0)
-            return (r, g, b)
-        }
-
-        let coreR: Double = 0.76, coreG: Double = 0.37, coreB: Double = 0.25
-        let outerR: Double = 0.54, outerG: Double = 0.25, outerB: Double = 0.18
-        let inner  = d < 0.3 ? (1 - d / 0.3) * 0.35 : 0
-        let r = coreR * inner + outerR * (1 - inner)
-        let g = coreG * inner + outerG * (1 - inner)
-        let b = coreB * inner + outerB * (1 - inner)
-        return (Float(r), Float(g), Float(b))
-    }
 
     // MARK: - Atmosphere haze particle colour
 
@@ -308,35 +248,9 @@ final class JupiterScene: SCNScene {
             colors[i * 3 + 2] = b * 0.2 * a
         }
 
-        let posData = Data(bytes: positions, count: positions.count * MemoryLayout<Float>.size)
-        let colData = Data(bytes: colors,    count: colors.count    * MemoryLayout<Float>.size)
-
-        let posSource = SCNGeometrySource(
-            data: posData, semantic: .vertex,
-            vectorCount: count, usesFloatComponents: true,
-            componentsPerVector: 3, bytesPerComponent: MemoryLayout<Float>.size,
-            dataOffset: 0, dataStride: MemoryLayout<Float>.size * 3
+        let geometry = PlanetGeometry.pointCloud(
+            positions: positions, colors: colors, count: count, pointSize: 2.0, opacity: 0.5
         )
-        let colSource = SCNGeometrySource(
-            data: colData, semantic: .color,
-            vectorCount: count, usesFloatComponents: true,
-            componentsPerVector: 3, bytesPerComponent: MemoryLayout<Float>.size,
-            dataOffset: 0, dataStride: MemoryLayout<Float>.size * 3
-        )
-
-        let element = SCNGeometryElement(data: nil, primitiveType: .point, primitiveCount: count, bytesPerIndex: 0)
-        let geometry = SCNGeometry(sources: [posSource, colSource], elements: [element])
-
-        let mat = SCNMaterial()
-        mat.isDoubleSided = true
-        mat.transparency = 0.5
-        mat.transparencyMode = .dualLayer
-        mat.writesToDepthBuffer = false
-        mat.shaderModifiers = [
-            .geometry: "#pragma body\n_geometry.pointSize = 2.0;"
-        ]
-        geometry.materials = [mat]
-
         let node = SCNNode(geometry: geometry)
         node.eulerAngles.x = -.pi / 2   // lay flat in XZ plane
         ringNode.addChildNode(node)
@@ -406,32 +320,9 @@ final class JupiterScene: SCNScene {
         let posSlice = Array(positions[0..<(actualCount * 3)])
         let colSlice = Array(colors[0..<(actualCount * 3)])
 
-        let posData = Data(bytes: posSlice, count: posSlice.count * MemoryLayout<Float>.size)
-        let colData = Data(bytes: colSlice, count: colSlice.count * MemoryLayout<Float>.size)
-
-        let posSource = SCNGeometrySource(
-            data: posData, semantic: .vertex,
-            vectorCount: actualCount, usesFloatComponents: true,
-            componentsPerVector: 3, bytesPerComponent: MemoryLayout<Float>.size,
-            dataOffset: 0, dataStride: MemoryLayout<Float>.size * 3
+        let geometry = PlanetGeometry.pointCloud(
+            positions: posSlice, colors: colSlice, count: actualCount, pointSize: 3.0
         )
-        let colSource = SCNGeometrySource(
-            data: colData, semantic: .color,
-            vectorCount: actualCount, usesFloatComponents: true,
-            componentsPerVector: 3, bytesPerComponent: MemoryLayout<Float>.size,
-            dataOffset: 0, dataStride: MemoryLayout<Float>.size * 3
-        )
-
-        let element = SCNGeometryElement(data: nil, primitiveType: .point, primitiveCount: actualCount, bytesPerIndex: 0)
-        let geometry = SCNGeometry(sources: [posSource, colSource], elements: [element])
-
-        let mat = SCNMaterial()
-        mat.isDoubleSided = true
-        mat.shaderModifiers = [
-            .geometry: "#pragma body\n_geometry.pointSize = 3.0;"
-        ]
-        geometry.materials = [mat]
-
         let node = SCNNode(geometry: geometry)
         redSpotNode.addChildNode(node)
     }

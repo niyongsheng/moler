@@ -14,19 +14,24 @@ import AppKit
 struct TopoBackground: NSViewRepresentable {
     var bgColor: Color = Brand.bgNavy
     var lineOpacity: Double = 0.4
-    var lineColor: Color = Color(hex: "#3b4e6b")
+    var lineColor: Color = Brand.lineColor
 
     func makeNSView(context: Context) -> PassthroughHostingView<TopoAnimatedView> {
         let view = PassthroughHostingView(rootView: TopoAnimatedView(
             bgColor: bgColor,
-            lineColor: lineColor
+            lineColor: lineColor,
+            lineOpacity: lineOpacity
         ))
         view.layer?.backgroundColor = NSColor.clear.cgColor
         return view
     }
 
     func updateNSView(_ nsView: PassthroughHostingView<TopoAnimatedView>, context: Context) {
-        nsView.rootView = TopoAnimatedView(bgColor: bgColor, lineColor: lineColor)
+        nsView.rootView = TopoAnimatedView(
+            bgColor: bgColor,
+            lineColor: lineColor,
+            lineOpacity: lineOpacity
+        )
     }
 }
 
@@ -40,6 +45,7 @@ final class PassthroughHostingView<Content: View>: NSHostingView<Content> {
 struct TopoAnimatedView: View {
     let bgColor: Color
     let lineColor: Color
+    let lineOpacity: Double
 
     @ObservedObject private var activity = AppActivityMonitor.shared
 
@@ -74,7 +80,8 @@ struct TopoAnimatedView: View {
                     // translation that costs no SwiftUI work per frame.
                     Canvas(rendersAsynchronously: true) { ctx, size in
                         contourRenderer.drawContourLayer(
-                            &ctx, size: size, time: phase, lineColor: lineColor
+                            &ctx, size: size, time: phase,
+                            lineColor: lineColor, lineOpacity: lineOpacity
                         )
                     }
                     .frame(
@@ -229,9 +236,18 @@ private final class TopoRenderer {
 
     // MARK: Animated
 
-    func drawContourLayer(_ ctx: inout GraphicsContext, size: CGSize, time: Double, lineColor: Color) {
+    func drawContourLayer(
+        _ ctx: inout GraphicsContext,
+        size: CGSize,
+        time: Double,
+        lineColor: Color,
+        lineOpacity: Double
+    ) {
         if cachedSize != size { rebuild(size: size) }
-        drawContours(ctx: &ctx, size: size, time: time, lineColor: lineColor)
+        drawContours(
+            ctx: &ctx, size: size, time: time,
+            lineColor: lineColor, lineOpacity: lineOpacity
+        )
     }
 
     func drawTwinkleLayer(_ ctx: inout GraphicsContext, size: CGSize) {
@@ -242,7 +258,13 @@ private final class TopoRenderer {
         }
     }
 
-    private func drawContours(ctx: inout GraphicsContext, size: CGSize, time: Double, lineColor: Color) {
+    private func drawContours(
+        ctx: inout GraphicsContext,
+        size: CGSize,
+        time: Double,
+        lineColor: Color,
+        lineOpacity: Double
+    ) {
         let neededCols = Int(size.width / gridSize) + 1
         let neededRows = Int(size.height / gridSize) + 1
         if neededCols != cols || neededRows != rows {
@@ -303,7 +325,7 @@ private final class TopoRenderer {
                     }
                 }
             }
-            ctx.opacity = 0.5
+            ctx.opacity = lineOpacity
             ctx.stroke(contour, with: .color(lineColor), style: style)
         }
         ctx.opacity = 1
@@ -433,7 +455,7 @@ extension View {
     func topoBackground(lineOpacity: Double = 0.4, lineColor: Color? = nil) -> some View {
         self.background(TopoBackground(
             lineOpacity: lineOpacity,
-            lineColor: lineColor ?? Color(hex: "#3b4e6b")
+            lineColor: lineColor ?? Brand.lineColor
         ))
     }
 }

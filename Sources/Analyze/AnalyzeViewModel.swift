@@ -33,20 +33,18 @@ final class AnalyzeViewModel: ObservableObject {
     private let homePath = FileManager.default.homeDirectoryForCurrentUser.path
 
     /// Common directories available as quick-select presets.
-    var scanPresets: [ScanPreset] {
-        let fm = FileManager.default
-        return [
-            ScanPreset(id: "house",           label: "Home",        path: homePath),
-            ScanPreset(id: "desktopcomputer",  label: "Desktop",    path: homePath + "/Desktop"),
-            ScanPreset(id: "doc.text",         label: "Documents",  path: homePath + "/Documents"),
-            ScanPreset(id: "arrow.down.doc",   label: "Downloads", path: homePath + "/Downloads"),
-            ScanPreset(id: "archivebox",       label: "Caches",     path: homePath + "/Library/Caches"),
-        ].filter { fm.fileExists(atPath: $0.path) }
-    }
+    let scanPresets: [ScanPreset]
 
     init() {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
-        self.selectedPath = home
+        selectedPath = homePath
+        let fm = FileManager.default
+        scanPresets = [
+            ScanPreset(id: "house",           label: L10n.analyzePresetHome,      path: homePath),
+            ScanPreset(id: "desktopcomputer", label: L10n.analyzePresetDesktop,   path: homePath + "/Desktop"),
+            ScanPreset(id: "doc.text",        label: L10n.analyzePresetDocuments, path: homePath + "/Documents"),
+            ScanPreset(id: "arrow.down.doc",  label: L10n.analyzePresetDownloads, path: homePath + "/Downloads"),
+            ScanPreset(id: "archivebox",      label: L10n.analyzePresetCaches,    path: homePath + "/Library/Caches"),
+        ].filter { fm.fileExists(atPath: $0.path) }
     }
 
     deinit {
@@ -69,8 +67,8 @@ final class AnalyzeViewModel: ObservableObject {
         panel.canChooseDirectories = true
         panel.canCreateDirectories = false
         panel.allowsMultipleSelection = false
-        panel.message = "Select a directory to analyze"
-        panel.prompt = "Select"
+        panel.message = L10n.analyzePickerMessage
+        panel.prompt = L10n.analyzePickerPrompt
 
         let response = panel.runModal()
         return response == .OK ? panel.url?.path : nil
@@ -81,12 +79,6 @@ final class AnalyzeViewModel: ObservableObject {
     /// Start scanning the currently selected path.
     func startScan() {
         performScan(path: selectedPath)
-    }
-
-    /// Start scanning a specific directory.
-    func startScan(path: String) {
-        selectedPath = path
-        performScan(path: path)
     }
 
     /// Drill into a subdirectory by re-scanning its path.
@@ -110,14 +102,6 @@ final class AnalyzeViewModel: ObservableObject {
         if let parent = breadcrumb.last {
             performScan(path: parent.id)
         }
-    }
-
-    /// Go back to the root of the current scan tree (the directory that was
-    /// originally selected before any drill-down).
-    func goHome() {
-        let rootPath = breadcrumb.first?.id ?? homePath
-        breadcrumb.removeAll()
-        performScan(path: rootPath)
     }
 
     /// Cancel the current scan.
@@ -188,7 +172,7 @@ final class AnalyzeViewModel: ObservableObject {
                     guard let self else { return }
                     self.scanTimer?.invalidate()
                     self.scanTimer = nil
-                    self.state = .error(error.localizedDescription)
+                    self.state = .error
                     self.errorMessage = error.localizedDescription
                 }
             }

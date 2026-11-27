@@ -9,12 +9,28 @@ enum Format {
     /// Format bytes as human-readable string (1024-based, matching mo's convention).
     /// e.g. 1_073_741_824 → "1.0 GB"
     static func bytes(_ value: Int64) -> String {
-        formatBytes(value)
+        let absValue = abs(value)
+        guard absValue >= 1024 else { return "\(value) B" }
+
+        let units = ["KB", "MB", "GB", "TB"]
+        var v = Double(absValue)
+        var unitIndex = -1
+
+        while v >= 1024 && unitIndex < units.count - 1 {
+            v /= 1024
+            unitIndex += 1
+        }
+
+        let sign = value < 0 ? "-" : ""
+        if unitIndex >= 0 {
+            return String(format: "\(sign)%.1f %@", v, units[unitIndex])
+        }
+        return "\(value) B"
     }
 
     /// Format a UInt64 byte count.
     static func bytes(_ value: UInt64) -> String {
-        formatBytes(Int64(value))
+        bytes(Int64(value))
     }
 
     // MARK: - Count
@@ -30,15 +46,15 @@ enum Format {
 
     /// Format a date relative to now: "just now", "3m ago", "2h ago", "5d ago".
     static func relativeDate(_ date: Date?) -> String {
-        guard let date else { return "Never" }
+        guard let date else { return L10n.relativeNever }
         let interval = Date().timeIntervalSince(date)
-        if interval < 60 { return "just now" }
+        if interval < 60 { return L10n.relativeJustNow }
         let m = Int(interval / 60)
-        if m < 60 { return "\(m)m ago" }
+        if m < 60 { return String(format: L10n.relativeMinutesAgo, m) }
         let h = m / 60
-        if h < 24 { return "\(h)h ago" }
+        if h < 24 { return String(format: L10n.relativeHoursAgo, h) }
         let d = h / 24
-        return "\(d)d ago"
+        return String(format: L10n.relativeDaysAgo, d)
     }
 
     // MARK: - Uptime
@@ -50,6 +66,15 @@ enum Format {
         if d > 0 { return "\(d)d \(h)h" }
         let m = seconds / 60
         return m > 0 ? "\(m)m" : "\(seconds)s"
+    }
+
+    // MARK: - Duration
+
+    /// Format seconds as a compact minutes/seconds string: "1m 5s", "12s".
+    static func duration(_ seconds: Int) -> String {
+        let m = seconds / 60
+        let s = seconds % 60
+        return m > 0 ? "\(m)m \(s)s" : "\(s)s"
     }
 
     // MARK: - Path
@@ -92,26 +117,11 @@ func parseSizeBytes(_ text: String) -> Int64 {
     return 0
 }
 
-// MARK: - Free Functions
+// MARK: - Version
 
-/// Format a byte count as human-readable (1024-based).
-/// Pure function, usable from any component.
-func formatBytes(_ value: Int64) -> String {
-    let absValue = abs(value)
-    guard absValue >= 1024 else { return "\(value) B" }
-
-    let units = ["KB", "MB", "GB", "TB"]
-    var v = Double(absValue)
-    var unitIndex = -1
-
-    while v >= 1024 && unitIndex < units.count - 1 {
-        v /= 1024
-        unitIndex += 1
-    }
-
-    let sign = value < 0 ? "-" : ""
-    if unitIndex >= 0 {
-        return String(format: "\(sign)%.1f %@", v, units[unitIndex])
-    }
-    return "\(value) B"
+/// Trim whitespace and drop a leading "v" from a version string.
+func normalizedVersion(_ version: String) -> String {
+    var v = version.trimmingCharacters(in: .whitespaces)
+    if v.hasPrefix("v") || v.hasPrefix("V") { v.removeFirst() }
+    return v
 }

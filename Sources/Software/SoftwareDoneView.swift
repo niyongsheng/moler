@@ -34,8 +34,8 @@ struct SoftwareDoneView: View {
             GlassCard {
                 VStack(spacing: Brand.unit * 2) {
                     DataRow(label: L10n.softwareDoneAppsRemoved, value: "\(result.filesRemoved)")
-                    DataRow(label: L10n.softwareDoneBytesFreed, value: formatBytes(result.bytesFreed))
-                    DataRow(label: L10n.softwareDoneDuration, value: formattedDuration(result.durationSeconds))
+                    DataRow(label: L10n.softwareDoneBytesFreed, value: Format.bytes(result.bytesFreed))
+                    DataRow(label: L10n.softwareDoneDuration, value: Format.duration(result.durationSeconds))
                 }
             }
             .frame(maxWidth: 360)
@@ -87,12 +87,5 @@ struct SoftwareDoneView: View {
             Spacer().frame(height: 8)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func formattedDuration(_ seconds: Int) -> String {
-        let m = seconds / 60
-        let s = seconds % 60
-        if m > 0 { return "\(m)m \(s)s" }
-        return "\(s)s"
     }
 }
