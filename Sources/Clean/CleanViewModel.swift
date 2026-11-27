@@ -6,17 +6,18 @@ import Foundation
 enum CleanState: Equatable {
     case idle
     case scanning(progress: ScanProgress)
-    case review(result: DiskScanResult)
+    case review(plan: CleanPlan)
     case running(log: [String], progress: Double)
-    case done(freedBytes: Int64, filesRemoved: Int)
+    case done(freedBytes: Int64, filesRemoved: Int, partial: Bool)
 
     static func == (lhs: CleanState, rhs: CleanState) -> Bool {
         switch (lhs, rhs) {
         case (.idle, .idle): return true
         case (.scanning, .scanning): return true
-        case (.review(let a), .review(let b)): return a.path == b.path
+        case (.review(let a), .review(let b)): return a == b
         case (.running, .running): return true
-        case (.done(let aB, let aF), .done(let bB, let bF)): return aB == bB && aF == bF
+        case (.done(let aB, let aF, let aP), .done(let bB, let bF, let bP)):
+            return aB == bB && aF == bF && aP == bP
         default: return false
         }
     }
@@ -38,52 +39,46 @@ final class CleanViewModel: ObservableObject {
     @Published var state: CleanState = .idle
     @Published var errorMessage: String?
 
-    @Published var selectedPaths: Set<String> = []
-
     // MARK: - Private
 
     private var scanTimer: Timer?
     private var scanStartTime: Date?
-    private var scanTask: Task<Void, Error>?
+    private var scanProcess: Process?
+    private var scanStopRequested = false
     private var cleanTimer: Timer?
     private var cleanProcess: Process?
     private(set) var cleanStartTime: Date?
-    private let currentMoProcess = ProcessBox()
-    private final class ProcessBox {
-        weak var process: Process?
-    }
 
-    // MARK: - Scan Accumulator
+    /// Rows in the reviewed plan, used to estimate real-run progress from the
+    /// `✓ …` result lines Mole prints as it cleans (spinners are TTY-only).
+    private var plannedRowCount = 0
+    private var completedRows = 0
+    private var expectedRowCount = 1
 
-    private var scannedEntries: [DiskScanEntry] = []
-    private var scannedTotal: Int64 = 0
-    private var scanShouldDiscard = false
-    /// Once set, all background error/cancellation handlers bail out immediately
-    /// so they never override the state that stopScan/cancelScan set on the main thread.
-    private var scanStopped = false
+    /// Dry-run output accumulator, shared across the pipe handler, timeout
+    /// work item, and exit task without touching main-actor state.
+    private let scanBuffer = CleanScanBuffer()
 
-    // MARK: - Actions
+    /// `mo clean --dry-run` walks the whole cache surface; 1.74 takes about a
+    /// minute on a warm cache, so allow plenty of headroom.
+    private static let scanTimeout: TimeInterval = 300
 
+    // MARK: - Scan
+
+    /// Run `mo clean --dry-run` and show Mole's real cleanup plan.
+    ///
+    /// The preview — not a directory scan — is the source of truth: it lists
+    /// exactly what Mole would delete, what it deliberately skips, and what is
+    /// review-only. Per-path checkboxes are intentionally gone: `mo clean`
+    /// has no path arguments, so a selection that did not affect execution
+    /// would be misleading.
     func startScan() {
         cancelScanTask()
-        scanStopped = false
-
-        let scanPath = Store.shared.lastScanPath
+        scanStopRequested = false
+        errorMessage = nil
         scanStartTime = Date()
-
-        let items: [String]
-        let fm = FileManager.default
-        do {
-            items = try fm.contentsOfDirectory(atPath: scanPath)
-        } catch {
-            state = .idle
-            errorMessage = "Failed to list scan path: \(error.localizedDescription)"
-            return
-        }
-
-        let totalItems = items.count
         state = .scanning(progress: ScanProgress(
-            currentItem: 0, totalItems: totalItems, currentPath: scanPath, elapsedSeconds: 0, scannedBytes: 0
+            currentItem: 0, totalItems: 0, currentPath: "", elapsedSeconds: 0, scannedBytes: 0
         ))
 
         scanTimer?.invalidate()
@@ -92,172 +87,137 @@ final class CleanViewModel: ObservableObject {
             let elapsed = Int(Date().timeIntervalSince(self.scanStartTime ?? Date()))
             self.state = .scanning(progress: ScanProgress(
                 currentItem: p.currentItem, totalItems: p.totalItems,
-                currentPath: p.currentPath, elapsedSeconds: elapsed, scannedBytes: p.scannedBytes
+                currentPath: p.currentPath, elapsedSeconds: elapsed,
+                scannedBytes: p.scannedBytes
             ))
         }
 
-        scanTask = Task.detached(priority: .userInitiated) { [weak self] in
-            await MainActor.run { [weak self] in
-                self?.scannedEntries = []
-                self?.scannedTotal = 0
+        guard let mo = MoleCLI.findExecutable() else {
+            scanTimer?.invalidate(); scanTimer = nil
+            state = .idle
+            errorMessage = L10n.errorMoNotFound
+            return
+        }
+
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: mo)
+        task.arguments = ["clean", "--dry-run"]
+        task.standardInput = FileHandle.nullDevice
+
+        var env = ProcessInfo.processInfo.environment
+        env["NO_COLOR"] = "1"
+        task.environment = env
+
+        let outPipe = Pipe()
+        let errPipe = Pipe()
+        task.standardOutput = outPipe
+        task.standardError = errPipe
+
+        // Drain stderr so a chatty child can never block on a full pipe.
+        errPipe.fileHandleForReading.readabilityHandler = { handle in
+            if handle.availableData.isEmpty {
+                errPipe.fileHandleForReading.readabilityHandler = nil
             }
+        }
 
-            do {
-                for (index, name) in items.enumerated() {
-                    try Task.checkCancellation()
+        let buffer = scanBuffer
+        buffer.reset()
 
-                    let childPath = (scanPath as NSString).appendingPathComponent(name)
-                    var isDir: ObjCBool = false
-                    guard fm.fileExists(atPath: childPath, isDirectory: &isDir) else { continue }
+        outPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
+            let data = handle.availableData
+            guard !data.isEmpty else { return }
+            let chunk = String(data: data, encoding: .utf8) ?? ""
+            let snapshot = buffer.append(chunk)
 
-                    var batchEntries: [DiskScanEntry] = []
-                    var batchSize: Int64 = 0
+            Task { @MainActor [weak self] in
+                guard let self, case .scanning(let p) = self.state else { return }
+                self.state = .scanning(progress: ScanProgress(
+                    currentItem: snapshot.categories,
+                    totalItems: 0,
+                    currentPath: snapshot.lastLine,
+                    elapsedSeconds: p.elapsedSeconds,
+                    scannedBytes: p.scannedBytes
+                ))
+            }
+        }
 
-                    if isDir.boolValue {
-                        guard let self else { continue }
-                        let result = try await scanDirectory(childPath)
-                        batchEntries = result.entries
-                        batchSize = result.totalSize
-                    } else {
-                        let attrs = try fm.attributesOfItem(atPath: childPath)
-                        if let fileSize = attrs[.size] as? NSNumber {
-                            let size = fileSize.int64Value
-                            batchEntries = [DiskScanEntry(
-                                id: childPath, name: name, path: childPath, size: size, isDir: false
-                            )]
-                            batchSize = size
+        // Kill a runaway preview so Cancel is never the only escape.
+        let killer = DispatchWorkItem {
+            buffer.markTimedOut()
+            task.terminate()
+        }
+        DispatchQueue.global(qos: .utility).asyncAfter(
+            deadline: .now() + Self.scanTimeout, execute: killer
+        )
+
+        do {
+            try task.run()
+            scanProcess = task
+
+            Task.detached(priority: .userInitiated) { [weak self] in
+                task.waitUntilExit()
+                killer.cancel()
+                outPipe.fileHandleForReading.readabilityHandler = nil
+                errPipe.fileHandleForReading.readabilityHandler = nil
+
+                if let remaining = try? outPipe.fileHandleForReading.readToEnd(),
+                   let text = String(data: remaining, encoding: .utf8), !text.isEmpty {
+                    _ = buffer.append(text)
+                }
+
+                let snapshot = buffer.snapshot()
+                let plan = CleanDryRunParser.parse(snapshot.output)
+                let status = task.terminationStatus
+
+                await MainActor.run { [weak self] in
+                    guard let self, self.scanProcess === task else { return }
+                    self.scanProcess = nil
+                    self.scanTimer?.invalidate(); self.scanTimer = nil
+
+                    if plan.categories.isEmpty {
+                        self.state = .idle
+                        // A user-requested stop is not a failure.
+                        if status != 0 && !self.scanStopRequested {
+                            self.errorMessage = snapshot.timedOut
+                                ? String(format: L10n.errorTimedOut, Int(Self.scanTimeout) / 60)
+                                : String(format: L10n.errorMoFailed, status, "")
+                        } else {
+                            self.errorMessage = nil
                         }
-                    }
-
-                    await MainActor.run { [weak self] in
-                        guard let self, case .scanning = self.state, !scanStopped else { return }
-                        scannedEntries.append(contentsOf: batchEntries)
-                        scannedTotal += batchSize
-                        let elapsed = Int(Date().timeIntervalSince(scanStartTime ?? Date()))
-                        state = .scanning(progress: ScanProgress(
-                            currentItem: index + 1, totalItems: totalItems,
-                            currentPath: childPath, elapsedSeconds: elapsed, scannedBytes: scannedTotal
-                        ))
-                    }
-                }
-
-                try Task.checkCancellation()
-
-                await MainActor.run { [weak self] in
-                    guard let self, !scanStopped else { return }
-                    scannedEntries.sort { $0.size > $1.size }
-                    let result = DiskScanResult(
-                        path: scanPath, totalSize: scannedTotal,
-                        totalFiles: scannedEntries.count, entries: scannedEntries, scannedAt: Date()
-                    )
-                    scanTimer?.invalidate(); scanTimer = nil
-                    state = .review(result: result)
-                    selectedPaths = Set(result.entries.map(\.path))
-                    errorMessage = nil
-                }
-            } catch is CancellationError {
-                await MainActor.run { [weak self] in
-                    guard let self, !scanStopped else { return }
-                    scanTimer?.invalidate(); scanTimer = nil
-                    if scanShouldDiscard || scannedEntries.isEmpty {
-                        state = .idle
                     } else {
-                        scannedEntries.sort { $0.size > $1.size }
-                        let result = DiskScanResult(
-                            path: scanPath, totalSize: scannedTotal,
-                            totalFiles: scannedEntries.count, entries: scannedEntries, scannedAt: Date()
-                        )
-                        state = .review(result: result)
-                        selectedPaths = Set(result.entries.map(\.path))
+                        self.plannedRowCount = plan.cleanableCount
+                        self.state = .review(plan: plan)
+                        self.errorMessage = nil
                     }
-                    errorMessage = nil
-                    scanShouldDiscard = false
-                }
-            } catch {
-                await MainActor.run { [weak self] in
-                    guard let self, !scanStopped else { return }
-                    scanTimer?.invalidate(); scanTimer = nil
-                    state = .idle
-                    errorMessage = error.localizedDescription
                 }
             }
+        } catch {
+            scanTimer?.invalidate(); scanTimer = nil
+            state = .idle
+            errorMessage = error.localizedDescription
         }
     }
 
-    /// Cancel scan — discard all progress, return to idle immediately.
+    /// Stop the preview and review what was parsed so far.
+    func stopScan() {
+        scanStopRequested = true
+        scanTimer?.invalidate(); scanTimer = nil
+        // Leave `scanProcess` set so the exit handler parses the partial output.
+        scanProcess?.terminate()
+    }
+
+    /// Discard the preview and return to idle.
     func cancelScan() {
-        scanShouldDiscard = true
-        scanStopped = true
         cancelScanTask()
         scanTimer?.invalidate(); scanTimer = nil
         state = .idle
         errorMessage = nil
     }
 
-    /// Stop scan — preserve scanned items, show review immediately.
-    func stopScan() {
-        scanShouldDiscard = false
-        scanStopped = true
-        cancelScanTask()
-        scanTimer?.invalidate(); scanTimer = nil
-        errorMessage = nil
-        if scannedEntries.isEmpty {
-            state = .idle
-        } else {
-            scannedEntries.sort { $0.size > $1.size }
-            let result = DiskScanResult(
-                path: Store.shared.lastScanPath,
-                totalSize: scannedTotal,
-                totalFiles: scannedEntries.count,
-                entries: scannedEntries,
-                scannedAt: Date()
-            )
-            state = .review(result: result)
-            selectedPaths = Set(result.entries.map(\.path))
-        }
-    }
-
     private func cancelScanTask() {
-        currentMoProcess.process?.terminate()
-        currentMoProcess.process = nil
-        scanTask?.cancel()
-        scanTask = nil
-    }
-
-    private func scanDirectory(_ path: String) async throws -> DiskScanResult {
-        guard let mo = MoleCLI.findExecutable() else { throw MoleError.notFound }
-        return try await Task.detached(priority: .utility) { [ref = currentMoProcess] in
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: mo)
-            task.arguments = ["analyze", "--json", path]
-            let outPipe = Pipe()
-            task.standardOutput = outPipe
-            let errPipe = Pipe()
-            task.standardError = errPipe
-            try task.run()
-            ref.process = task
-            let outData = outPipe.fileHandleForReading.readDataToEndOfFile()
-            task.waitUntilExit()
-            if ref.process === task { ref.process = nil }
-            guard task.terminationStatus == 0 else {
-                let err = String(data: errPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-                throw MoleError.failed(exitCode: task.terminationStatus, stderr: err)
-            }
-            return try DiskScanner.parse(outData)
-        }.value
-    }
-
-    func toggleSelection(_ path: String) {
-        if selectedPaths.contains(path) { selectedPaths.remove(path) }
-        else { selectedPaths.insert(path) }
-    }
-
-    func selectedTotalBytes(from result: DiskScanResult) -> Int64 {
-        result.entries.filter { selectedPaths.contains($0.path) }.reduce(0) { $0 + $1.size }
-    }
-
-    func selectedCount(from result: DiskScanResult) -> Int {
-        result.entries.filter { selectedPaths.contains($0.path) }.count
+        let process = scanProcess
+        scanProcess = nil
+        process?.terminate()
     }
 
     // MARK: - Clean Execution
@@ -267,10 +227,15 @@ final class CleanViewModel: ObservableObject {
         state = .running(log: [], progress: 0)
         cleanStartTime = Date()
         let startTime = cleanStartTime!
+        completedRows = 0
+        expectedRowCount = max(plannedRowCount, 1)
 
         cleanTimer?.invalidate()
         cleanTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
             guard let self, case .running(let log, _) = self.state else { return }
+            // Once Mole reports result rows, the handler owns the progress
+            // value; pulse only while waiting for the first one.
+            guard self.completedRows == 0 else { return }
             let elapsed = Date().timeIntervalSince(startTime)
             let pulse = 0.15 + 0.7 * (0.5 + 0.5 * sin(elapsed * 3))
             self.state = .running(log: log, progress: pulse)
@@ -316,6 +281,7 @@ final class CleanViewModel: ObservableObject {
             outPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
                 let data = handle.availableData
                 guard !data.isEmpty else { return }
+                var newCompleted = 0
                 lock.lock()
                 if let chunk = String(data: data, encoding: .utf8) {
                     allOutput += chunk; partialLine += chunk
@@ -324,15 +290,25 @@ final class CleanViewModel: ObservableObject {
                         partialLine = lines.removeLast()
                         for line in lines {
                             let t = line.trimmingCharacters(in: .whitespaces)
-                            if !t.isEmpty { logLines.append(t) }
+                            if !t.isEmpty {
+                                logLines.append(t)
+                                // Mole prints `✓ <item> · <size>` per
+                                // completed row when stdout is not a TTY.
+                                if t.hasPrefix("✓") { newCompleted += 1 }
+                            }
                         }
                     }
                 }
                 let snapshot = logLines
                 lock.unlock()
-                Task { @MainActor in
+
+                guard newCompleted > 0 else { return }
+                Task { @MainActor [weak self] in
                     guard let self, case .running = self.state else { return }
-                    self.state = .running(log: snapshot, progress: 0.5)
+                    self.completedRows += newCompleted
+                    let fraction = min(Double(self.completedRows) / Double(self.expectedRowCount), 1.0)
+                    let progress = min(0.12 + 0.83 * fraction, 0.95)
+                    self.state = .running(log: snapshot, progress: progress)
                 }
             }
 
@@ -348,6 +324,7 @@ final class CleanViewModel: ObservableObject {
                 // was interrupted (or found nothing) — report zero, not noise.
                 let freed = summary?.freedBytes ?? 0
                 let filesRemoved = summary?.itemsCleaned ?? 0
+                let partial = summary?.isPartial ?? false
 
                 await MainActor.run { [weak self] in
                     guard let self else { return }
@@ -357,7 +334,7 @@ final class CleanViewModel: ObservableObject {
                         "freed_bytes": Int(freed),
                         "files_removed": filesRemoved,
                     ])
-                    state = .done(freedBytes: freed, filesRemoved: filesRemoved)
+                    state = .done(freedBytes: freed, filesRemoved: filesRemoved, partial: partial)
                     errorMessage = nil
                 }
             }
@@ -370,7 +347,8 @@ final class CleanViewModel: ObservableObject {
     func cancelClean() {
         cancelCleanTask()
         cleanTimer?.invalidate(); cleanTimer = nil
-        state = .idle; errorMessage = nil
+        state = .idle
+        errorMessage = nil
     }
 
     private func cancelCleanTask() {
@@ -381,16 +359,63 @@ final class CleanViewModel: ObservableObject {
     func reset() {
         scanTimer?.invalidate(); scanTimer = nil
         cleanTimer?.invalidate(); cleanTimer = nil
+        cancelScanTask()
         cleanProcess = nil
-        currentMoProcess.process = nil
         state = .idle
-        selectedPaths = []
-        scannedEntries = []
-        scannedTotal = 0
         errorMessage = nil
-        scanStopped = false
+        scanStopRequested = false
+        scanStartTime = nil
+        cleanStartTime = nil
     }
 }
 
-// MARK: - Helpers
+// MARK: - Scan Buffer
 
+/// Thread-safe accumulator for `mo clean --dry-run` output.
+/// Kept outside the main-actor view model so the pipe handler and exit task
+/// never touch actor-isolated state.
+private final class CleanScanBuffer: @unchecked Sendable {
+    private let lock = NSLock()
+    private var output = ""
+    private var partialLine = ""
+    private var categoryCount = 0
+    private var lastLine = ""
+    private var timedOut = false
+
+    func reset() {
+        lock.lock(); defer { lock.unlock() }
+        output = ""
+        partialLine = ""
+        categoryCount = 0
+        lastLine = ""
+        timedOut = false
+    }
+
+    /// Append a chunk and return the live section count / last line for UI.
+    func append(_ chunk: String) -> (categories: Int, lastLine: String) {
+        lock.lock(); defer { lock.unlock() }
+        output += chunk
+        partialLine += chunk
+        var lines = partialLine.components(separatedBy: "\n")
+        if lines.count > 1 {
+            partialLine = lines.removeLast()
+            for line in lines {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.isEmpty else { continue }
+                if trimmed.hasPrefix("➤") { categoryCount += 1 }
+                lastLine = trimmed
+            }
+        }
+        return (categoryCount, lastLine)
+    }
+
+    func markTimedOut() {
+        lock.lock(); defer { lock.unlock() }
+        timedOut = true
+    }
+
+    func snapshot() -> (output: String, timedOut: Bool) {
+        lock.lock(); defer { lock.unlock() }
+        return (output, timedOut)
+    }
+}

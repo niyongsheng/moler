@@ -162,10 +162,10 @@ final class DataModelsTests: XCTestCase {
     }
 
     func testCleanStateEqualityDone() {
-        XCTAssertEqual(CleanState.done(freedBytes: 100, filesRemoved: 5),
-                       CleanState.done(freedBytes: 100, filesRemoved: 5))
-        XCTAssertNotEqual(CleanState.done(freedBytes: 100, filesRemoved: 5),
-                          CleanState.done(freedBytes: 200, filesRemoved: 5))
+        XCTAssertEqual(CleanState.done(freedBytes: 100, filesRemoved: 5, partial: false),
+                       CleanState.done(freedBytes: 100, filesRemoved: 5, partial: false))
+        XCTAssertNotEqual(CleanState.done(freedBytes: 100, filesRemoved: 5, partial: false),
+                          CleanState.done(freedBytes: 200, filesRemoved: 5, partial: false))
     }
 
     func testScanProgressInit() {

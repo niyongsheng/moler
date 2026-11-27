@@ -22,6 +22,7 @@ final class CleanSummaryParserTests: XCTestCase {
         let summary = CleanSummaryParser.parse("Tracked cleanup: 1.5GB+ | Items cleaned: 3")
         XCTAssertEqual(summary?.freedBytes, 1_610_612_736)
         XCTAssertEqual(summary?.itemsCleaned, 3)
+        XCTAssertEqual(summary?.isPartial, true)
     }
 
     func testDryRunPotentialSpace() {
@@ -54,11 +55,13 @@ final class CleanSummaryParserTests: XCTestCase {
         XCTAssertEqual(summary?.itemsCleaned, 1)
     }
 
-    /// A lower-bound total ("1.5GB+") still parses its numeric part.
+    /// A lower-bound total ("1.5GB+") still parses its numeric part and is
+    /// flagged as partial.
     func testRemovedPartialSize() {
         let summary = CleanSummaryParser.parse("Removed: 1.5GB+ · 3 items")
         XCTAssertEqual(summary?.freedBytes, 1_610_612_736)
         XCTAssertEqual(summary?.itemsCleaned, 3)
+        XCTAssertEqual(summary?.isPartial, true)
     }
 
     func testDryRunPotentialSpaceNewFormat() {
@@ -67,8 +70,13 @@ final class CleanSummaryParserTests: XCTestCase {
         XCTAssertEqual(summary?.itemsCleaned, 7)
     }
 
-    func testUnmeasuredNewSummaryIsNil() {
-        XCTAssertNil(CleanSummaryParser.parse("Removed: Partially measured · 0 items"))
+    /// Mole 1.74 can print no size at all when every check timed out. The run
+    /// still happened, so return a partial summary instead of nil.
+    func testUnmeasuredNewSummaryIsPartial() {
+        let summary = CleanSummaryParser.parse("Removed: Partially measured · 0 items")
+        XCTAssertEqual(summary?.freedBytes, 0)
+        XCTAssertEqual(summary?.itemsCleaned, 0)
+        XCTAssertEqual(summary?.isPartial, true)
     }
 
     func testIgnoresPerItemSizes() {
@@ -88,8 +96,10 @@ final class CleanSummaryParserTests: XCTestCase {
     }
 
     func testUnmeasuredCleanup() {
-        XCTAssertNil(CleanSummaryParser.parse(
+        let summary = CleanSummaryParser.parse(
             "Tracked cleanup: Partially measured | Items cleaned: 0"
-        ))
+        )
+        XCTAssertEqual(summary?.freedBytes, 0)
+        XCTAssertEqual(summary?.isPartial, true)
     }
 }

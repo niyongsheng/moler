@@ -4,6 +4,8 @@ import SwiftUI
 struct CleanResultView: View {
     let freedBytes: Int64
     let filesRemoved: Int
+    /// Mole could not size every item (`Removed: Partially measured`).
+    let partial: Bool
     let onDone: () -> Void
 
     var body: some View {
@@ -37,7 +39,7 @@ struct CleanResultView: View {
                 HStack(spacing: 32) {
                     statBlock(
                         label: L10n.cleanDoneSpaceFreed,
-                        value: formatBytes(freedBytes),
+                        value: partial && freedBytes == 0 ? "—" : formatBytes(freedBytes),
                         accent: Brand.accentGold
                     )
                     Divider()
@@ -51,6 +53,15 @@ struct CleanResultView: View {
                 }
             }
             .frame(maxWidth: 380)
+
+            if partial {
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle").font(.system(size: 9))
+                    Text(L10n.cleanDonePartialNote).monoFont(9)
+                }
+                .foregroundColor(Brand.accentGold)
+                .frame(maxWidth: 380)
+            }
 
             // Return button
             Button(action: onDone) {
@@ -92,6 +103,7 @@ struct CleanResultView: View {
     CleanResultView(
         freedBytes: 3_500_000_000,
         filesRemoved: 847,
+        partial: false,
         onDone: {}
     )
     .frame(width: 700, height: 500)

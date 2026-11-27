@@ -69,7 +69,11 @@ final class MoEngine {
     /// Run `mo clean --dry-run` to preview what would be cleaned.
     /// Returns the raw output for parsing.
     func cleanDryRun() throws -> CapturedProcess {
-        try capture(MoCommand(args: ["clean", "--dry-run"], timeout: 120))
+        try capture(MoCommand(
+            args: ["clean", "--dry-run"],
+            timeout: 300,
+            env: ["NO_COLOR": "1"]
+        ))
     }
 
     /// Run `mo clean` for real. Returns streaming-style capture.

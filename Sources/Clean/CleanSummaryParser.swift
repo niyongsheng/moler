@@ -16,6 +16,9 @@ enum CleanSummaryParser {
     struct Summary: Equatable {
         let freedBytes: Int64
         let itemsCleaned: Int?
+        /// True when Mole could not size every item — either the summary says
+        /// "Partially measured" or the total is a lower bound ("6.74GB+").
+        var isPartial: Bool = false
     }
 
     /// Summary labels, newest first. `Removed:` replaced `Tracked cleanup:`
@@ -27,11 +30,40 @@ enum CleanSummaryParser {
         let lines = text.components(separatedBy: .newlines)
         for line in lines.reversed() {
             guard labels.contains(where: { line.contains($0) }) else { continue }
-            // "Removed: Partially measured" carries no size; keep looking.
-            guard let bytes = firstSize(in: line) else { continue }
-            return Summary(freedBytes: bytes, itemsCleaned: firstItemCount(in: line))
+
+            if let size = firstSize(in: line) {
+                return Summary(
+                    freedBytes: size.bytes,
+                    itemsCleaned: itemCount(in: line),
+                    isPartial: size.isLowerBound
+                )
+            }
+
+            // Mole 1.74 prints `Removed: Partially measured · N items` when
+            // every size check timed out. Bytes are unknown, but the run did
+            // remove items — report a partial result instead of nothing.
+            if line.localizedCaseInsensitiveContains("partially measured") {
+                return Summary(
+                    freedBytes: 0,
+                    itemsCleaned: itemCount(in: line),
+                    isPartial: true
+                )
+            }
         }
         return nil
+    }
+
+    // MARK: - Shared Field Helpers
+
+    /// First human-readable size in a line, in bytes.
+    static func sizeBytes(in line: String) -> Int64? {
+        firstSize(in: line)?.bytes
+    }
+
+    /// Item count from either `Items cleaned: 42` / `Items: 7` or
+    /// `42 items` / `1 item`.
+    static func itemCount(in line: String) -> Int? {
+        firstItemCount(in: line)
     }
 
     // MARK: - Field extraction
@@ -47,7 +79,7 @@ enum CleanSummaryParser {
         options: .caseInsensitive
     )
 
-    private static func firstSize(in line: String) -> Int64? {
+    private static func firstSize(in line: String) -> (bytes: Int64, isLowerBound: Bool)? {
         let ns = line as NSString
         guard let match = sizePattern.firstMatch(
             in: line, range: NSRange(location: 0, length: ns.length)
@@ -64,7 +96,12 @@ enum CleanSummaryParser {
         case "KB": multiplier = 1_024
         default:   multiplier = 1
         }
-        return Int64(value * multiplier)
+
+        // Mole appends "+" when some items could not be sized ("1.5GB+").
+        let end = match.range.location + match.range.length
+        let isLowerBound = end < ns.length && ns.substring(with: NSRange(location: end, length: 1)) == "+"
+
+        return (Int64(value * multiplier), isLowerBound)
     }
 
     private static func firstItemCount(in line: String) -> Int? {

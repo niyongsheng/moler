@@ -34,14 +34,15 @@ struct CleanView: View {
             idleView
         case .scanning(let progress):
             scanningView(progress)
-        case .review(let result):
-            CleanReviewView(vm: vm, result: result)
+        case .review(let plan):
+            CleanReviewView(vm: vm, plan: plan)
         case .running(let log, let progress):
             CleanRunView(log: log, progress: progress, elapsedSeconds: Int(Date().timeIntervalSince(vm.cleanStartTime ?? Date())), onCancel: { vm.cancelClean() })
-        case .done(let freedBytes, let filesRemoved):
+        case .done(let freedBytes, let filesRemoved, let partial):
             CleanResultView(
                 freedBytes: freedBytes,
                 filesRemoved: filesRemoved,
+                partial: partial,
                 onDone: { vm.reset() }
             )
         }
@@ -134,8 +135,7 @@ struct CleanView: View {
                 TypewriterLabel(L10n.cleanScanningHint, speed: 0.05)
 
                 HStack(spacing: 24) {
-                    DataRow(label: L10n.cleanFiles, value: "\(progress.currentItem)/\(progress.totalItems)")
-                    DataRow(label: L10n.cleanSize, value: formatBytes(progress.scannedBytes))
+                    DataRow(label: L10n.cleanSections, value: "\(progress.currentItem)")
                     DataRow(label: L10n.cleanElapsed, value: "\(progress.elapsedSeconds)s")
                 }
 
