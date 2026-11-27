@@ -70,13 +70,36 @@ struct OptimizeTask: Identifiable, Equatable {
     let description: String
     let categoryName: String
     let isCompleted: Bool
+    /// Mole marks advisory rows inside a category with `◎` — for example
+    /// "Close these apps before database optimization: Safari" or
+    /// "skipped (admin access required)". These are not tasks that ran.
+    let isWarning: Bool
 
-    init(description: String, categoryName: String, isCompleted: Bool) {
-        let raw = "\(description)::\(categoryName)"
+    init(description: String, categoryName: String, isCompleted: Bool, isWarning: Bool = false) {
+        let raw = "\(description)::\(categoryName)::\(isWarning)"
         self.id = String(raw.hashValue)
         self.description = description
         self.categoryName = categoryName
         self.isCompleted = isCompleted
+        self.isWarning = isWarning
+    }
+}
+
+// MARK: - Outcome Counts
+
+/// Footer counters printed by `mo optimize` since Mole 1.67, for example
+/// `14 unchanged | 2 skipped | 1 unavailable`.
+struct OptimizeOutcomeCounts: Equatable {
+    var applied: Int = 0
+    var unchanged: Int = 0
+    var skipped: Int = 0
+    var unavailable: Int = 0
+    var attention: Int = 0
+    var failed: Int = 0
+
+    var isEmpty: Bool {
+        applied == 0 && unchanged == 0 && skipped == 0
+            && unavailable == 0 && attention == 0 && failed == 0
     }
 }
 
@@ -89,6 +112,23 @@ struct OptimizeResult: Equatable {
     let isDryRun: Bool
     let durationSeconds: Int
     let timestamp: Date
+    var outcomes: OptimizeOutcomeCounts
+
+    init(
+        categories: [OptimizeCategory],
+        totalOptimizations: Int,
+        isDryRun: Bool,
+        durationSeconds: Int,
+        timestamp: Date,
+        outcomes: OptimizeOutcomeCounts = OptimizeOutcomeCounts()
+    ) {
+        self.categories = categories
+        self.totalOptimizations = totalOptimizations
+        self.isDryRun = isDryRun
+        self.durationSeconds = durationSeconds
+        self.timestamp = timestamp
+        self.outcomes = outcomes
+    }
 }
 
 // MARK: - Parser Events
@@ -97,8 +137,11 @@ struct OptimizeResult: Equatable {
 enum ParsedEvent: Equatable {
     case categoryStarted(name: String)
     case taskItem(description: String, completed: Bool)
+    /// Advisory row inside a category (`◎`), not a task that ran.
+    case warningItem(description: String)
     case diagnosisItem(description: String)
     case totalOptimizations(Int)
+    case outcomes(OptimizeOutcomeCounts)
     case runComplete
     case unknown(String)
 }

@@ -230,12 +230,23 @@ final class OptimizeViewModel: ObservableObject {
                 progress.totalCategories = p.categories.count
             }
 
+        case .warningItem(let description):
+            // Advisory row — it already lives in the category's task list, so
+            // the live log shows it; only track it as the current line.
+            currentTaskDescription = description
+            progress.currentTask = description
+            progress.categories = accumulatedCategories
+
         case .diagnosisItem(let description):
             progress.diagnosisItems.append(description)
             progress.categories = accumulatedCategories
 
         case .totalOptimizations(let count):
             progress.totalCategories = count
+
+        case .outcomes:
+            // Counts are read from the parser when the run finishes.
+            break
 
         case .runComplete:
             // Finalize - the finish() will be called from the exit handler
@@ -283,7 +294,8 @@ final class OptimizeViewModel: ObservableObject {
             totalOptimizations: p.totalOptimizations,
             isDryRun: isDryRun,
             durationSeconds: Int(Date().timeIntervalSince(startTime ?? Date())),
-            timestamp: Date()
+            timestamp: Date(),
+            outcomes: p.outcomeCounts
         )
 
         // Record to store (only for real runs)

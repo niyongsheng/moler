@@ -84,6 +84,7 @@ struct OptimizeRunView: View {
         let text: String
         let isCategory: Bool
         let isCompleted: Bool
+        let isWarning: Bool
         let isDiagnosis: Bool
         let isCurrent: Bool
     }
@@ -94,18 +95,18 @@ struct OptimizeRunView: View {
 
         // Diagnosis items
         for item in progress.diagnosisItems {
-            lines.append(LogLine(id: idx, text: "  \(item)", isCategory: false, isCompleted: false, isDiagnosis: true, isCurrent: false))
+            lines.append(LogLine(id: idx, text: "  \(item)", isCategory: false, isCompleted: false, isWarning: false, isDiagnosis: true, isCurrent: false))
             idx += 1
         }
 
         // Categories and their tasks
         for category in progress.categories {
-            lines.append(LogLine(id: idx, text: "➤ \(category.name)", isCategory: true, isCompleted: false, isDiagnosis: false, isCurrent: false))
+            lines.append(LogLine(id: idx, text: "➤ \(category.name)", isCategory: true, isCompleted: false, isWarning: false, isDiagnosis: false, isCurrent: false))
             idx += 1
 
             for task in category.tasks {
-                let prefix = task.isCompleted ? "✓" : "→"
-                lines.append(LogLine(id: idx, text: "  \(prefix) \(task.description)", isCategory: false, isCompleted: task.isCompleted, isDiagnosis: false, isCurrent: false))
+                let prefix = task.isCompleted ? "✓" : (task.isWarning ? "◎" : "→")
+                lines.append(LogLine(id: idx, text: "  \(prefix) \(task.description)", isCategory: false, isCompleted: task.isCompleted, isWarning: task.isWarning, isDiagnosis: false, isCurrent: false))
                 idx += 1
             }
         }
@@ -114,10 +115,10 @@ struct OptimizeRunView: View {
         if !progress.currentTask.isEmpty {
             let hasCurrentCategory = progress.categories.last?.name == progress.currentCategory
             if !hasCurrentCategory && !progress.currentCategory.isEmpty {
-                lines.append(LogLine(id: idx, text: "➤ \(progress.currentCategory)", isCategory: true, isCompleted: false, isDiagnosis: false, isCurrent: false))
+                lines.append(LogLine(id: idx, text: "➤ \(progress.currentCategory)", isCategory: true, isCompleted: false, isWarning: false, isDiagnosis: false, isCurrent: false))
                 idx += 1
             }
-            lines.append(LogLine(id: idx, text: progress.currentTask, isCategory: false, isCompleted: false, isDiagnosis: false, isCurrent: true))
+            lines.append(LogLine(id: idx, text: progress.currentTask, isCategory: false, isCompleted: false, isWarning: false, isDiagnosis: false, isCurrent: true))
             idx += 1
         }
 
@@ -142,6 +143,9 @@ struct OptimizeRunView: View {
         } else if line.isCompleted {
             Text(line.text)
                 .foregroundColor(Brand.accentGold)
+        } else if line.isWarning {
+            Text(line.text)
+                .foregroundColor(Brand.accentOrange)
         } else if line.isDiagnosis {
             Text(line.text)
                 .foregroundColor(Brand.textDim.opacity(0.8))

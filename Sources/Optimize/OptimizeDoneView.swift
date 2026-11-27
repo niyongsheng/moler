@@ -44,6 +44,24 @@ struct OptimizeDoneView: View {
                         label: L10n.optimizeDoneDuration,
                         value: formattedDuration(result.durationSeconds)
                     )
+                    if result.outcomes.unchanged > 0 {
+                        DataRow(
+                            label: L10n.optimizeDoneUnchanged,
+                            value: "\(result.outcomes.unchanged)"
+                        )
+                    }
+                    if result.outcomes.skipped > 0 {
+                        DataRow(
+                            label: L10n.optimizeDoneSkipped,
+                            value: "\(result.outcomes.skipped)"
+                        )
+                    }
+                    if result.outcomes.unavailable > 0 {
+                        DataRow(
+                            label: L10n.optimizeDoneUnavailable,
+                            value: "\(result.outcomes.unavailable)"
+                        )
+                    }
                 }
             }
             .frame(maxWidth: 360)
@@ -105,24 +123,49 @@ struct OptimizeDoneView: View {
     }
 
     private func categoryRow(_ category: OptimizeCategory) -> some View {
-        let completed = category.tasks.filter(\.isCompleted).count
-        let total = category.tasks.count
+        // `◎` advisory rows are not tasks that ran — keep them out of the
+        // x/y counter, but show them so skipped work has an explanation.
+        let tasks = category.tasks.filter { !$0.isWarning }
+        let warnings = category.tasks.filter(\.isWarning)
+        let completed = tasks.filter(\.isCompleted).count
+        let total = tasks.count
         let allDone = completed == total && total > 0
 
-        return HStack(spacing: 8) {
-            Image(systemName: allDone ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 10))
-                .foregroundColor(allDone ? Brand.accentGold : Brand.textDim)
+        return VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Image(systemName: allDone ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 10))
+                    .foregroundColor(allDone ? Brand.accentGold : Brand.textDim)
 
-            Text(category.name)
-                .monoFont(10)
-                .foregroundColor(Brand.textPrimary)
+                Text(category.name)
+                    .monoFont(10)
+                    .foregroundColor(Brand.textPrimary)
 
-            Spacer()
+                Spacer()
 
-            Text("\(completed)/\(total)")
-                .monoFont(10)
-                .foregroundColor(allDone ? Brand.accentGold : Brand.textDim)
+                if !warnings.isEmpty {
+                    Text("◎ \(warnings.count)")
+                        .monoFont(9)
+                        .foregroundColor(Brand.accentOrange)
+                }
+
+                Text("\(completed)/\(total)")
+                    .monoFont(10)
+                    .foregroundColor(allDone ? Brand.accentGold : Brand.textDim)
+            }
+
+            ForEach(warnings) { warning in
+                HStack(alignment: .top, spacing: 4) {
+                    Text("◎")
+                        .monoFont(9)
+                        .foregroundColor(Brand.accentOrange)
+                    Text(warning.description)
+                        .monoFont(9)
+                        .foregroundColor(Brand.accentOrange.opacity(0.9))
+                        .lineLimit(2)
+                }
+                .padding(.leading, 18)
+            }
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 8)

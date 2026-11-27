@@ -76,6 +76,18 @@ final class OptimizeOutputParserTests: XCTestCase {
         XCTAssertEqual(parser.diagnosisItems.count, 2)
     }
 
+    /// Mole 1.74 prints a plain `✓` line for a clean diagnosis
+    /// ("No sustained high-CPU bottleneck detected").
+    func testDiagnosisPlainCheckmark() {
+        parser.ingest(line: "Performance diagnosis")
+        let event = parser.ingest(line: "  ✓ No sustained high-CPU bottleneck detected")
+        guard case .diagnosisItem(let desc) = event else {
+            XCTFail("Expected diagnosisItem, got \(event)"); return
+        }
+        XCTAssertEqual(desc, "No sustained high-CPU bottleneck detected")
+        XCTAssertEqual(parser.diagnosisItems.count, 1)
+    }
+
     // MARK: - Categories Phase
 
     func testCategoryStarted() {
@@ -116,6 +128,20 @@ final class OptimizeOutputParserTests: XCTestCase {
         XCTAssertEqual(desc, "QuickLook thumbnails refreshed")
         XCTAssertFalse(completed)
         XCTAssertEqual(parser.categories[0].tasks.count, 1)
+    }
+
+    /// Mole marks skipped/failed work inside a category with `◎`, e.g.
+    /// "Close these apps before database optimization: Safari".
+    func testCategoryWarningRow() {
+        parser.ingest(line: "➤ Database Optimization")
+        let event = parser.ingest(line: "  ◎ Close these apps before database optimization: Safari")
+        guard case .warningItem(let desc) = event else {
+            XCTFail("Expected warningItem, got \(event)"); return
+        }
+        XCTAssertEqual(desc, "Close these apps before database optimization: Safari")
+        XCTAssertEqual(parser.categories[0].tasks.count, 1)
+        XCTAssertTrue(parser.categories[0].tasks[0].isWarning)
+        XCTAssertFalse(parser.categories[0].tasks[0].isCompleted)
     }
 
     func testMultipleCategories() {
@@ -180,6 +206,33 @@ final class OptimizeOutputParserTests: XCTestCase {
         }
     }
 
+    /// Mole 1.67+ prints an outcome breakdown under the total line.
+    func testFooterOutcomeCounts() {
+        parser.ingest(line: "========================================")
+        let event = parser.ingest(line: "14 unchanged | 2 skipped | 1 unavailable")
+        guard case .outcomes(let counts) = event else {
+            XCTFail("Expected outcomes, got \(event)"); return
+        }
+        XCTAssertEqual(counts.unchanged, 14)
+        XCTAssertEqual(counts.skipped, 2)
+        XCTAssertEqual(counts.unavailable, 1)
+        XCTAssertEqual(counts.applied, 0)
+
+        XCTAssertEqual(parser.outcomeCounts.unchanged, 14)
+        XCTAssertEqual(parser.outcomeCounts.skipped, 2)
+        XCTAssertEqual(parser.outcomeCounts.unavailable, 1)
+    }
+
+    func testFooterOutcomeCountsWithFailed() {
+        parser.ingest(line: "========================================")
+        let event = parser.ingest(line: "1 failed | 2 attention")
+        guard case .outcomes(let counts) = event else {
+            XCTFail("Expected outcomes, got \(event)"); return
+        }
+        XCTAssertEqual(counts.failed, 1)
+        XCTAssertEqual(counts.attention, 2)
+    }
+
     // MARK: - Unknown Lines
 
     func testEmptyLine() {
@@ -204,14 +257,17 @@ final class OptimizeOutputParserTests: XCTestCase {
         parser.ingest(line: "  → Task")
         parser.ingest(line: "========================================")
         parser.ingest(line: "Would apply 5 optimizations")
+        parser.ingest(line: "3 skipped")
 
         XCTAssertEqual(parser.categories.count, 1)
         XCTAssertEqual(parser.totalOptimizations, 5)
+        XCTAssertEqual(parser.outcomeCounts.skipped, 3)
 
         parser.reset()
         XCTAssertEqual(parser.categories.count, 0)
         XCTAssertEqual(parser.totalOptimizations, 0)
         XCTAssertNil(parser.currentCategory)
+        XCTAssertEqual(parser.outcomeCounts, OptimizeOutcomeCounts())
     }
 
     // MARK: - Full Dry Run Output
