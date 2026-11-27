@@ -33,14 +33,17 @@ final class MercuryScene: SCNScene {
     let interactionNode = SCNNode()
     let spinNode = SCNNode()
     let cameraNode = SCNNode()
-    var targetZoom: CGFloat = 38
+    /// Match the apparent size of the other planet scenes (Earth 25,
+    /// Jupiter 28, Mars 30). At 38 Mercury stayed a small ball while the
+    /// window grew, which read as "not following" the resize.
+    var targetZoom: CGFloat = 30
 
     /// 0 = idle, 1 = scanning full speed
     var animationIntensity: CGFloat = 0
 
     func updateForScanning(_ isScanning: Bool) {
         animationIntensity = isScanning ? 1.0 : 0.0
-        targetZoom = isScanning ? 45 : 38
+        targetZoom = isScanning ? 38 : 30
         interactionNode.eulerAngles.x = isScanning ? 0.35 : 0.2
     }
 
@@ -52,7 +55,7 @@ final class MercuryScene: SCNScene {
     private func setupScene() {
         background.contents = NSColor.clear
         let cam = SCNCamera(); cam.zNear = 0.1; cam.zFar = 200; cam.fieldOfView = 35
-        cameraNode.camera = cam; cameraNode.position = SCNVector3(0, 1, 38)
+        cameraNode.camera = cam; cameraNode.position = SCNVector3(0, 1, 30)
         rootNode.addChildNode(cameraNode)
         rootNode.addChildNode(interactionNode); interactionNode.eulerAngles.x = 0.2
         tiltNode.eulerAngles.z = 0.03 * (.pi / 180) // Mercury's tiny axial tilt
@@ -283,7 +286,7 @@ final class MercurySCNView: SCNView {
     weak var sceneRef: MercuryScene?
     override func scrollWheel(with event: NSEvent) {
         guard let s = sceneRef else { return }
-        s.targetZoom = max(25, min(70, s.targetZoom - event.scrollingDeltaY * 0.4))
+        s.targetZoom = max(20, min(60, s.targetZoom - event.scrollingDeltaY * 0.4))
     }
 }
 
