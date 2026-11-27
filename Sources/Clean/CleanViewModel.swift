@@ -9,18 +9,6 @@ enum CleanState: Equatable {
     case review(plan: CleanPlan)
     case running(log: [String], progress: Double)
     case done(freedBytes: Int64, filesRemoved: Int, partial: Bool)
-
-    static func == (lhs: CleanState, rhs: CleanState) -> Bool {
-        switch (lhs, rhs) {
-        case (.idle, .idle): return true
-        case (.scanning, .scanning): return true
-        case (.review(let a), .review(let b)): return a == b
-        case (.running, .running): return true
-        case (.done(let aB, let aF, let aP), .done(let bB, let bF, let bP)):
-            return aB == bB && aF == bF && aP == bP
-        default: return false
-        }
-    }
 }
 
 struct ScanProgress: Equatable {
@@ -55,9 +43,11 @@ final class CleanViewModel: ObservableObject {
     private var completedRows = 0
     private var expectedRowCount = 1
 
-    /// Dry-run output accumulator, shared across the pipe handler, timeout
-    /// work item, and exit task without touching main-actor state.
-    private let scanBuffer = CleanScanBuffer()
+    /// Dry-run output accumulator, shared across the pipe handler and exit
+    /// task without touching main-actor state.
+    private let scanBuffer = LineBuffer()
+    /// Real-run output accumulator for the live log and summary parsing.
+    private let cleanBuffer = LineBuffer()
 
     /// `mo clean --dry-run` walks the whole cache surface; 1.74 takes about a
     /// minute on a warm cache, so allow plenty of headroom.
@@ -92,106 +82,62 @@ final class CleanViewModel: ObservableObject {
             ))
         }
 
-        guard let mo = MoleCLI.findExecutable() else {
-            scanTimer?.invalidate(); scanTimer = nil
-            state = .idle
-            errorMessage = L10n.errorMoNotFound
-            return
-        }
-
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: mo)
-        task.arguments = ["clean", "--dry-run"]
-        task.standardInput = FileHandle.nullDevice
-
-        var env = ProcessInfo.processInfo.environment
-        env["NO_COLOR"] = "1"
-        task.environment = env
-
-        let outPipe = Pipe()
-        let errPipe = Pipe()
-        task.standardOutput = outPipe
-        task.standardError = errPipe
-
-        // Drain stderr so a chatty child can never block on a full pipe.
-        errPipe.fileHandleForReading.readabilityHandler = { handle in
-            if handle.availableData.isEmpty {
-                errPipe.fileHandleForReading.readabilityHandler = nil
-            }
-        }
-
+        // Dry-run output is accumulated here; stderr is drained and discarded.
         let buffer = scanBuffer
         buffer.reset()
 
-        outPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
-            let data = handle.availableData
-            guard !data.isEmpty else { return }
-            let chunk = String(data: data, encoding: .utf8) ?? ""
-            let snapshot = buffer.append(chunk)
-
-            Task { @MainActor [weak self] in
-                guard let self, case .scanning(let p) = self.state else { return }
-                self.state = .scanning(progress: ScanProgress(
-                    currentItem: snapshot.categories,
-                    totalItems: 0,
-                    currentPath: snapshot.lastLine,
-                    elapsedSeconds: p.elapsedSeconds,
-                    scannedBytes: p.scannedBytes
-                ))
-            }
-        }
-
-        // Kill a runaway preview so Cancel is never the only escape.
-        let killer = DispatchWorkItem {
-            buffer.markTimedOut()
-            task.terminate()
-        }
-        DispatchQueue.global(qos: .utility).asyncAfter(
-            deadline: .now() + Self.scanTimeout, execute: killer
-        )
-
         do {
-            try task.run()
-            scanProcess = task
+            let stream = try MoleCLI.stream(
+                args: ["clean", "--dry-run"],
+                timeout: Self.scanTimeout,
+                onStdout: { chunk in
+                    let snapshot = buffer.append(chunk).snapshot
+                    let categories = snapshot.lines.reduce(0) {
+                        $0 + ($1.hasPrefix("➤") ? 1 : 0)
+                    }
+                    let lastLine = snapshot.lines.last ?? ""
 
-            Task.detached(priority: .userInitiated) { [weak self] in
-                task.waitUntilExit()
-                killer.cancel()
-                outPipe.fileHandleForReading.readabilityHandler = nil
-                errPipe.fileHandleForReading.readabilityHandler = nil
+                    Task { @MainActor [weak self] in
+                        guard let self, case .scanning(let p) = self.state else { return }
+                        self.state = .scanning(progress: ScanProgress(
+                            currentItem: categories,
+                            totalItems: 0,
+                            currentPath: lastLine,
+                            elapsedSeconds: p.elapsedSeconds,
+                            scannedBytes: p.scannedBytes
+                        ))
+                    }
+                },
+                onExit: { [weak self] result, process in
+                    let plan = CleanDryRunParser.parse(buffer.snapshot().output)
 
-                if let remaining = try? outPipe.fileHandleForReading.readToEnd(),
-                   let text = String(data: remaining, encoding: .utf8), !text.isEmpty {
-                    _ = buffer.append(text)
-                }
+                    Task { @MainActor [weak self] in
+                        guard let self, self.scanProcess === process else { return }
+                        self.scanProcess = nil
+                        self.scanTimer?.invalidate(); self.scanTimer = nil
 
-                let snapshot = buffer.snapshot()
-                let plan = CleanDryRunParser.parse(snapshot.output)
-                let status = task.terminationStatus
-
-                await MainActor.run { [weak self] in
-                    guard let self, self.scanProcess === task else { return }
-                    self.scanProcess = nil
-                    self.scanTimer?.invalidate(); self.scanTimer = nil
-
-                    if plan.categories.isEmpty {
-                        self.state = .idle
-                        // A user-requested stop is not a failure.
-                        if status != 0 && !self.scanStopRequested {
-                            self.errorMessage = snapshot.timedOut
-                                ? String(format: L10n.errorTimedOut, Int(Self.scanTimeout) / 60)
-                                : String(format: L10n.errorMoFailed, status, "")
+                        if plan.categories.isEmpty {
+                            self.state = .idle
+                            // A user-requested stop is not a failure.
+                            if result.exitCode != 0 && !self.scanStopRequested {
+                                self.errorMessage = result.timedOut
+                                    ? String(format: L10n.errorTimedOut, Int(Self.scanTimeout) / 60)
+                                    : String(format: L10n.errorMoFailed, result.exitCode, "")
+                            } else {
+                                self.errorMessage = nil
+                            }
                         } else {
+                            self.plannedRowCount = plan.cleanableCount
+                            self.state = .review(plan: plan)
                             self.errorMessage = nil
                         }
-                    } else {
-                        self.plannedRowCount = plan.cleanableCount
-                        self.state = .review(plan: plan)
-                        self.errorMessage = nil
                     }
                 }
-            }
+            )
+            scanProcess = stream.process
+            try stream.start()
         } catch {
+            scanProcess = nil
             scanTimer?.invalidate(); scanTimer = nil
             state = .idle
             errorMessage = error.localizedDescription
@@ -241,104 +187,60 @@ final class CleanViewModel: ObservableObject {
             self.state = .running(log: log, progress: pulse)
         }
 
-        guard let mo = MoleCLI.findExecutable() else {
-            cleanTimer?.invalidate(); cleanTimer = nil
-            state = .idle; errorMessage = L10n.errorMoNotFound; return
-        }
-
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: mo)
-        task.arguments = ["clean"]
-        let outPipe = Pipe()
-        task.standardOutput = outPipe
-        let errPipe = Pipe()
-        task.standardError = errPipe
-        let inPipe = Pipe()
-        task.standardInput = inPipe
-
-        var logLines: [String] = []
-        var partialLine = ""
-        var allOutput = ""
-        let lock = NSLock()
-        var errData = Data()
-        errPipe.fileHandleForReading.readabilityHandler = { handle in
-            let d = handle.availableData
-            if !d.isEmpty {
-                lock.lock()
-                errData.append(d)
-                lock.unlock()
-            }
-        }
+        // Mole prints `✓ <item> · <size>` per completed row on stdout; stderr
+        // is drained and discarded.
+        let buffer = cleanBuffer
+        buffer.reset()
 
         do {
-            try task.run()
-            cleanProcess = task
-            if let data = "y\ny\n".data(using: .utf8) {
-                inPipe.fileHandleForWriting.write(data)
-                try? inPipe.fileHandleForWriting.close()
-            }
+            let stream = try MoleCLI.stream(
+                args: ["clean"],
+                stdin: "y\ny\n",
+                onStdout: { [weak self] chunk in
+                    let batch = buffer.append(chunk)
+                    let newCompleted = batch.newLines.filter { $0.hasPrefix("✓") }.count
+                    guard newCompleted > 0 else { return }
+                    let lines = batch.snapshot.lines
 
-            outPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
-                let data = handle.availableData
-                guard !data.isEmpty else { return }
-                var newCompleted = 0
-                lock.lock()
-                if let chunk = String(data: data, encoding: .utf8) {
-                    allOutput += chunk; partialLine += chunk
-                    var lines = partialLine.components(separatedBy: "\n")
-                    if lines.count > 1 {
-                        partialLine = lines.removeLast()
-                        for line in lines {
-                            let t = line.trimmingCharacters(in: .whitespaces)
-                            if !t.isEmpty {
-                                logLines.append(t)
-                                // Mole prints `✓ <item> · <size>` per
-                                // completed row when stdout is not a TTY.
-                                if t.hasPrefix("✓") { newCompleted += 1 }
-                            }
-                        }
+                    Task { @MainActor [weak self] in
+                        guard let self, case .running = self.state else { return }
+                        self.completedRows += newCompleted
+                        let fraction = min(
+                            Double(self.completedRows) / Double(self.expectedRowCount), 1.0
+                        )
+                        let progress = min(0.12 + 0.83 * fraction, 0.95)
+                        self.state = .running(log: lines, progress: progress)
+                    }
+                },
+                onExit: { [weak self] _, process in
+                    // Trust Mole's own summary: per-item lines also contain
+                    // sizes, so summing them would over-count. No summary means
+                    // the run was interrupted (or found nothing) — report zero.
+                    let summary = CleanSummaryParser.parse(buffer.snapshot().output)
+                    let freed = summary?.freedBytes ?? 0
+                    let filesRemoved = summary?.itemsCleaned ?? 0
+                    let partial = summary?.isPartial ?? false
+
+                    Task { @MainActor [weak self] in
+                        guard let self, self.cleanProcess === process else { return }
+                        self.cleanTimer?.invalidate(); self.cleanTimer = nil
+                        self.cleanProcess = nil
+                        Store.shared.recordClean(freedBytes: freed)
+                        Analytics.track(.cleanCompleted, [
+                            "freed_bytes": Int(freed),
+                            "files_removed": filesRemoved,
+                        ])
+                        self.state = .done(
+                            freedBytes: freed, filesRemoved: filesRemoved, partial: partial
+                        )
+                        self.errorMessage = nil
                     }
                 }
-                let snapshot = logLines
-                lock.unlock()
-
-                guard newCompleted > 0 else { return }
-                Task { @MainActor [weak self] in
-                    guard let self, case .running = self.state else { return }
-                    self.completedRows += newCompleted
-                    let fraction = min(Double(self.completedRows) / Double(self.expectedRowCount), 1.0)
-                    let progress = min(0.12 + 0.83 * fraction, 0.95)
-                    self.state = .running(log: snapshot, progress: progress)
-                }
-            }
-
-            Task.detached(priority: .userInitiated) { [weak self] in
-                task.waitUntilExit()
-                outPipe.fileHandleForReading.readabilityHandler = nil
-                lock.lock()
-                let summary = CleanSummaryParser.parse(allOutput)
-                lock.unlock()
-
-                // Trust Mole's own summary: per-item lines also contain sizes,
-                // so summing them would over-count. No summary means the run
-                // was interrupted (or found nothing) — report zero, not noise.
-                let freed = summary?.freedBytes ?? 0
-                let filesRemoved = summary?.itemsCleaned ?? 0
-                let partial = summary?.isPartial ?? false
-
-                await MainActor.run { [weak self] in
-                    guard let self else { return }
-                    cleanTimer?.invalidate(); cleanTimer = nil; cleanProcess = nil
-                    Store.shared.recordClean(freedBytes: freed, filesRemoved: filesRemoved)
-                    Analytics.track(.cleanCompleted, [
-                        "freed_bytes": Int(freed),
-                        "files_removed": filesRemoved,
-                    ])
-                    state = .done(freedBytes: freed, filesRemoved: filesRemoved, partial: partial)
-                    errorMessage = nil
-                }
-            }
+            )
+            cleanProcess = stream.process
+            try stream.start()
         } catch {
+            cleanProcess = nil
             cleanTimer?.invalidate(); cleanTimer = nil
             state = .idle; errorMessage = error.localizedDescription
         }
@@ -366,56 +268,5 @@ final class CleanViewModel: ObservableObject {
         scanStopRequested = false
         scanStartTime = nil
         cleanStartTime = nil
-    }
-}
-
-// MARK: - Scan Buffer
-
-/// Thread-safe accumulator for `mo clean --dry-run` output.
-/// Kept outside the main-actor view model so the pipe handler and exit task
-/// never touch actor-isolated state.
-private final class CleanScanBuffer: @unchecked Sendable {
-    private let lock = NSLock()
-    private var output = ""
-    private var partialLine = ""
-    private var categoryCount = 0
-    private var lastLine = ""
-    private var timedOut = false
-
-    func reset() {
-        lock.lock(); defer { lock.unlock() }
-        output = ""
-        partialLine = ""
-        categoryCount = 0
-        lastLine = ""
-        timedOut = false
-    }
-
-    /// Append a chunk and return the live section count / last line for UI.
-    func append(_ chunk: String) -> (categories: Int, lastLine: String) {
-        lock.lock(); defer { lock.unlock() }
-        output += chunk
-        partialLine += chunk
-        var lines = partialLine.components(separatedBy: "\n")
-        if lines.count > 1 {
-            partialLine = lines.removeLast()
-            for line in lines {
-                let trimmed = line.trimmingCharacters(in: .whitespaces)
-                guard !trimmed.isEmpty else { continue }
-                if trimmed.hasPrefix("➤") { categoryCount += 1 }
-                lastLine = trimmed
-            }
-        }
-        return (categoryCount, lastLine)
-    }
-
-    func markTimedOut() {
-        lock.lock(); defer { lock.unlock() }
-        timedOut = true
-    }
-
-    func snapshot() -> (output: String, timedOut: Bool) {
-        lock.lock(); defer { lock.unlock() }
-        return (output, timedOut)
     }
 }

@@ -1,8 +1,7 @@
 import Foundation
 
 /// Wraps Foundation `Process` for captured subprocess execution (small, short-lived
-/// commands like `mo analyze --json`). For long-running streaming ops, use the
-/// streaming port in MoEngine.
+/// commands like `mo analyze --json`).
 enum MoleProcess {
 
     /// Spawn the given executable with `args`, feed optional `stdin` and capture

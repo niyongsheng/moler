@@ -58,37 +58,6 @@ final class MoleCLITests: XCTestCase {
         XCTAssertTrue(cp.timedOut)
     }
 
-    // MARK: - MoCommand
-
-    func testMoCommandDefaults() {
-        let cmd = MoCommand(args: ["analyze", "--json", "/"])
-        XCTAssertEqual(cmd.args, ["analyze", "--json", "/"])
-        XCTAssertNil(cmd.stdin)
-        XCTAssertEqual(cmd.timeout, 10)
-        XCTAssertNil(cmd.env)
-    }
-
-    func testMoCommandCustom() {
-        let cmd = MoCommand(args: ["clean"], stdin: "y\n", timeout: 300, env: ["NO_COLOR": "1"])
-        XCTAssertEqual(cmd.args, ["clean"])
-        XCTAssertEqual(cmd.stdin, "y\n")
-        XCTAssertEqual(cmd.timeout, 300)
-        XCTAssertEqual(cmd.env, ["NO_COLOR": "1"])
-    }
-
-    // MARK: - MoleAvailability
-
-    func testMoleAvailabilityInstalled() {
-        let a = MoleAvailability.installed(path: "/opt/homebrew/bin/mo")
-        XCTAssertEqual(a, .installed(path: "/opt/homebrew/bin/mo"))
-    }
-
-    func testMoleAvailabilityMissing() {
-        let a = MoleAvailability.missing
-        XCTAssertEqual(a, .missing)
-        XCTAssertNotEqual(a, .installed(path: "/test"))
-    }
-
     // MARK: - Install consts
 
     func testInstallCommand() {

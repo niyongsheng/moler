@@ -32,8 +32,8 @@ enum UpdateChecker {
 
         var errorDescription: String? {
             switch self {
-            case .http(let code): return "GitHub returned HTTP \(code)."
-            case .badResponse:    return "Unexpected response from GitHub."
+            case .http(let code): return String(format: L10n.updateHttpError, code)
+            case .badResponse:    return L10n.updateResponseError
             }
         }
     }
@@ -43,18 +43,7 @@ enum UpdateChecker {
     /// Numeric per-component compare; tolerates a leading "v" and ragged
     /// lengths (missing components count as 0).
     static func isNewer(_ remote: String, than local: String) -> Bool {
-        func parts(_ s: String) -> [Int] {
-            var t = s.trimmingCharacters(in: .whitespaces)
-            if t.hasPrefix("v") || t.hasPrefix("V") { t.removeFirst() }
-            return t.split(separator: ".").map { Int($0) ?? 0 }
-        }
-        let r = parts(remote), l = parts(local)
-        for i in 0..<max(r.count, l.count) {
-            let rv = i < r.count ? r[i] : 0
-            let lv = i < l.count ? l[i] : 0
-            if rv != lv { return rv > lv }
-        }
-        return false
+        MoleCLI.compareVersions(remote, local) == .orderedDescending
     }
 
     // MARK: - API Response Parsing
@@ -65,8 +54,7 @@ enum UpdateChecker {
               let tag = obj["tag_name"] as? String,
               let urlString = obj["html_url"] as? String,
               let url = URL(string: urlString) else { return nil }
-        var version = tag.trimmingCharacters(in: .whitespaces)
-        if version.hasPrefix("v") || version.hasPrefix("V") { version.removeFirst() }
+        let version = normalizedVersion(tag)
         guard !version.isEmpty else { return nil }
         let assets = obj["assets"] as? [[String: Any]] ?? []
         return Release(

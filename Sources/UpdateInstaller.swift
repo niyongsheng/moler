@@ -122,7 +122,7 @@ enum UpdateInstaller {
         }
 
         let found = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        guard let found, normalized(found) == normalized(expectedVersion) else {
+        guard let found, normalizedVersion(found) == normalizedVersion(expectedVersion) else {
             throw InstallError.versionMismatch(expected: expectedVersion, found: found)
         }
 
@@ -166,18 +166,12 @@ enum UpdateInstaller {
             guard let bundle = Bundle(url: url),
                   bundle.bundleIdentifier == bundleIdentifier else { continue }
             let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            if let version, normalized(version) == normalized(expectedVersion) {
+            if let version, normalizedVersion(version) == normalizedVersion(expectedVersion) {
                 return url
             }
             fallback = fallback ?? url
         }
         return fallback
-    }
-
-    private static func normalized(_ version: String) -> String {
-        var v = version.trimmingCharacters(in: .whitespaces)
-        if v.hasPrefix("v") || v.hasPrefix("V") { v.removeFirst() }
-        return v
     }
 
     private static func runTool(_ path: String, _ arguments: [String]) throws {

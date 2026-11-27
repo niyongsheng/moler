@@ -72,11 +72,11 @@ enum MoleCLI {
         compareVersions(version, minimumVersion) != .orderedAscending
     }
 
-    /// Numeric component-wise semver comparison. Non-numeric components
-    /// (nightly suffixes, for instance) count as zero.
+    /// Numeric component-wise semver comparison. Tolerates a leading "v";
+    /// non-numeric components (nightly suffixes, for instance) count as zero.
     static func compareVersions(_ lhs: String, _ rhs: String) -> ComparisonResult {
-        let left = lhs.split(separator: ".").map { Int($0) ?? 0 }
-        let right = rhs.split(separator: ".").map { Int($0) ?? 0 }
+        let left = normalizedVersion(lhs).split(separator: ".").map { Int($0) ?? 0 }
+        let right = normalizedVersion(rhs).split(separator: ".").map { Int($0) ?? 0 }
         for index in 0..<max(left.count, right.count) {
             let l = index < left.count ? left[index] : 0
             let r = index < right.count ? right[index] : 0
@@ -103,6 +103,32 @@ enum MoleCLI {
             stdin: stdin,
             timeout: timeout,
             env: env
+        )
+    }
+
+    /// Prepare a streaming `mo` invocation. The caller assigns the process to
+    /// its state, then calls `start()` so exit callbacks can verify ownership.
+    static func stream(
+        args: [String],
+        stdin: String? = nil,
+        timeout: TimeInterval? = nil,
+        env: [String: String]? = ["NO_COLOR": "1"],
+        onStdout: @escaping (String) -> Void,
+        onStderr: ((String) -> Void)? = nil,
+        onExit: @escaping (StreamedProcessResult, Process) -> Void
+    ) throws -> MoleStreamingProcess {
+        guard let mo = findExecutable() else {
+            throw MoleError.notFound
+        }
+        return MoleStreamingProcess(
+            executable: mo,
+            args: args,
+            stdin: stdin,
+            timeout: timeout,
+            env: env,
+            onStdout: onStdout,
+            onStderr: onStderr,
+            onExit: onExit
         )
     }
 }

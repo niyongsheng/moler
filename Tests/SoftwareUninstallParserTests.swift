@@ -191,7 +191,7 @@ final class SoftwareUninstallParserTests: XCTestCase {
         let result = CapturedProcess(stdout: "", stderr: "", exitCode: 1)
         XCTAssertEqual(
             SoftwareUninstallParser.failureReason(from: result, appName: "Slack"),
-            "mo exited with code 1"
+            String(format: L10n.errorMoExitCode, 1)
         )
     }
 

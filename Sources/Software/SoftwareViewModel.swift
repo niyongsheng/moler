@@ -48,7 +48,7 @@ final class SoftwareViewModel: ObservableObject {
         if apps.count == 1 {
             return "\(apps[0].name) · \(apps[0].sizeStr)"
         }
-        return "\(apps.count) apps · \(formatBytes(total))"
+        return String(format: L10n.softwareSelectionCount, apps.count, Format.bytes(total))
     }
 
     // MARK: - Actions
@@ -59,25 +59,12 @@ final class SoftwareViewModel: ObservableObject {
 
         Task.detached(priority: .userInitiated) { [weak self] in
             do {
-                guard let mo = MoleCLI.findExecutable() else { throw MoleError.notFound }
-                let process = Process()
-                process.executableURL = URL(fileURLWithPath: mo)
-                process.arguments = ["uninstall", "--list"]
-                var env = ProcessInfo.processInfo.environment
-                env["NO_COLOR"] = "1"
-                process.environment = env
-                let outPipe = Pipe()
-                process.standardOutput = outPipe
-                process.standardError = Pipe()
-                try process.run()
-                process.waitUntilExit()
-                let data = outPipe.fileHandleForReading.readDataToEndOfFile()
-
-                guard process.terminationStatus == 0 else {
-                    throw MoleError.failed(exitCode: process.terminationStatus, stderr: "")
+                let result = try MoEngine.shared.uninstallList()
+                guard result.exitCode == 0 else {
+                    throw MoleError.failed(exitCode: result.exitCode, stderr: result.stderr)
                 }
 
-                let apps = SoftwareUninstallParser.parseAppListJSON(data)
+                let apps = SoftwareUninstallParser.parseAppListJSON(Data(result.stdout.utf8))
 
                 // Prewarm icon cache synchronously BEFORE the view renders,
                 // so every icon(for:) call hits the cache immediately.
@@ -173,15 +160,6 @@ final class SoftwareViewModel: ObservableObject {
         pathSelections[appID] = sels
     }
 
-    func selectAllFiles(appID: String) {
-        guard let preview = previews[appID] else { return }
-        pathSelections[appID] = Set(preview.entries.map(\.path))
-    }
-
-    func deselectAllFiles(appID: String) {
-        pathSelections[appID] = []
-    }
-
     func confirmAndRemove() {
         guard !selectedApps.isEmpty else { return }
 
@@ -265,11 +243,4 @@ final class SoftwareViewModel: ObservableObject {
             }
         }
     }
-}
-
-// MARK: - Localized fallbacks (used before L10n keys are added)
-
-private extension L10n {
-    static let softwareConfirmTitle = "Confirm Removal"
-    static let softwareConfirmMessage = "Remove %d selected application(s)? This action cannot be undone."
 }

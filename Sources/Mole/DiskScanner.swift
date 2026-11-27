@@ -40,15 +40,8 @@ enum DiskScanner {
     /// Scan a single directory level via `mo analyze --json <path>`.
     /// Returns aggregated sizes for each direct child.
     static func scan(_ path: String = FileManager.default.homeDirectoryForCurrentUser.path) throws -> DiskScanResult {
-        guard let mo = MoleCLI.findExecutable() else {
-            throw MoleError.notFound
-        }
-
-        let result = try MoleProcess.run(
-            executable: mo,
-            args: ["analyze", "--json", path],
-            timeout: 3600 // 1-hour timeout; home dir scans can take 30+ min
-        )
+        // 1-hour timeout; home dir scans can take 30+ min.
+        let result = try MoleCLI.capture(args: ["analyze", "--json", path], timeout: 3600)
 
         if result.timedOut {
             throw MoleError.timedOut(timeout: 3600)

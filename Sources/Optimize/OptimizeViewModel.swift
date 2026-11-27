@@ -13,13 +13,10 @@ final class OptimizeViewModel: ObservableObject {
 
     private var process: Process?
     private var parser: OptimizeOutputParser?
+    private let outputBuffer = LineBuffer()
     private var timer: Timer?
     private var startTime: Date?
     private var isDryRun = false
-    private var accumulatedCategories: [OptimizeCategory] = []
-    private var completedCategories = 0
-    private var currentCategoryName = ""
-    private var currentTaskDescription = ""
 
     // MARK: - Actions
 
@@ -52,23 +49,10 @@ final class OptimizeViewModel: ObservableObject {
     // MARK: - Private: Process Management
 
     private func startProcess(args: [String], isDryRun: Bool) {
-        // Validate mo executable
-        guard let mo = MoleCLI.findExecutable() else {
-            errorMessage = L10n.errorMoNotFound
-            return
-        }
-
         cancel() // ensure any existing process is terminated
 
-        // Setup
         self.isDryRun = isDryRun
-        self.accumulatedCategories = []
-        self.completedCategories = 0
-        self.currentCategoryName = ""
-        self.currentTaskDescription = ""
-
         let parser = OptimizeOutputParser()
-        parser.reset()
         self.parser = parser
 
         // Elapsed timer
@@ -90,112 +74,56 @@ final class OptimizeViewModel: ObservableObject {
             diagnosisItems: []
         ))
 
-        // Create and configure Process
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: mo)
-        task.arguments = args
-
-        // Set NO_COLOR to strip ANSI colour codes
-        var env = ProcessInfo.processInfo.environment
-        env["NO_COLOR"] = "1"
-        task.environment = env
-
-        let outPipe = Pipe()
-        task.standardOutput = outPipe
-        let errPipe = Pipe()
-        task.standardError = errPipe
-
-        var partialLine = ""
-        var errData = Data()
-
-        errPipe.fileHandleForReading.readabilityHandler = { handle in
-            let d = handle.availableData
-            if !d.isEmpty { errData.append(d) }
-        }
-
-        outPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
-            let data = handle.availableData
-            guard !data.isEmpty, let self else { return }
-
-            let raw = String(data: data, encoding: .utf8) ?? ""
-            partialLine += raw
-
-            // Split on newlines, keep partial line
-            var lines = partialLine.components(separatedBy: "\n")
-            if lines.count > 1 {
-                partialLine = lines.removeLast()
-                for line in lines {
-                    let event = parser.ingest(line: line)
-                    Task { @MainActor in
-                        self.handle(event: event)
-                    }
-                }
-            }
-        }
+        // Line splitting happens here; the parser turns lines into events.
+        let buffer = outputBuffer
+        buffer.reset()
 
         do {
-            try task.run()
-            self.process = task
-
-            // Wait for exit on background thread
-            Task.detached(priority: .userInitiated) { [weak self] in
-                task.waitUntilExit()
-
-                // Stop handlers first to prevent races
-                outPipe.fileHandleForReading.readabilityHandler = nil
-                errPipe.fileHandleForReading.readabilityHandler = nil
-
-                // Drain remaining pipe data after process exit
-                let remainingOut = try? outPipe.fileHandleForReading.readToEnd()
-                let remainingErr = try? errPipe.fileHandleForReading.readToEnd()
-
-                // Append remaining data
-                if let rem = remainingOut, let str = String(data: rem, encoding: .utf8), !str.isEmpty {
-                    partialLine += str
-                }
-                if let rem = remainingErr, !rem.isEmpty { errData.append(rem) }
-
-                // Flush any remaining partial line
-                if !partialLine.isEmpty {
-                    let event = parser.ingest(line: partialLine)
-                    await MainActor.run { [weak self] in
-                        // Only flush if we're still the current process
-                        guard self?.process === task else { return }
-                        self?.handle(event: event)
+            let stream = try MoleCLI.stream(
+                args: args,
+                onStdout: { [weak self] chunk in
+                    let lines = buffer.append(chunk).newLines
+                    guard !lines.isEmpty else { return }
+                    let events = lines.map { parser.ingest(line: $0) }
+                    Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        events.forEach { self.handle(event: $0) }
                     }
-                }
+                },
+                onExit: { [weak self] result, process in
+                    var events: [ParsedEvent] = []
+                    if let line = buffer.flushPartial() {
+                        events.append(parser.ingest(line: line))
+                    }
+                    let errorText = result.stderr
 
-                let status = task.terminationStatus
-                let reason = task.terminationReason
-                let errText = String(data: errData, encoding: .utf8) ?? ""
+                    Task { @MainActor [weak self] in
+                        guard let self else { return }
+                        // Ignore output from a superseded or cancelled run.
+                        guard case .running = self.state, self.process === process else { return }
+                        events.forEach { self.handle(event: $0) }
+                        guard case .running = self.state else { return }
 
-                await MainActor.run { [weak self] in
-                    guard let self else { return }
-
-                    // If we already transitioned (e.g. cancelled), don't override
-                    guard case .running = self.state else { return }
-                    // Also ensure we're still the current process (not superseded)
-                    guard self.process === task else { return }
-
-                    if status == 0 {
-                        // Success - transition to done
-                        self.finish()
-                    } else {
-                        // Build error detail string
-                        var detail = ""
-                        if reason == .uncaughtSignal {
-                            detail = "terminated (signal \(status))"
+                        if result.exitCode == 0 {
+                            self.finish()
                         } else {
-                            detail = "exit code \(status)"
+                            var detail = ""
+                            if result.terminationReason == .uncaughtSignal {
+                                detail = "terminated (signal \(result.exitCode))"
+                            } else {
+                                detail = "exit code \(result.exitCode)"
+                            }
+                            if !errorText.isEmpty {
+                                detail += ": " + errorText.prefix(200)
+                            }
+                            self.state = .error(detail)
+                            self.errorMessage = detail
                         }
-                        if !errText.isEmpty {
-                            detail += ": " + errText.prefix(200)
-                        }
-                        self.state = .error(detail)
-                        self.errorMessage = detail
                     }
                 }
-            }
+            )
+            process = stream.process
+            try stream.start()
         } catch {
             timer?.invalidate()
             timer = nil
@@ -211,55 +139,20 @@ final class OptimizeViewModel: ObservableObject {
 
         switch event {
         case .categoryStarted(let name):
-            currentCategoryName = name
-            currentTaskDescription = ""
-            // A new category means the previous one is complete
-            if !accumulatedCategories.isEmpty && !accumulatedCategories.last!.tasks.isEmpty {
-                completedCategories += 1
-            }
             progress.currentCategory = name
-            progress.categories = accumulatedCategories
-
-        case .taskItem(let description, let completed):
-            currentTaskDescription = description
+            progress.currentTask = ""
+        case .taskItem(let description, _):
             progress.currentTask = description
-            progress.categories = accumulatedCategories
-
-            // Update total categories count from parser
-            if let p = parser {
-                progress.totalCategories = p.categories.count
-            }
-
         case .warningItem(let description):
-            // Advisory row — it already lives in the category's task list, so
-            // the live log shows it; only track it as the current line.
-            currentTaskDescription = description
             progress.currentTask = description
-            progress.categories = accumulatedCategories
-
         case .diagnosisItem(let description):
             progress.diagnosisItems.append(description)
-            progress.categories = accumulatedCategories
-
-        case .totalOptimizations(let count):
-            progress.totalCategories = count
-
-        case .outcomes:
-            // Counts are read from the parser when the run finishes.
-            break
-
-        case .runComplete:
-            // Finalize - the finish() will be called from the exit handler
-            break
-
-        case .unknown:
+        case .totalOptimizations, .outcomes, .runComplete, .unknown:
             break
         }
 
-        // Sync accumulated categories from parser
         if let p = parser {
-            accumulatedCategories = p.categories
-            progress.categories = accumulatedCategories
+            progress.categories = p.categories
             progress.totalCategories = max(p.categories.count, p.totalOptimizations)
         }
 
@@ -280,7 +173,7 @@ final class OptimizeViewModel: ObservableObject {
 
         guard let p = parser else {
             state = .done(result: OptimizeResult(
-                categories: accumulatedCategories,
+                categories: [],
                 totalOptimizations: 0,
                 isDryRun: isDryRun,
                 durationSeconds: Int(Date().timeIntervalSince(startTime ?? Date())),

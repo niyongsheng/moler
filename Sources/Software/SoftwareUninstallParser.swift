@@ -112,7 +112,7 @@ enum SoftwareUninstallParser {
             return clipped(line)
         }
         if result.exitCode != 0 {
-            return "mo exited with code \(result.exitCode)"
+            return String(format: L10n.errorMoExitCode, result.exitCode)
         }
         return nil
     }

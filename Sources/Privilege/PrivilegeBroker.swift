@@ -24,9 +24,8 @@ enum PrivilegeBroker {
             try task.run()
             task.waitUntilExit()
 
-            // Log output for debugging
-            let stdoutStr = String(data: outPipe.fileHandleForReading.readDataToEndOfFile(),
-                                   encoding: .utf8) ?? ""
+            // Drain stdout so a full pipe can't stall osascript.
+            _ = outPipe.fileHandleForReading.readDataToEndOfFile()
             let stderrStr = String(data: errPipe.fileHandleForReading.readDataToEndOfFile(),
                                    encoding: .utf8) ?? ""
 

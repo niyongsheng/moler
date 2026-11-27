@@ -45,7 +45,6 @@ final class OptimizeOutputParser {
     private var phase: Phase = .header
     private(set) var currentCategory: String?
     private(set) var categories: [OptimizeCategory] = []
-    private(set) var diagnosisItems: [OptimizeTask] = []
     private(set) var totalOptimizations: Int = 0
     private(set) var outcomeCounts = OptimizeOutcomeCounts()
 
@@ -87,12 +86,6 @@ final class OptimizeOutputParser {
         if phase == .diagnosis {
             let desc = Self.strippingMarker(from: trimmed)
             guard !desc.isEmpty else { return .unknown(trimmed) }
-            let task = OptimizeTask(
-                description: desc,
-                categoryName: "PERFORMANCE DIAGNOSIS",
-                isCompleted: false
-            )
-            diagnosisItems.append(task)
             return .diagnosisItem(description: desc)
         }
 
@@ -165,7 +158,6 @@ final class OptimizeOutputParser {
         phase = .header
         currentCategory = nil
         categories.removeAll()
-        diagnosisItems.removeAll()
         totalOptimizations = 0
         outcomeCounts = OptimizeOutcomeCounts()
     }

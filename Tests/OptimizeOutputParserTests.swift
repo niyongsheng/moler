@@ -69,11 +69,16 @@ final class OptimizeOutputParserTests: XCTestCase {
         XCTAssertEqual(desc, "Desktop composition is busy")
     }
 
-    func testDiagnosisItemsAccumulated() {
+    func testDiagnosisItemsEmitted() {
         parser.ingest(line: "PERFORMANCE DIAGNOSIS")
-        parser.ingest(line: "  ◎ Bottleneck A")
-        parser.ingest(line: "  ☞ Hint B")
-        XCTAssertEqual(parser.diagnosisItems.count, 2)
+        guard case .diagnosisItem(let a) = parser.ingest(line: "  ◎ Bottleneck A") else {
+            XCTFail("Expected diagnosisItem for Bottleneck A"); return
+        }
+        guard case .diagnosisItem(let b) = parser.ingest(line: "  ☞ Hint B") else {
+            XCTFail("Expected diagnosisItem for Hint B"); return
+        }
+        XCTAssertEqual(a, "Bottleneck A")
+        XCTAssertEqual(b, "Hint B")
     }
 
     /// Mole 1.74 prints a plain `✓` line for a clean diagnosis
@@ -85,7 +90,6 @@ final class OptimizeOutputParserTests: XCTestCase {
             XCTFail("Expected diagnosisItem, got \(event)"); return
         }
         XCTAssertEqual(desc, "No sustained high-CPU bottleneck detected")
-        XCTAssertEqual(parser.diagnosisItems.count, 1)
     }
 
     // MARK: - Categories Phase
@@ -327,7 +331,6 @@ final class OptimizeOutputParserTests: XCTestCase {
 
         // Verify parser final state
         XCTAssertEqual(parser.categories.count, 2)
-        XCTAssertEqual(parser.diagnosisItems.count, 2)
         XCTAssertEqual(parser.totalOptimizations, 22)
     }
 

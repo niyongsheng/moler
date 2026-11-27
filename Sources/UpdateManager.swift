@@ -34,7 +34,6 @@ final class UpdateManager: ObservableObject {
 
     private let defaults = UserDefaults.standard
     private var lastCheckDate: Date?
-    private var isFetching = false
 
     private init() {
         // `object(forKey:)` distinguishes "never set" (default true) from
@@ -68,9 +67,6 @@ final class UpdateManager: ObservableObject {
     /// nothing) at most once a day. A newer release flips the sidebar badge.
     func start() {
         guard autoCheckEnabled else { return }
-        if let last = lastCheckDate, Date().timeIntervalSince(last) < 24 * 60 * 60 {
-            return
-        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
             guard let self, self.autoCheckEnabled else { return }
             self.check(userInitiated: false)
@@ -90,7 +86,6 @@ final class UpdateManager: ObservableObject {
     }
 
     private func runCheck(userInitiated: Bool) {
-        isFetching = true
         state = .checking
         Task {
             do {
@@ -114,7 +109,6 @@ final class UpdateManager: ObservableObject {
                 Analytics.track(.updateChecked,
                                 ["result": "error", "manual": userInitiated])
             }
-            isFetching = false
         }
     }
 
