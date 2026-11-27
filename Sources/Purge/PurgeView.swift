@@ -33,7 +33,7 @@ struct PurgeView: View {
         switch vm.state {
         case .idle: idleView
         case .scanning(let p): scanningView(p)
-        case .review(let entries): reviewView(entries)
+        case .review(let plan): reviewView(plan)
         case .running(let log): runView(log)
         case .done(let f, let c, let fail): doneView(f, c, fail)
         }
@@ -74,7 +74,7 @@ struct PurgeView: View {
                 // Preset targets row
                 if !presetTargets.isEmpty {
                     HStack(spacing: 6) {
-                        Text("PRESETS")
+                        Text("DEFAULT PATHS")
                             .monoFont(8).kerning(2).foregroundColor(Brand.textDim.opacity(0.5))
                         Brand.lineColor.frame(height: 0.5)
                     }
@@ -89,7 +89,7 @@ struct PurgeView: View {
 
                 // Custom targets row (with ADD_PATH at the front)
                     HStack(spacing: 6) {
-                        Text("CUSTOM")
+                        Text("CUSTOM PATHS")
                             .monoFont(8).kerning(2).foregroundColor(Brand.textDim.opacity(0.5))
                         Brand.lineColor.frame(height: 0.5)
                     }
@@ -116,6 +116,21 @@ struct PurgeView: View {
                             }
                         }
                     }
+
+                HStack(spacing: 4) {
+                    Image(systemName: "info.circle").font(.system(size: 9))
+                    Text(vm.usingDefaults ? L10n.purgePathsDefaults : L10n.purgePathsCustom)
+                        .monoFont(8)
+                    Spacer()
+                }
+                .foregroundColor(Brand.textDim.opacity(0.7))
+
+                HStack(spacing: 4) {
+                    Image(systemName: "link").font(.system(size: 8))
+                    Text(L10n.purgePathsShared).monoFont(8)
+                    Spacer()
+                }
+                .foregroundColor(Brand.textDim.opacity(0.5))
             }
             .padding(20)
             .background(Brand.bgCard.opacity(0.5))
@@ -237,71 +252,113 @@ struct PurgeView: View {
 
     // MARK: - Review
 
-    private func reviewView(_ entries: [PurgeEntry]) -> some View {
-        let selected = vm.selectedPaths
-        return VStack(spacing: 0) {
-            InstrumentPanel(title: L10n.purgeReviewTitle, subtitle: nil, badge: "\(vm.selectedCount(from: entries))/\(entries.count)") {
+    private func reviewView(_ plan: PurgePlan) -> some View {
+        VStack(spacing: 0) {
+            InstrumentPanel(
+                title: L10n.purgeReviewTitle,
+                subtitle: nil,
+                badge: "\(plan.displayItemCount)"
+            ) {
                 HStack(spacing: 24) {
-                    DataRow(label: L10n.purgeReviewTotal, value: formatBytes(entries.reduce(0){$0+$1.size}))
+                    DataRow(label: L10n.purgeReviewTotal, value: formatBytes(plan.totalBytes))
+                    DataRow(
+                        label: L10n.purgeReviewPaths,
+                        value: "\(vm.scanTargets.filter(\.isSelected).count)"
+                    )
                 }
             }.frame(maxHeight: 100).padding(.bottom, Brand.margin)
 
-            ScrollView {
-                LazyVStack(spacing: 0) {
-                    Button(action: {
-                        let all = selected.count == entries.count
-                        vm.selectedPaths = all ? [] : Set(entries.map(\.path))
-                    }) {
-                        HStack(spacing: 6) {
-                            ReticleCheck(selected: selected.count == entries.count).frame(width: 14, height: 14)
-                            Text(selected.count == entries.count ? L10n.cleanReviewDeselectAll : L10n.cleanReviewSelectAll)
-                                .monoFont(10).foregroundColor(Brand.accentGold)
-                            Spacer()
-                        }.padding(.horizontal, Brand.marginTight + 6).padding(.vertical, 6)
-                    }.buttonStyle(.plain)
-                    Divider().background(Brand.lineColor)
+            notices(plan)
 
-                    ForEach(entries) { entry in
-                        PurgeEntryRow(entry: entry, isSelected: selected.contains(entry.path), onToggle: { vm.toggleSelection(entry.path) })
-                        Divider().background(Brand.lineColor.opacity(0.3))
-                    }
-                }
-            }
-            .background(Brand.bgCard.opacity(0.5))
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Brand.lineColor, lineWidth: 0.5))
-
-            // Floating pill
-            let hasSel = !selected.isEmpty
-            HStack(spacing: 12) {
-                Button(action: { vm.reset() }) {
-                    Image(systemName: "arrow.left").font(.system(size: 12, weight: .medium))
-                }.buttonStyle(.plain).foregroundColor(Brand.textDim)
-                Divider().frame(height: 20).overlay(Brand.lineColor)
-                if hasSel {
-                    Text("\(vm.selectedCount(from: entries)) selected").monoFont(10).foregroundColor(Brand.textPrimary)
-                    Text(formatBytes(vm.selectedTotalBytes(from: entries))).monoFont(12).foregroundColor(Brand.accentOrange)
-                } else {
-                    Text("Nothing selected").monoFont(10).foregroundColor(Brand.textDim)
-                }
+            if plan.entries.isEmpty {
                 Spacer()
-                Button(action: { vm.startPurge() }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "trash").font(.system(size: 11))
-                        Text(L10n.purgeReviewExecute).titleFont(11).kerning(3)
+                Text(L10n.purgeReviewEmpty)
+                    .monoFont(11).foregroundColor(Brand.textDim)
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(plan.entries) { entry in
+                            PurgeEntryRow(entry: entry)
+                            Divider().background(Brand.lineColor.opacity(0.3))
+                        }
                     }
-                    .padding(.horizontal, 16).padding(.vertical, 8)
-                    .background(hasSel ? Brand.accentOrange : Brand.lineColor.opacity(0.3))
-                    .foregroundColor(hasSel ? .white : Brand.textDim)
-                    .clipShape(Capsule())
-                }.buttonStyle(.plain).disabled(!hasSel)
+                }
+                .background(Brand.bgCard.opacity(0.5))
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .overlay(RoundedRectangle(cornerRadius: 4).stroke(Brand.lineColor, lineWidth: 0.5))
             }
-            .padding(.horizontal, 16).padding(.vertical, 10)
-            .background(Brand.bgElevated.opacity(0.95)).clipShape(Capsule())
-            .overlay(Capsule().stroke(Brand.lineColor, lineWidth: 0.5))
-            .shadow(color: .black.opacity(0.3), radius: 8, y: -2)
-            .padding(.horizontal, 40).padding(.bottom, 16).padding(.top, Brand.margin)
+
+            footer(plan)
         }
+    }
+
+    @ViewBuilder
+    private func notices(_ plan: PurgePlan) -> some View {
+        VStack(spacing: 6) {
+            if plan.cloudCount > 0 {
+                notice(
+                    icon: "icloud",
+                    text: String(format: L10n.purgeReviewCloudNote, plan.cloudCount),
+                    color: Brand.accentGold
+                )
+            }
+            if !plan.warnings.isEmpty {
+                notice(
+                    icon: "exclamationmark.triangle",
+                    text: plan.warnings.prefix(2).joined(separator: " · "),
+                    color: Brand.accentOrange
+                )
+            }
+            HStack(spacing: 4) {
+                Image(systemName: "shield").font(.system(size: 8))
+                Text(L10n.purgeReviewNote).monoFont(8)
+                Spacer()
+            }
+            .foregroundColor(Brand.textDim.opacity(0.6))
+        }
+        .padding(.bottom, Brand.marginTight)
+    }
+
+    private func notice(icon: String, text: String, color: Color) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon).font(.system(size: 9))
+            Text(text).monoFont(9).lineLimit(2)
+            Spacer()
+        }
+        .foregroundColor(color)
+        .padding(.horizontal, 12).padding(.vertical, 6)
+        .background(color.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
+    private func footer(_ plan: PurgePlan) -> some View {
+        HStack(spacing: 12) {
+            Button(action: { vm.reset() }) {
+                Image(systemName: "arrow.left").font(.system(size: 12, weight: .medium))
+            }.buttonStyle(.plain).foregroundColor(Brand.textDim)
+            Divider().frame(height: 20).overlay(Brand.lineColor)
+            Text(formatBytes(plan.totalBytes))
+                .monoFont(12).foregroundColor(Brand.accentOrange)
+            Text("· \(plan.displayItemCount) \(L10n.purgeReviewItems)")
+                .monoFont(9).foregroundColor(Brand.textDim)
+            Spacer()
+            Button(action: { vm.startPurge() }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "trash").font(.system(size: 11))
+                    Text(L10n.purgeReviewExecute).titleFont(11).kerning(3)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 8)
+                .background(plan.entries.isEmpty ? Brand.lineColor.opacity(0.3) : Brand.accentOrange)
+                .foregroundColor(plan.entries.isEmpty ? Brand.textDim : .white)
+                .clipShape(Capsule())
+            }.buttonStyle(.plain).disabled(plan.entries.isEmpty)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .background(Brand.bgElevated.opacity(0.95)).clipShape(Capsule())
+        .overlay(Capsule().stroke(Brand.lineColor, lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.3), radius: 8, y: -2)
+        .padding(.horizontal, 40).padding(.bottom, 16).padding(.top, Brand.margin)
     }
 
     // MARK: - Running
@@ -347,7 +404,7 @@ struct PurgeView: View {
                     DataRow(label: L10n.purgeDoneSpaceFreed, value: formatBytes(freedBytes))
                     DataRow(label: L10n.purgeDoneItemsRemoved, value: "\(itemsRemoved)")
                     if itemsFailed > 0 {
-                        DataRow(label: "Failed", value: "\(itemsFailed)")
+                        DataRow(label: L10n.purgeDoneFailed, value: "\(itemsFailed)")
                     }
                 }
             }.frame(maxWidth: 300)
@@ -375,22 +432,24 @@ struct PurgeView: View {
 
 struct PurgeEntryRow: View {
     let entry: PurgeEntry
-    let isSelected: Bool
-    let onToggle: () -> Void
 
     var body: some View {
-        Button(action: onToggle) {
-            HStack(spacing: 8) {
-                ReticleCheck(selected: isSelected).frame(width: 14, height: 14)
-                VStack(alignment: .leading, spacing: 1) {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 4) {
                     Text(entry.name).monoFont(11).foregroundColor(Brand.textPrimary)
-                    Text(entry.path).monoFont(8).foregroundColor(Brand.textDim).lineLimit(1).truncationMode(.middle)
+                    if entry.isCloud {
+                        Image(systemName: "icloud")
+                            .font(.system(size: 9))
+                            .foregroundColor(Brand.accentGold)
+                    }
                 }
-                Spacer()
-                Text(formatBytes(entry.size)).monoFont(10).foregroundColor(Brand.accentGold)
+                Text(entry.path).monoFont(8).foregroundColor(Brand.textDim).lineLimit(1).truncationMode(.middle)
             }
-            .padding(.horizontal, Brand.marginTight + 6).padding(.vertical, 6)
-        }.buttonStyle(.plain)
+            Spacer()
+            Text(formatBytes(entry.size)).monoFont(10).foregroundColor(Brand.accentGold)
+        }
+        .padding(.horizontal, Brand.marginTight + 6).padding(.vertical, 6)
     }
 }
 
