@@ -18,7 +18,7 @@
 
 ---
 
-<img alt="demo" src="https://github.com/user-attachments/assets/ccc5b553-50e0-4930-b223-98cfb8018824" />
+https://github.com/user-attachments/assets/61b2a73d-c8e4-4142-abf6-7effedb59791
 
 ## 功能
 
@@ -30,8 +30,6 @@
 | **系统优化** | 🔄 | 刷新系统缓存与服务，支持**预演模式** |
 | **磁盘分析** | 🎛 | 磁盘占用矩形树图 — 显示所有项目，**按文件类型着色** |
 | **软件管理** | 📦 | 扫描并卸载应用，显示体积信息 |
-
-Moler 启动后每天自动检查一次 GitHub Releases，可在**设置 → 关于**中下载、校验并原地安装更新（安装在 `/Applications` 的副本需要管理员授权）。
 
 ## 安装
 

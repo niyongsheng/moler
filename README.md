@@ -18,7 +18,7 @@
 
 ---
 
-<img alt="demo" src="https://github.com/user-attachments/assets/ccc5b553-50e0-4930-b223-98cfb8018824" />
+https://github.com/user-attachments/assets/61b2a73d-c8e4-4142-abf6-7effedb59791
 
 ## Features
 
@@ -30,8 +30,6 @@
 | **Optimize** | 🔄 | Refresh system caches & services with **dry-run preview** support |
 | **Analyze** | 🎛 | Disk usage treemap visualization — all items shown, **color-coded by file type** |
 | **Software** | 📦 | Scan and uninstall applications with size info |
-
-Moler checks GitHub Releases for a new version once a day at launch and can download, verify and install updates in place from **Settings → About** (administrator approval is required for copies in `/Applications`).
 
 ## Install
 
