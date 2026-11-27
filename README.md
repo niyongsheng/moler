@@ -6,13 +6,16 @@
 <p align="center">NASA-Punk style macOS disk cleaner based on Mole • Native Swift GUI</p>
 
 <p align="center">
+  <b>English</b> · <a href="README_zh.md">简体中文</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/niyongsheng/moler/releases"><img src="https://img.shields.io/github/v/release/niyongsheng/moler?style=for-the-badge&label=Release" alt="Release"></a>
   <a href="https://github.com/niyongsheng/moler"><img src="https://img.shields.io/badge/Swift-5.9-FA7343?style=for-the-badge&logo=swift&logoColor=white" alt="Swift"></a>
   <a href="https://github.com/niyongsheng/moler"><img src="https://img.shields.io/badge/macOS-14.0+-005a9e?style=for-the-badge&logo=apple&logoColor=white" alt="macOS"></a>
   <a href="/LICENSE"><img src="https://img.shields.io/github/license/niyongsheng/moler?style=for-the-badge" alt="License"></a>
 </p>
 
-[![爱发电](https://img.shields.io/badge/爱发电-Afdian-946ce6?style=for-the-badge&logo=github&logoColor=white)](https://ifdian.net/a/nico2026)
 ---
 
 <img alt="demo" src="https://github.com/user-attachments/assets/ccc5b553-50e0-4930-b223-98cfb8018824" />
@@ -27,6 +30,8 @@
 | **Optimize** | 🔄 | Refresh system caches & services with **dry-run preview** support |
 | **Analyze** | 🎛 | Disk usage treemap visualization — all items shown, **color-coded by file type** |
 | **Software** | 📦 | Scan and uninstall applications with size info |
+
+Moler checks GitHub Releases for a new version once a day at launch and can download, verify and install updates in place from **Settings → About** (administrator approval is required for copies in `/Applications`).
 
 ## Install
 
